@@ -29,6 +29,7 @@
 * OF SUCH DAMAGE.
 *
 */
+#ifndef __APPLE__
 
 #pragma once
 
@@ -40,6 +41,7 @@
 #include "field_computation.h"
 
 #include <array>
+#include <cstdint>
 
 namespace hdi {
   namespace dr {
@@ -90,7 +92,7 @@ namespace hdi {
       void interpolateFields(float* sum_Q);
       void computeGradients(unsigned int num_points, float sum_Q, double exaggeration);
       void updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult);
-      void updateEmbedding(embedding_type* embedding, float exaggeration, float iteration, float mult);
+      void updateEmbedding(unsigned int num_points, float exaggeration, float iteration, float mult);
 
     private:
       const unsigned int FIXED_FIELDS_SIZE = 40;
@@ -127,3 +129,5 @@ namespace hdi {
     };
   }
 }
+
+#endif // __APPLE__

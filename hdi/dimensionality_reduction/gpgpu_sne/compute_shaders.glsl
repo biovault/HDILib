@@ -87,7 +87,7 @@ const char* compute_forces_source = GLSL(430,
   uniform float sum_Q;
 
   void main() {
-    uint i = gl_WorkGroupID.x;
+    uint i = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
     uint groupSize = gl_WorkGroupSize.x;
     uint lid = gl_LocalInvocationID.x;
 
@@ -165,8 +165,8 @@ const char* update_source = GLSL(430,
   uniform float mult;
 
   void main() {
-    uint i = gl_GlobalInvocationID.x;
-    uint groupSize = gl_WorkGroupSize.x;
+    uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
 
     if (i >= num_points * 2)
       return;
@@ -204,8 +204,8 @@ const char* bounds_source = GLSL(430,
     uint lid = gl_LocalInvocationIndex.x;
     uint groupSize = gl_WorkGroupSize.x;
 
-    vec2 minBound = vec2(1.0 / 0.0); // inf
-    vec2 maxBound = vec2(-1.0 / 0.0); // -inf
+    vec2 minBound = vec2(1e38);//1.0 / 0.0); // inf
+    vec2 maxBound = vec2(-1e38);//-1.0 / 0.0); // -inf
 
     for (uint i = lid; i < num_points; i += groupSize)
     {
@@ -276,8 +276,8 @@ const char* center_and_scale_source = GLSL(430,
   uniform float diameter;
 
   void main() {
-    uint i = gl_GlobalInvocationID.x;
-    uint groupSize = gl_WorkGroupSize.x;
+    uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
 
     if (i >= num_points)
       return;
