@@ -78,7 +78,7 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             cmake.definitions["CMAKE_CXX_STANDARD"] = 14
             cmake.definitions["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
-        cmake.configure()
+        cmake.configure(source_folder=self._source_subfolder)
         cmake.verbose = True
         return cmake
 
