@@ -9,14 +9,12 @@ class HDILibConan(ConanFile):
     name = "HDILib"
     version = "1.0.0-alpha1"
     description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
-    # topics can get used for searches, GitHub topics, Bintray tags etc. Add here keywords about the library
-    topics = ("conan", "analysis", "n-dimensional", "tSNE")
+    topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
     branch = "master"
-    author = "B. van Lew <b.van_lew@lumc.nl>"
-    license = "MIT"  # Indicates license type of the packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+    author = "B. van Lew <b.van_lew@lumc.nl>" #conanfile author
+    license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
     exports = ["LICENSE.md"]      # Packages the license for the conanfile.py
-    # Remove following lines if the target lib does not use cmake.
     generators = "cmake"
 
     # Options may need to change depending on the packaged library
@@ -26,10 +24,9 @@ class HDILibConan(ConanFile):
     export_sources = "CMakeLists.txt", "hdi/*"
 
     _source_subfolder = name
-    # requires = (
-        # "qt/5.12.4@lkeb/stable",
-        # "bzip2/1.0.8@conan/stable"
-    # )
+    requires = (
+        "CRoaring/0.2.63@lkeb/stable"
+    )
 
     def system_requirements(self):
         # if tools.os_info.is_linux:
@@ -61,9 +58,8 @@ class HDILibConan(ConanFile):
         os.chdir("./{0}".format(self._source_subfolder))
         self.run("git checkout {0}".format(self.branch))
         
-        # This small hack might be useful to guarantee proper /MT /MD linkage
-        # in MSVC if the packaged project doesn't have variables to set it
-        # properly
+        # Patch CMakeLists.txt to support /MT /MD linkage in MSVC if 
+        # the packaged project doesn't have variables to set it properly
         conanproj = ("PROJECT(${PROJECT})\n"
                 "include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)\n"
                 "conan_basic_setup()\n"
