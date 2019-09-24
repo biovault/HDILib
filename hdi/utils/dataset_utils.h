@@ -97,9 +97,6 @@ namespace hdi{
     namespace IO{
 
       template <typename scalar_type>
-      void loadMNIST(data::PanelData<scalar_type>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images = 60000, int label_to_be_selected = -1);
-
-      template <typename scalar_type>
       void loadCifar10(data::PanelData<scalar_type>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, int n_points = 50000);
 
       template <typename scalar_type>
@@ -117,87 +114,6 @@ namespace hdi{
 #endif
 
       //////////////////////////////////////////////////////////////
-
-      template <typename scalar_type>
-      void loadMNIST(data::PanelData<scalar_type>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images, int label_to_be_selected){
-        panel_data.clear();
-        const int num_dimensions(784);
-
-        std::ifstream file_data(filename_data, std::ios::in|std::ios::binary);
-        std::ifstream file_labels(filename_labels, std::ios::in|std::ios::binary);
-        if (!file_labels.is_open()){
-          throw std::runtime_error("label file cannot be found");
-        }
-        if (!file_data.is_open()){
-          throw std::runtime_error("data file cannot be found");
-        }
-        {//removing headers
-          int32_t appo;
-          file_labels.read((char*)&appo,4);
-          file_labels.read((char*)&appo,4);
-          file_data.read((char*)&appo,4);
-          file_data.read((char*)&appo,4);
-          file_data.read((char*)&appo,4);
-          file_data.read((char*)&appo,4);
-        }
-
-
-        {//initializing panel data
-          for(int j = 0; j < 28; ++j){
-            for(int i = 0; i < 28; ++i){
-              panel_data.addDimension(std::make_shared<hdi::data::PixelData>(hdi::data::PixelData(j,i,28,28)));
-            }
-          }
-          panel_data.initialize();
-        }
-
-        std::vector<QImage> images;
-        std::vector<std::vector<scalar_type> > input_data;
-        {//reading data
-          images.reserve(num_images);
-          input_data.reserve(num_images);
-          labels.reserve(num_images);
-
-          for(int i = 0; i < num_images; ++i){
-            unsigned char label;
-            file_labels.read((char*)&label,1);
-            labels.push_back(label);
-
-            //still some pics to read for this digit
-            input_data.push_back(std::vector<scalar_type>(num_dimensions));
-            images.push_back(QImage(28,28,QImage::Format::Format_ARGB32));
-            const int idx = int(input_data.size()-1);
-            for(int i = 0; i < num_dimensions; ++i){
-              unsigned char pixel;
-              file_data.read((char*)&pixel,1);
-              const scalar_type intensity(255.f - pixel);
-              input_data[idx][i] = intensity;
-              images[idx].setPixel(i%28,i/28,qRgb(intensity,intensity,intensity));
-            }
-          }
-
-          {
-            //moving a digit at the beginning digits of the vectors
-            const int digit_to_be_moved = 1;
-            int idx_to_be_swapped = 0;
-            for(int i = 0; i < images.size(); ++i){
-              if(labels[i] == digit_to_be_moved){
-                std::swap(images[i],    images[idx_to_be_swapped]);
-                std::swap(input_data[i],  input_data[idx_to_be_swapped]);
-                std::swap(labels[i],    labels[idx_to_be_swapped]);
-                ++idx_to_be_swapped;
-              }
-            }
-          }
-
-          for(int i = 0; i < images.size(); ++i){
-            panel_data.addDataPoint(std::make_shared<hdi::data::ImageData>(hdi::data::ImageData(images[i])), input_data[i]);
-            if(labels[i] == label_to_be_selected){
-              panel_data.getFlagsDataPoints()[i] = hdi::data::PanelData<scalar_type>::Selected;
-            }
-          }
-        }
-      }
 
 
       template <typename scalar_type>

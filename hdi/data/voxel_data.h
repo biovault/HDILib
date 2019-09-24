@@ -34,7 +34,6 @@
 #define VOXEL_DATA_H
 
 #include "hdi/data/abstract_data.h"
-#include <QImage>
 
 namespace hdi{
   namespace data{
