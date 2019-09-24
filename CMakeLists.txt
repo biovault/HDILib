@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 2.8.11)
 
-project (HighDimInspector)
+set(PROJECT "HDILib")
+PROJECT(${PROJECT})
 
 if(APPLE)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")

@@ -12,6 +12,7 @@ class HDILibConan(ConanFile):
     # topics can get used for searches, GitHub topics, Bintray tags etc. Add here keywords about the library
     topics = ("conan", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
+    branch = "master"
     author = "B. van Lew <b.van_lew@lumc.nl>"
     license = "MIT"  # Indicates license type of the packaged library; please use SPDX Identifiers https://spdx.org/licenses/
     exports = ["LICENSE.md"]      # Packages the license for the conanfile.py
@@ -24,6 +25,7 @@ class HDILibConan(ConanFile):
     default_options = {"shared": True, "fPIC": True}
     export_sources = "CMakeLists.txt", "hdi/*"
 
+    _source_subfolder = name
     # requires = (
         # "qt/5.12.4@lkeb/stable",
         # "bzip2/1.0.8@conan/stable"
@@ -54,7 +56,20 @@ class HDILibConan(ConanFile):
             del self.options.fPIC 
     
     def source(self):
-        pass
+        source_url = self.url
+        self.run("git clone {0}.git".format(self.url))
+        os.chdir("./{0}".format(self._source_subfolder))
+        self.run("git checkout {0}".format(self.branch))
+        
+        # This small hack might be useful to guarantee proper /MT /MD linkage
+        # in MSVC if the packaged project doesn't have variables to set it
+        # properly
+        conanproj = ("PROJECT(${PROJECT})\n"
+                "include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)\n"
+                "conan_basic_setup()\n"
+        )
+        os.chdir("..")
+        tools.replace_in_file("HDILib/CMakeLists.txt", "PROJECT(${PROJECT})", conanproj)
 
     def _configure_cmake(self):
         cmake = CMake(self)
