@@ -22,11 +22,7 @@ class HDILibConan(ConanFile):
     settings = {"os": None, "build_type": None, "compiler": None, "arch": None}
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": True, "fPIC": True}
-    scm = {
-        "type": "git",
-        "url": "auto",
-        "revision": "auto"
-    }
+    export_sources = "CMakeLists.txt", "hdi/*"
 
     # requires = (
         # "qt/5.12.4@lkeb/stable",
