@@ -35,7 +35,7 @@
 
 #ifdef PREPROC_USE_ROARING
 
-#include "roaring/roaring.hh"
+#include "roaring.hh"
 #include <queue>
 
 namespace hdi{

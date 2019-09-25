@@ -49,7 +49,7 @@
 #include <unordered_map>
 
 #ifdef PREPROC_USE_ROARING
-    #include "roaring/roaring.hh"
+    #include "roaring.hh"
 #endif
 
 namespace hdi{
