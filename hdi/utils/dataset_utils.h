@@ -57,7 +57,8 @@ namespace hdi{
 
     template <typename scalar_type>
     void loadGaussianSpheres(data::PanelData<scalar_type>& panel_data, std::vector<unsigned int>& labels, int n_spheres = 5, int n_points_sphere = 1000, int n_dimensions = 10);
-
+#ifdef false    
+    // disabled due to Qt dependency - move to applications
     template <typename scalar_type>
     void loadGaussianSpheres(data::PanelData<scalar_type>& panel_data, std::vector<unsigned int>& labels, int n_spheres, int n_points_sphere, int n_dimensions){
       panel_data.clear();
@@ -92,7 +93,7 @@ namespace hdi{
         }
       }
     }
-
+#endif
     namespace IO{
 
       template <typename scalar_type>
