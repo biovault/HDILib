@@ -27,27 +27,26 @@ class HDILibConan(ConanFile):
     requires = (
         "CRoaring/0.2.63@lkeb/stable"
     )
+    # Flann builds are bit complex and certain versions fail with 
+    # certain platform, and compiler combinations. Hence use 
+    # either self built 1.8.5 for Windows or system supplied 
+    # 1.8.4 on Linux and Macos
 
     def system_requirements(self):
-        # if tools.os_info.is_linux:
-            # if tools.os_info.with_apt:
-                # installer = tools.SystemPackageTool()
-                # installer.install('mesa-common-dev')
-                # installer.install('libgl1-mesa-dev')
-                # installer.install('libxcomposite-dev')
-                # installer.install('libxcursor-dev')
-                # installer.install('libxi-dev')
-                # installer.install('libnss3-dev')
-                # installer.install('libnspr4-dev')
-                # installer.install('libfreetype6-dev')
-                # installer.install('libfontconfig1-dev')
-                # installer.install('libxtst-dev')
-                # installer.install('libasound2-dev')
-                # installer.install('libdbus-1-dev')
+        if tools.os_info.is_linux:
+            if tools.os_info.with_apt:
+                installer = tools.SystemPackageTool()
+                installer.install('libflann-dev=1.8.5')
         if tools.os_info.is_macos: 
             installer = tools.SystemPackageTool()    
-            installer.install('libomp')              
-                
+            installer.install('libomp')
+            installer.install('flann@1.8.4')
+               
+    def requirements(self):
+        if self.settings.os == "Windows":
+            self.requires(flann/1.8.5@lkeb/stable)
+            
+        
     def config_options(self):
         if self.settings.os == 'Windows':
             del self.options.fPIC 
