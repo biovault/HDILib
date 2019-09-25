@@ -36,7 +36,7 @@ class HDILibConan(ConanFile):
         if tools.os_info.is_linux:
             if tools.os_info.with_apt:
                 installer = tools.SystemPackageTool()
-                installer.install('libflann-dev=1.8.5')
+                installer.install('libflann-dev=1.8.4')
         if tools.os_info.is_macos: 
             installer = tools.SystemPackageTool()    
             installer.install('libomp')
