@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 2.8.11)
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
 
-if(APPLE)
+if(CMAKE_GENERATOR STREQUAL Xcode)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
   set_target_properties(${PROJECT} PROPERTIES XCODE_ATTRIBUTE_COMPILER_INDEX_STORE_ENABLE "NO")
 
@@ -27,10 +27,6 @@ if(APPLE)
     message("OS is macOS, no OpenMP support detected, using Grand Central Dispatch instead.")
     add_definitions( -D__USE_GCD__)
   endif( LLVM_FOUND )
-endif(APPLE)
-
-if(APPLE)
-    set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
 endif(APPLE)
 
 option(HDI_BUILD_VISUALIZATION "Build the visualization library" ON)
