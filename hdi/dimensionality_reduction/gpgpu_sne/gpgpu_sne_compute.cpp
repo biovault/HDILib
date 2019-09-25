@@ -6,6 +6,7 @@
 #include <vector>
 #include <limits>
 #include <iostream>
+#include <math.h>
 
 namespace hdi {
   namespace dr {
