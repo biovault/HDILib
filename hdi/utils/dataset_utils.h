@@ -38,7 +38,6 @@
 #include <iostream>
 #include <fstream>
 #include "hdi/data/pixel_data.h"
-#include "hdi/data/image_data.h"
 #include "hdi/data/empty_data.h"
 #include "hdi/data/text_data.h"
 #include "hdi/data/voxel_data.h"
