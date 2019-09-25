@@ -44,7 +44,7 @@ class HDILibConan(ConanFile):
                
     def requirements(self):
         if self.settings.os == "Windows":
-            self.requires(flann/1.8.5@lkeb/stable)
+            self.requires("flann/1.8.5@lkeb/stable")
             
         
     def config_options(self):
