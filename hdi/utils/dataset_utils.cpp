@@ -31,7 +31,6 @@
  */
 
 #include "hdi/utils/dataset_utils.h"
-#include <QDir>
 
 namespace hdi{
   namespace utils{
@@ -40,7 +39,8 @@ namespace hdi{
       template void loadMNIST(data::PanelData<double>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images, int label_to_be_selected);
       template void loadMNIST(data::PanelData<float>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images, int label_to_be_selected);
 
-#ifdef PREPROC_USE_ROARING
+#ifdef false
+      // Disable - currently unused but could have rewrite with c++17 filesystem
       void loadTwitterFollowers(const std::string& folder, std::vector<Roaring>& follower_to_target, std::vector<Roaring>& target_to_follower,
                     std::unordered_map<std::string,uint32_t>& follower_id, std::unordered_map<std::string,uint32_t>& target_id)
       {
