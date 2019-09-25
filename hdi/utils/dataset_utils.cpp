@@ -36,8 +36,8 @@ namespace hdi{
   namespace utils{
     namespace IO{
 
-      template void loadMNIST(data::PanelData<double>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images, int label_to_be_selected);
-      template void loadMNIST(data::PanelData<float>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images, int label_to_be_selected);
+      void loadMNIST(data::PanelData<double>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images, int label_to_be_selected);
+      void loadMNIST(data::PanelData<float>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images, int label_to_be_selected);
 
 #ifdef false
       // Disable - currently unused but could have rewrite with c++17 filesystem
