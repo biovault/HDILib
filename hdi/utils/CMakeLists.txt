@@ -46,7 +46,6 @@ file(GLOB ResourceFiles *.qrc)
 
 add_library(hdiutils ${HeaderFiles} ${SourceFiles} ${Resources} )
 
-target_link_libraries (hdiutils Qt5::Core Qt5::Widgets)
 if (UNIX)
     target_link_libraries (hdiutils ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
 endif (UNIX)
