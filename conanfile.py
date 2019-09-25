@@ -85,7 +85,12 @@ class HDILibConan(ConanFile):
         self.copy(pattern="LICENSE", dst="licenses", src=self._source_subfolder)
         # If the CMakeLists.txt has a proper install method, the steps below may be redundant
         # If so, you can just remove the lines below
-        self.copy(pattern="*", src=os.path.join(self.install_dir, 'Release'))
+        self.copy("*.h", dst="include", keep_path=True)
+        self.copy("*.hpp", dst="include", keep_path=True)       
+        self.copy("*.dll", dst="bin", keep_path=False)
+        self.copy("*.so", dst="lib", keep_path=False)
+        self.copy("*.dylib", dst="lib", keep_path=False)
+        self.copy("*.a", dst="lib", keep_path=False)
 
 
     def package_info(self):
