@@ -39,6 +39,7 @@ class HDILibConan(ConanFile):
                 installer.install('libflann-dev')
         if tools.os_info.is_macos: 
             installer = tools.SystemPackageTool()    
+            installer.install('llvm')
             installer.install('libomp')
             installer.install('flann')
                
