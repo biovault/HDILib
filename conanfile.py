@@ -68,7 +68,10 @@ class HDILibConan(ConanFile):
         tools.replace_in_file("HDILib/CMakeLists.txt", "PROJECT(${PROJECT})", conanproj)
 
     def _configure_cmake(self):
-        cmake = CMake(self)
+        if self.settings.os == "Macos":
+            cmake = CMake(self, generator='Xcode')
+        else:
+            cmake = CMake(self)
         if self.settings.os == "Windows" and self.options.shared:
             cmake.definitions["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
         if self.settings.os == "Linux" or self.settings.os == "Macos":
