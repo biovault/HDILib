@@ -5,7 +5,6 @@ PROJECT(${PROJECT})
 
 if (CMAKE_GENERATOR STREQUAL Xcode)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
-  set_target_properties(${PROJECT} PROPERTIES XCODE_ATTRIBUTE_COMPILER_INDEX_STORE_ENABLE "NO")
   if(DEFINED ENV{CONAN_IS_TRAVIS_OSX})
     find_program(BREW NAMES brew)
     message(STATUS, "In Darwin with ${BREW}")
