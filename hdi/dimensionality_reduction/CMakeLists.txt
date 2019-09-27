@@ -16,6 +16,8 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
     set(OpenMP_CXX_LIB_NAMES "omp")
     set(OpenMP_omp_LIBRARY "${BREW_LIBOMP_PREFIX}/lib/libomp.dylib")
     include_directories("${BREW_LIBOMP_PREFIX}/include") 
+    execute_process(COMMAND ${BREW} --prefix flann OUTPUT_VARIABLE BREW_FLANN_PREFIX
+    include_directories("${BREW_FLANN_PREFIX}/include")        
   else() 
       find_package(LLVM)
       if( LLVM_FOUND )

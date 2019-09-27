@@ -41,7 +41,7 @@ class HDILibConan(ConanFile):
             
             installer = tools.SystemPackageTool()  
             installer.install('libomp')
-            installer.install('flann@1.8.4')
+            installer.install('flann')
                
     def requirements(self):
         if self.settings.os == "Windows":
