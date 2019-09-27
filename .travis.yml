@@ -7,7 +7,7 @@ env:
      - CONAN_PASSWORD=$CONAN_PASSWORD_SECRET  
      - CONAN_UPLOAD="http://cytosplore.lumc.nl:8081/artifactory/api/conan/conan-local"
      - CONAN_STABLE_BRANCH_PATTERN="master"
-     - CONAN_UPLOAD_ONLY_WHEN_STABLE=1 "
+     - CONAN_UPLOAD_ONLY_WHEN_STABLE=1"
 
 linux: &linux
    os: linux
@@ -33,6 +33,7 @@ matrix:
             - CONAN_APPLE_CLANG_VERSIONS=10.0
             - CONAN_BUILD_TYPES=Release
             - CONAN_ARCHS=x86_64
+            - CONAN_IS_TRAVIS_OSX=1
 
 install:
   - chmod +x .ci/install.sh
