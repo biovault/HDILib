@@ -5,6 +5,7 @@ include_directories ("${CMAKE_SOURCE_DIR}")
 include_directories ("${CMAKE_CURRENT_BINARY_DIR}")
 
 if (CMAKE_GENERATOR STREQUAL Xcode)
+  add_definitions(-DGL_SILENCE_DEPRECATION)
   set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
   if(DEFINED ENV{CONAN_IS_TRAVIS_OSX})
     find_program(BREW NAMES brew)
