@@ -45,6 +45,9 @@
 
 namespace hdi{
   namespace dr{
+
+	  int HDJointProbabilityGenerator_NrOfKnnAlgorithms();
+
     //! Generator for a joint probability distribution that describes similarities in the high dimensional data
     /*!
       Generator for a joint probability distribution that describes similarities in the high dimensional data.
@@ -69,6 +72,9 @@ namespace hdi{
         int     _perplexity_multiplier; //! Multiplied by the perplexity gives the number of nearest neighbors used
         int     _num_trees;       //! Number of trees used int the AKNN
         int     _num_checks;      //! Number of checks used int the AKNN
+		int     _aknn_algorithm;
+		double _aknn_algorithmP1;
+		double _aknn_algorithmP2;
       };
 
       //!

@@ -40,6 +40,16 @@
 
 namespace hdi{
   namespace dr{
+
+	  int HierarchicalSNE_NrOfKnnAlgorithms()
+	  {
+#ifdef HNSWLIB_SUPPORTED
+		  return 2;
+#else
+		  return 1;
+#endif
+	  }
+
     template class HierarchicalSNE<float,std::vector<std::map<uint32_t,float>>>;
     template class HierarchicalSNE<double,std::vector<std::map<uint32_t,double>>>;
 

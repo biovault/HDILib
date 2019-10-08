@@ -25,7 +25,8 @@ class HDILibConan(ConanFile):
 
     _source_subfolder = name
     requires = (
-        "CRoaring/0.2.63@lkeb/stable"
+        "CRoaring/0.2.63@lkeb/stable",
+        "hnswlib/latest@lkeb/stable"
     )
     # Flann builds are bit complex and certain versions fail with 
     # certain platform, and compiler combinations. Hence use 

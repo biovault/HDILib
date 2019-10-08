@@ -33,7 +33,7 @@
 
 #ifndef HIERARCHICAL_SNE_INL
 #define HIERARCHICAL_SNE_INL
-
+#include <omp.h>
 #include "hdi/dimensionality_reduction/hierarchical_sne.h"
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
@@ -48,6 +48,21 @@
 #include "hdi/data/map_helpers.h"
 #include "hdi/data/io.h"
 #include "hdi/utils/log_progress.h"
+
+#ifdef HNSWLIB_FOUND
+#ifdef _MSC_VER
+#if (__cplusplus >=201103)
+#include "hnswlib/hnswlib.h"
+#include "hnswlib/space_l2.h"
+#define HNSWLIB_SUPPORTED
+#endif //__cplusplus >=201103
+#else // _MSC_VER
+#include "hnswlib/hnswlib.h"
+#include "hnswlib/space_l2.h"
+#define HNSWLIB_SUPPORTED
+#endif // _MSC_VER
+#endif //HNSWLIB_FOUND
+
 
 //#ifdef __USE_GCD__
 //#include <dispatch/dispatch.h>
@@ -81,6 +96,9 @@ namespace hdi{
       _num_neighbors(30),
       _aknn_num_trees(4),
       _aknn_num_checks(1024),
+	  _aknn_algorithm(-1),
+	  _aknn_algorithmP1(0),
+	  _aknn_algorithmP2(0),
       _monte_carlo_sampling(true),
       _mcmcs_num_walks(10),
       _mcmcs_landmark_thresh(1.5),
@@ -251,16 +269,21 @@ namespace hdi{
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type,sparse_scalar_matrix_type>::computeNeighborhoodGraph(scalar_vector_type& distance_based_probabilities, std::vector<int>& neighborhood_graph){
-      utils::secureLog(_logger,"Computing the neighborhood graph...");
-      flann::Matrix<scalar_type> dataset  (_high_dimensional_data,_num_dps,_dimensionality);
-      flann::Matrix<scalar_type> query  (_high_dimensional_data,_num_dps,_dimensionality);
-      
-      flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(_params._aknn_num_trees));
+     
       unsigned_int_type nn = _params._num_neighbors + 1;
       scalar_type perplexity = _params._num_neighbors / 3.;
       neighborhood_graph.resize(_num_dps*nn);
       distance_based_probabilities.resize(_num_dps*nn);
+
+#ifdef HNSWLIB_SUPPORTED
+	  if(_params._aknn_algorithm == -1)
+#endif
       {
+		utils::secureLog(_logger, "Computing the neighborhood graph...");
+		flann::Matrix<scalar_type> dataset(_high_dimensional_data, _num_dps, _dimensionality);
+		flann::Matrix<scalar_type> query(_high_dimensional_data, _num_dps, _dimensionality);
+
+		flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(_params._aknn_num_trees));
         utils::secureLog(_logger,"\tBuilding the trees...");
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
         index.buildIndex();
@@ -271,6 +294,43 @@ namespace hdi{
         utils::secureLog(_logger,"\tAKNN queries...");
         index.knnSearch(query, indices_mat, dists_mat, nn, params);
       }
+#ifdef HNSWLIB_SUPPORTED
+	  else
+	  {
+		  utils::secureLog(_logger, "Computing the neighborhood graph with HNSW Lib...");
+
+		  hnswlib::L2Space l2space(_dimensionality);
+		  hnswlib::HierarchicalNSW<scalar_type> appr_alg(&l2space, _num_dps, _params._aknn_algorithmP1, _params._aknn_algorithmP2, 0);
+
+		  utils::secureLog(_logger, "\tBuilding the trees...");
+		  utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
+		  appr_alg.addPoint((void*)_high_dimensional_data, (std::size_t) 0);
+		  #pragma  omp parallel for
+		  for (int i = 1; i < _num_dps; ++i)
+		  {
+			  appr_alg.addPoint((void*)(_high_dimensional_data + (i*_dimensionality)), (hnswlib::labeltype) i);
+		  }
+		  utils::secureLog(_logger, "\tAKNN queries...");
+		  //	#pragma  omp parallel for
+		  for (int i = 0; i < _num_dps; ++i)
+		  {
+			  auto top_candidates = appr_alg.searchKnn(_high_dimensional_data + (i*_dimensionality), (hnswlib::labeltype)nn);
+
+			  scalar_type *distances = distance_based_probabilities.data() + (i*nn);
+			  int *indices = neighborhood_graph.data() + (i*nn);
+			  int j = 0;
+			  assert(top_candidates.size() == nn);
+			  while (top_candidates.size() > 0)
+			  {
+				  auto rez = top_candidates.top();
+				  distances[nn - j - 1] = rez.first;
+				  indices[nn - j - 1] = rez.second;
+				  top_candidates.pop();
+				  ++j;
+			  }
+		  }
+	  }
+#endif
       {
         utils::secureLog(_logger,"\tFMC computation...");
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_probabilities_time);
@@ -293,17 +353,16 @@ namespace hdi{
             std::swap(distance_based_probabilities[nn*d],distance_based_probabilities[to_swap]);
           }
           scalar_vector_type temp_probability(nn,0);
-          utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
-                  distance_based_probabilities.begin() + d*nn,
-                  distance_based_probabilities.begin() + (d + 1)*nn,
-                  temp_probability.begin(),
-                  temp_probability.begin() + nn,
-                  perplexity,
-                  200,
-                  1e-5,
-                  0
-                );
-
+		  utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
+			  distance_based_probabilities.cbegin() + d * nn,
+			  distance_based_probabilities.cbegin() + (d + 1)*nn,
+			  temp_probability.begin(),
+			  temp_probability.begin() + nn,
+			  perplexity,
+			  200,
+			  1e-5,
+			  0
+			  );
           distance_based_probabilities[d*nn] = 0;
           for(unsigned_int_type n = 1; n < nn; ++n){
             distance_based_probabilities[d*nn+n] = temp_probability[n];
@@ -326,14 +385,15 @@ namespace hdi{
       scalar_vector_type distance_based_probabilities;
       std::vector<int> neighborhood_graph;
 
-      computeNeighborhoodGraph(distance_based_probabilities, neighborhood_graph);
+	  computeNeighborhoodGraph(distance_based_probabilities, neighborhood_graph);
       unsigned_int_type nn = _params._num_neighbors + 1;
 
       {
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_fmc_time);
         utils::secureLog(_logger,"Creating transition matrix...");
         scale._landmark_to_original_data_idx.resize(_num_dps);
-        scale._landmark_to_previous_scale_idx.resize(_num_dps);
+		std::iota(scale._landmark_to_original_data_idx.begin(), scale._landmark_to_original_data_idx.end(), 0);
+		scale._landmark_to_previous_scale_idx = scale._landmark_to_original_data_idx;
         scale._landmark_weight.resize(_num_dps,1);
         scale._transition_matrix.resize(_num_dps);
 
@@ -356,8 +416,6 @@ namespace hdi{
 //        );
 //#endif
 
-        std::iota(scale._landmark_to_original_data_idx.begin(),scale._landmark_to_original_data_idx.end(),0);
-        std::iota(scale._landmark_to_previous_scale_idx.begin(),scale._landmark_to_previous_scale_idx.end(),0);
       }
 
       utils::secureLogValue(_logger,"Min memory requirements (MB)",scale.mimMemoryOccupation());
@@ -375,12 +433,10 @@ namespace hdi{
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_fmc_time);
         utils::secureLog(_logger,"Creating transition matrix...");
         scale._landmark_to_original_data_idx.resize(_num_dps);
-        scale._landmark_to_previous_scale_idx.resize(_num_dps);
+		std::iota(scale._landmark_to_original_data_idx.begin(), scale._landmark_to_original_data_idx.end(), 0);
+		scale._landmark_to_previous_scale_idx = scale._landmark_to_original_data_idx;
         scale._landmark_weight.resize(_num_dps,1);
-        scale._transition_matrix.resize(_num_dps);
         scale._transition_matrix = similarities;
-        std::iota(scale._landmark_to_original_data_idx.begin(),scale._landmark_to_original_data_idx.end(),0);
-        std::iota(scale._landmark_to_previous_scale_idx.begin(),scale._landmark_to_previous_scale_idx.end(),0);
       }
 
       utils::secureLogValue(_logger,"Min memory requirements (MB)",scale.mimMemoryOccupation());

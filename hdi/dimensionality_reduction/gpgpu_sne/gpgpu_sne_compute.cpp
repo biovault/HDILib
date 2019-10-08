@@ -6,7 +6,7 @@
 #include <vector>
 #include <limits>
 #include <iostream>
-#include <math.h>
+#include <cmath> // for sqrt
 
 namespace hdi {
   namespace dr {

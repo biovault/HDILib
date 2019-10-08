@@ -43,8 +43,24 @@
 #include <unordered_set>
 #include <numeric>
 
+#ifdef HNSWLIB_FOUND
+#ifdef _MSC_VER
+#if (_MSC_VER >= 1910)
+#include "hnswlib/hnswlib.h"
+#include "hnswlib/space_l2.h"
+#define HNSWLIB_SUPPORTED
+#endif //__cplusplus >=201103
+#else // _MSC_VER
+#include "hnswlib/hnswlib.h"
+#include "hnswlib/space_l2.h"
+#define HNSWLIB_SUPPORTED
+#endif
+#endif
+
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>
+#else
+#define __block
 #endif
 
 #pragma warning( push )
@@ -73,7 +89,10 @@ namespace hdi{
       _perplexity(30),
       _perplexity_multiplier(3),
       _num_trees(4),
-      _num_checks(1024)
+      _num_checks(1024),
+	  _aknn_algorithm(-1),
+	  _aknn_algorithmP1(16), // default parameter for HNSW
+	  _aknn_algorithmP2(200) // default parameter for HNSW
     {}
 
   /////////////////////////////////////////////////////////////////////////
@@ -156,26 +175,73 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeHighDimensionalDistances(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params){
-      hdi::utils::secureLog(_logger,"Computing nearest neighborhoods...");
-      flann::Matrix<scalar_type> dataset  (high_dimensional_data,num_dps,num_dim);
-      flann::Matrix<scalar_type> query  (high_dimensional_data,num_dps,num_dim);
+#ifdef  HNSWLIB_SUPPORTED
+		if (params._aknn_algorithm == -1)
+#endif
+		{
+			hdi::utils::secureLog(_logger, "Computing nearest neighborhoods...");
+			flann::Matrix<scalar_type> dataset(high_dimensional_data, num_dps, num_dim);
+			flann::Matrix<scalar_type> query(high_dimensional_data, num_dps, num_dim);
 
-      flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(params._num_trees));
-      const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
-      distances_squared.resize(num_dps*nn);
-      indices.resize(num_dps*nn);
-      {
-        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
-        index.buildIndex();
-      }
-      {
-        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
-        flann::Matrix<int> indices_mat(indices.data(), query.rows, nn);
-        flann::Matrix<scalar_type> dists_mat(distances_squared.data(), query.rows, nn);
-        flann::SearchParams flann_params(params._num_checks);
-        flann_params.cores = 0; //all cores
-        index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
-      }
+			flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(params._num_trees));
+			const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
+			distances_squared.resize(num_dps*nn);
+			indices.resize(num_dps*nn);
+			{
+				utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
+				index.buildIndex();
+			}
+	  {
+		  utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
+		  flann::Matrix<int> indices_mat(indices.data(), query.rows, nn);
+		  flann::Matrix<scalar_type> dists_mat(distances_squared.data(), query.rows, nn);
+		  flann::SearchParams flann_params(params._num_checks);
+		  flann_params.cores = 0; //all cores
+		  index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
+	  }
+		}
+#ifdef  HNSWLIB_SUPPORTED
+		else
+		{
+			hdi::utils::secureLog(_logger, "Computing nearest neighborhoods with HNSWLIB...");
+			hnswlib::L2Space l2space(num_dim);
+			hnswlib::HierarchicalNSW<scalar> appr_alg(&l2space, num_dps, params._aknn_algorithmP1, params._aknn_algorithmP2, 0);
+			{
+				utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
+				appr_alg.addPoint((void*)high_dimensional_data, (std::size_t) 0);
+#pragma  omp parallel for
+				for (int i = 1; i < num_dps; ++i)
+				{
+					appr_alg.addPoint((void*)(high_dimensional_data + (i*num_dim)), (hnswlib::labeltype) i);
+				}
+			}
+			const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
+			distances_squared.resize(num_dps*nn);
+			indices.resize(num_dps*nn);
+			{
+				utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
+#pragma  omp parallel for
+				for (int i = 0; i < num_dps; ++i)
+				{
+					auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i*num_dim), (hnswlib::labeltype)nn);
+					while (top_candidates.size() > nn) {
+						top_candidates.pop();
+					}
+					auto *distances_offset = distances_squared.data() + (i*nn);
+					auto indices_offset = indices.data() + (i*nn);
+					int j = 0;
+					while (top_candidates.size() > 0) {
+						auto rez = top_candidates.top();
+						distances_offset[nn - j - 1] = rez.first;
+						indices_offset[nn - j - 1] = appr_alg.getExternalLabel(rez.second);
+						top_candidates.pop();
+						++j;
+					}
+				}
+			}
+		}
+#endif
+      
     }
 
     template <typename scalar, typename sparse_scalar_matrix>
