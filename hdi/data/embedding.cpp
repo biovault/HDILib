@@ -52,7 +52,7 @@ namespace hdi{
     template void copyAndRemap1D2DVertical(const Embedding<double>& input, Embedding<double>& output, const std::vector<double>& weights);
     template void copyAndRemap2D2D(const Embedding<float>& input, Embedding<float>& output, const std::vector<float>& weights, bool fix_aspect_ratio);
     template void copyAndRemap2D2D(const Embedding<double>& input, Embedding<double>& output, const std::vector<double>& weights, bool fix_aspect_ratio);
-    template void Embedding<float>::computeEmbeddingBBox(scalar_vector_type& limits, scalar_type offset, bool squared_limits);
-    template void Embedding<double>::computeEmbeddingBBox(scalar_vector_type& limits, scalar_type offset, bool squared_limits);
+    template void Embedding<float>::computeEmbeddingBBox(Embedding<float>::scalar_vector_type& limits, float offset, bool squared_limits);
+    template void Embedding<double>::computeEmbeddingBBox(Embedding<double>::scalar_vector_type& limits, double offset, bool squared_limits);
   }
 }
