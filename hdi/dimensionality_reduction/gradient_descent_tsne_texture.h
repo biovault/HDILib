@@ -106,7 +106,7 @@ namespace hdi {
 
       //! Set the adaptive texture scaling
       void setResolutionFactor(float factor) {
-#ifndef __APPPLE__
+#ifndef __APPLE__
 		  if (_gpgpu_type == COMPUTE_SHADER)
 			  _gpgpu_compute_tsne.setScalingFactor(factor);
 		  else
