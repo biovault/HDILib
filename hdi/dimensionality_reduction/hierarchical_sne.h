@@ -95,6 +95,9 @@ namespace hdi{
         unsigned_int_type _aknn_num_trees; //! Number of trees in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
         unsigned_int_type _aknn_num_checks; //! Number of checks in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
 
+		int               _aknn_algorithm;   //! used to switch between FLANN and HNSW
+		double            _aknn_algorithmP1; //! used for HNSW
+		double            _aknn_algorithmP2; //! used for HNSW
         /////////////////// Landmark Selection ////////////////////////
         bool _monte_carlo_sampling; //! Select landmarks with a Markov Chain Monte Carlo sampling (MCMCS)
         unsigned_int_type _mcmcs_num_walks; //! Num walks per landmark in the MCMCS (beta in the paper)
