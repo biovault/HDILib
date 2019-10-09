@@ -2,6 +2,13 @@ Linux & Macos (Travis) | Windows (Appveyor)
 --- | ---
 [![Build Status](https://travis-ci.com/biovault/HDILib.svg?branch=master)](https://travis-ci.com/biovault/HDILib) | [![Build status](https://ci.appveyor.com/api/projects/status/xtd9ee63fukd462p?svg=true)](https://ci.appveyor.com/project/bldrvnlw/hdilib)
 
+Currently the following build matrix is performed
+
+OS | Architecture | Compiler
+--- | --- | ---
+Windows | x64 | MSVC 2017
+Linux | x86_64 | gcc 9
+Macos | x86_64 | clang 10
 
 
 [![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)

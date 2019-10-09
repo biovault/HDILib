@@ -9,6 +9,10 @@ env:
      - CONAN_STABLE_BRANCH_PATTERN="master"
      - CONAN_UPLOAD_ONLY_WHEN_STABLE=1"
 
+ignore:
+    - README.md
+    - appveyor.yml
+        
 linux: &linux
    os: linux
    dist: xenial
