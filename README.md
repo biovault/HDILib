@@ -1,9 +1,13 @@
-[![Build Status](https://travis-ci.org/Nicola17/High-Dimensional-Inspector.svg?branch=master)](https://travis-ci.org/Nicola17/High-Dimensional-Inspector)
+Linux & Macos (Travis) | Windows (Appveyor)
+--- | ---
+[![Build Status](https://travis-ci.com/biovault/HDILib.svg?branch=master)](https://travis-ci.com/biovault/HDILib) | [![Build status](https://ci.appveyor.com/api/projects/status/xtd9ee63fukd462p?svg=true)](https://ci.appveyor.com/project/bldrvnlw/hdilib)
+
+
 
 [![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)
 
 
-# ![HDILib: High Dimensional Inspector Library](./images/logo.png)
+# HDILib: High Dimensional Inspector Library
 HDILib is a library for the scalable analysis of large and high-dimensional data.
 It contains scalable manifold-learning algorithms, visualizations and visual-analytics frameworks.
 HDILib is implemented in C++, OpenGL and JavaScript.
