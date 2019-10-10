@@ -256,7 +256,7 @@ namespace hdi {
       // Update the point positions
       updatePoints(num_points, points, embedding, iteration, mult);
       computeEmbeddingBounds1(num_points, points);
-      updateEmbedding(embedding, exaggeration, iteration, mult);
+      updateEmbedding(num_points, exaggeration, iteration, mult);
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[POSITION]);
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, embedding->numDataPoints() * sizeof(Point2D), points);
