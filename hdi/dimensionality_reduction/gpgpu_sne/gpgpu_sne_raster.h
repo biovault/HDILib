@@ -83,7 +83,14 @@ namespace hdi {
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
-
+	  //!  Change the runtime configurable params
+	  void updateParams(TsneParameters params) {
+		  if (!_initialized) {
+			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
+		  }
+		  _params = params;
+	  };
+	  bool isInitialized() { return _initialized == true; }
     private:
       void initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P);
 
