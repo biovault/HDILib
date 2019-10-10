@@ -205,7 +205,7 @@ namespace hdi {
 
 		_gpgpu_raster_tsne.updateParams(params);
 #endif
-
+	}
 
     void GradientDescentTSNETexture::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");
