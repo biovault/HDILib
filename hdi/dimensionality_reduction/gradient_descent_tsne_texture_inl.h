@@ -137,7 +137,9 @@ namespace hdi {
       utils::secureLogValue(_logger, "Number of data points", _P.size());
 
       computeHighDimensionalDistribution(probabilities);
-      initializeEmbeddingPosition(params._seed, params._rngRange);
+	  if (!params._presetEmbedding) {
+        initializeEmbeddingPosition(params._seed);
+      }
 
 #ifndef __APPLE__
 	  if (_gpgpu_type == AUTO_DETECT)
@@ -191,6 +193,19 @@ namespace hdi {
       _initialized = true;
       utils::secureLog(_logger, "Initialization complete!");
     }
+    
+    void GradientDescentTSNETexture::updateParams(TsneParameters params) {
+        if (!_initialized) {
+            throw std::runtime_error("GradientDescentTSNETexture must be initialized before updating the tsne parameters");
+        }
+        _params = params;
+#ifndef __APPLE__
+		_gpgpu_compute_tsne.updateParams(params);
+#else
+
+		_gpgpu_raster_tsne.updateParams(params);
+#endif
+
 
     void GradientDescentTSNETexture::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");

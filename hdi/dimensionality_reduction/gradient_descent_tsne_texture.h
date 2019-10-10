@@ -74,6 +74,8 @@ namespace hdi {
       void initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
       //! Initialize the class with a joint-probability distribution. Note that it must be provided non initialized and with the weight of each row equal to 2.
       void initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
+	  //! Change the runtime modifiable tsne parameters
+	  void updateParams(TsneParameters params);
       //! Reset the internal state of the class but it keeps the inserted data-points
       void reset();
       //! Reset the class and remove all the data points
@@ -115,7 +117,7 @@ namespace hdi {
 		  _gpgpu_raster_tsne.setScalingFactor(factor);
 #endif
       }
-
+      bool isInitialized() { return _initialized == true; }
       //! Exageration baseline
       double& exaggeration_baseline() { return _exaggeration_baseline; }
       const double& exaggeration_baseline()const { return _exaggeration_baseline; }
