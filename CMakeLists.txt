@@ -47,12 +47,7 @@ else()
   endif()
 endif()
 
-option(HDI_BUILD_VISUALIZATION "Build the visualization library" ON)
 option(HDI_USE_ROARING "Use roaring bitmaps" ON)
-
-option(APP_TDD "Build TDD" ON)
-option(APP_COMMAND_LINE "Build command line tools" ON)
-option(APP_VISUAL_TESTS "Build visual tests" ON)
 
 if (HDI_USE_ROARING)
     add_definitions(-DPREPROC_USE_ROARING)
