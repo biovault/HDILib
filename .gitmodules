@@ -1,3 +1,6 @@
 [submodule "external/hnsw"]
 	path = external/hnsw
 	url = git@github.com:nmslib/hnswlib.git
+[submodule "external/annoy"]
+	path = external/annoy
+	url = git@github.com:spotify/annoy.git
