@@ -58,9 +58,7 @@
 #endif
 
 #ifdef __USE_GCD__
-#include <dispatch/dispatch.h>
-#else
-#define __block
+    #include <dispatch/dispatch.h>
 #endif
 
 #pragma warning( push )
