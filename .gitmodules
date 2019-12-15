@@ -1,0 +1,3 @@
+[submodule "external/hnsw"]
+	path = external/hnsw
+	url = git@github.com:nmslib/hnswlib.git
