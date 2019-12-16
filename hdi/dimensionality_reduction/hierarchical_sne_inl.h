@@ -97,8 +97,8 @@ namespace hdi{
       _aknn_num_trees(4),
       _aknn_num_checks(1024),
 	  _aknn_algorithm(hdi::utils::KNN_FLANN),
-      _aknn_algorithmP1(0),
-      _aknn_algorithmP2(0),
+      _aknn_algorithmP1(16), // default parameter for HNSW
+      _aknn_algorithmP2(200), // default parameter for HNSW
       _monte_carlo_sampling(true),
       _mcmcs_num_walks(10),
       _mcmcs_landmark_thresh(1.5),
