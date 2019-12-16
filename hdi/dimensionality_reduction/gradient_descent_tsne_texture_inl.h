@@ -79,22 +79,22 @@ namespace hdi {
     }
 
 #ifndef __APPLE__
-	void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
-		if (tsne_type == AUTO_DETECT)
-		{
-			//resolve the optimal type to use based on the available OpenGL version
-			if (GLAD_GL_VERSION_4_3)
-			{
-				_gpgpu_type = COMPUTE_SHADER;
-			}
-			else if (GLAD_GL_VERSION_3_3)
-			{
-				std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
-				_gpgpu_type = RASTER;
-			}
-		}
-		else
-			_gpgpu_type = tsne_type;
+    void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
+      if (tsne_type == AUTO_DETECT)
+      {
+        //resolve the optimal type to use based on the available OpenGL version
+        if (GLAD_GL_VERSION_4_3)
+        {
+          _gpgpu_type = COMPUTE_SHADER;
+        }
+        else if (GLAD_GL_VERSION_3_3)
+        {
+          std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
+          _gpgpu_type = RASTER;
+        }
+      }
+      else
+        _gpgpu_type = tsne_type;
     }
 #endif
 
@@ -131,26 +131,26 @@ namespace hdi {
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
         _embedding->resize(_params._embedding_dimensionality, size);
-	_P.clear();
+        _P.clear();
         _P.resize(size);
       }
 
       utils::secureLogValue(_logger, "Number of data points", _P.size());
 
       computeHighDimensionalDistribution(probabilities);
-	  if (!params._presetEmbedding) {
+      if (!params._presetEmbedding) {
         initializeEmbeddingPosition(params._seed);
       }
 
 #ifndef __APPLE__
-	  if (_gpgpu_type == AUTO_DETECT)
-		  setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
-	  if (_gpgpu_type == COMPUTE_SHADER)
-		  _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
-	  else// (_tsne_type == RASTER)
-		  _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+    if (_gpgpu_type == AUTO_DETECT)
+      setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
+    if (_gpgpu_type == COMPUTE_SHADER)
+      _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+    else// (_tsne_type == RASTER)
+      _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else
-	  _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+    _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #endif
 
       _iteration = 0;
@@ -178,16 +178,15 @@ namespace hdi {
       initializeEmbeddingPosition(params._seed, params._rngRange);
 
 #ifndef __APPLE__
-	  if (_gpgpu_type == AUTO_DETECT)
-		  setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
-	  if (_gpgpu_type == COMPUTE_SHADER)
-		  _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
-	  else// (_tsne_type == RASTER)
-		  _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      if (_gpgpu_type == AUTO_DETECT)
+        setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
+      if (_gpgpu_type == COMPUTE_SHADER)
+        _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      else// (_tsne_type == RASTER)
+        _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else
-	  _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #endif
-
 
       _iteration = 0;
 
@@ -201,12 +200,12 @@ namespace hdi {
         }
         _params = params;
 #ifndef __APPLE__
-		_gpgpu_compute_tsne.updateParams(params);
+        _gpgpu_compute_tsne.updateParams(params);
 #else
 
-		_gpgpu_raster_tsne.updateParams(params);
+        _gpgpu_raster_tsne.updateParams(params);
 #endif
-	}
+    }
 
     void GradientDescentTSNETexture::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");
@@ -289,14 +288,14 @@ namespace hdi {
     void GradientDescentTSNETexture::doAnIterationImpl(double mult) {
       // Compute gradient of the KL function using a compute shader approach
 #ifndef __APPLE__
-		if (_gpgpu_type == COMPUTE_SHADER)
-			_gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
-		else
-			_gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+      if (_gpgpu_type == COMPUTE_SHADER)
+        _gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+      else
+        _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
 #else
-		_gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+      _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
 #endif
-		++_iteration;
+      ++_iteration;
     }
 
     double GradientDescentTSNETexture::computeKullbackLeiblerDivergence() {
