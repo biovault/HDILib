@@ -74,6 +74,7 @@ namespace hdi{
         int         _num_trees;             //! Number of trees used int the AKNN
         int         _num_checks;            //! Number of checks used int the AKNN
 		hdi::utils::knn_library _aknn_algorithm;
+        hdi::utils::knn_distance_metric _aknn_metric;
 		double      _aknn_algorithmP1;
 		double      _aknn_algorithmP2;
       };

@@ -42,6 +42,16 @@ namespace hdi{
       KNN_HNSW = 0,
       KNN_ANNOY = 1
     };
+           
+    enum knn_distance_metric
+    {
+      KNN_METRIC_EUCLIDEAN = 0,
+      KNN_METRIC_COSINE = 1,
+      KNN_METRIC_INNER_PRODUCT = 2,
+      KNN_METRIC_MANHATTAN = 3,
+      KNN_METRIC_HAMMING = 4,
+      KNN_METRIC_DOT = 5
+    };
   }
 }
 #endif // KNN_H
