@@ -43,11 +43,15 @@ namespace hdi{
 
 	  int HierarchicalSNE_NrOfKnnAlgorithms()
 	  {
+          int numSupported = 1;
 #ifdef HNSWLIB_SUPPORTED
-		  return 2;
-#else
-		  return 1;
+          numSupported++;
 #endif
+          
+#ifdef __USE_ANNOY__
+          numSupported++;
+#endif
+		  return numSupported;
 	  }
 
     template class HierarchicalSNE<float,std::vector<std::map<uint32_t,float>>>;

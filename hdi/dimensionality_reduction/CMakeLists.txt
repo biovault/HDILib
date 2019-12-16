@@ -5,6 +5,11 @@ include_directories(${HNSWLIB_INCLUDE_DIR})
 message (STATUS "HNSWLIB: " ${HNSWLIB_INCLUDE_DIR})
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHNSWLIB_FOUND")
 
+get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/annoy/src" REALPATH)
+include_directories(${ANNOY_INCLUDE_DIR})
+message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__USE_ANNOY__")
+
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles *.h gpgpu_sne/*.h)
 file(GLOB SourceFiles *.cpp gpgpu_sne/*.cpp)
