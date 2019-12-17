@@ -97,6 +97,7 @@ namespace hdi{
       _aknn_num_trees(4),
       _aknn_num_checks(1024),
 	  _aknn_algorithm(hdi::utils::KNN_FLANN),
+      _aknn_metric(hdi::utils::KNN_METRIC_EUCLIDEAN),
       _aknn_algorithmP1(16), // default parameter for HNSW
       _aknn_algorithmP2(200), // default parameter for HNSW
       _monte_carlo_sampling(true),
@@ -314,8 +315,19 @@ namespace hdi{
 #ifdef HNSWLIB_SUPPORTED
 		  utils::secureLog(_logger, "Computing the neighborhood graph with HNSW Lib...");
 
-		  hnswlib::L2Space l2space(_dimensionality);
-		  hnswlib::HierarchicalNSW<scalar_type> appr_alg(&l2space, _num_dps, _params._aknn_algorithmP1, _params._aknn_algorithmP2, 0);
+          hnswlib::SpaceInterface<float> *space = NULL;
+          switch (_params._aknn_metric) {
+            case hdi::utils::KNN_METRIC_EUCLIDEAN:
+              space = new hnswlib::L2Space(_dimensionality);
+              break;
+            case hdi::utils::KNN_METRIC_INNER_PRODUCT:
+              space = new hnswlib::InnerProductSpace(_dimensionality);
+              break;
+            default:
+              space = new hnswlib::L2Space(_dimensionality);
+              break;
+          }
+          hnswlib::HierarchicalNSW<scalar_type> appr_alg(space, _num_dps, _params._aknn_algorithmP1, _params._aknn_algorithmP2, 0);
 
 		  utils::secureLog(_logger, "\tBuilding the trees...");
 		  utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
@@ -352,8 +364,35 @@ namespace hdi{
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy...");
           
           int search_k = nn * _params._aknn_num_trees;
-
-          AnnoyIndex<int, double, Euclidean, Kiss32Random> tree = AnnoyIndex<int, double, Euclidean, Kiss32Random>(_dimensionality);
+          
+          AnnoyIndexInterface<int, double>* tree = NULL;
+          switch (_params._aknn_metric) {
+            case hdi::utils::KNN_METRIC_EUCLIDEAN:
+                hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
+                tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random>(_dimensionality);
+              break;
+            case hdi::utils::KNN_METRIC_COSINE:
+              hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
+              tree = new AnnoyIndex<int, double, Angular, Kiss32Random>(_dimensionality);
+              break;
+            case hdi::utils::KNN_METRIC_MANHATTAN:
+              hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
+              tree = new AnnoyIndex<int, double, Manhattan, Kiss32Random>(_dimensionality);
+              break;
+            //case hdi::utils::KNN_METRIC_HAMMING:
+            //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
+            //  tree = new AnnoyIndex<int, double, Hamming, Kiss32Random>(num_dim);
+            //  break;
+            case hdi::utils::KNN_METRIC_DOT:
+              hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
+              tree = new AnnoyIndex<int, double, DotProduct, Kiss32Random>(_dimensionality);
+              break;
+            default:
+              hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
+              tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random>(_dimensionality);
+              break;
+          }
+          
           {
               utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
               
@@ -362,15 +401,15 @@ namespace hdi{
                   for (int z = 0; z < _dimensionality; ++z){
                       vec[z] = _high_dimensional_data[i * _dimensionality + z];
                   }
-                  tree.add_item(i, vec);
+                  tree->add_item(i, vec);
               }
-              tree.build(_params._aknn_num_trees);
+              tree->build(_params._aknn_num_trees);
   
               // Sample check if it returns enough neighbors
               std::vector<int> closest;
               std::vector<double> closest_distances;
               for (int n = 0; n < 100; n++){
-                  tree.get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
+                  tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
                   unsigned int neighbors_count = closest.size();
                   if (neighbors_count < nn) {
                       printf("Requesting %d neighbors, but ANNOY returned only %u. Please increase search_k\n", nn, neighbors_count);
@@ -391,7 +430,7 @@ namespace hdi{
                                   // Find nearest neighbors
                                   std::vector<int> closest;
                                   std::vector<double> closest_distances;
-                                  tree.get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
+                                  tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
                                   
                                   // Copy current row
                                   for(unsigned int m = 0; m < nn; m++) {
@@ -403,6 +442,7 @@ namespace hdi{
               }
               std::for_each(threads.begin(), threads.end(), [](std::thread& x){x.join();});
           }
+          delete tree;
 #endif // __USE_ANNOY__
       }
         
