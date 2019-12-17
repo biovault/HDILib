@@ -10,6 +10,8 @@ else("${HNSWLIB_INCLUDE_DIR}" STREQUAL "OFF")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHNSWLIB_FOUND")
 endif("${HNSWLIB_INCLUDE_DIR}" STREQUAL "OFF")
 
+include_directories("$ENV{FLANN_DIR}/include")
+message (STATUS "$ENV{FLANN_DIR}/include")
 
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles *.h gpgpu_sne/*.h)
