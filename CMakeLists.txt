@@ -1,10 +1,22 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 3.9)
 
+# Set C++11 language standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable the INSTALL project for building by default in VS
+set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
+
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
+# If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    message(STATUS "Default CMAKE_INSTALL_PREFIX detected. Setting to build directory.")
+    set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Default install path" FORCE )
+else()
+    message(STATUS "Custom CMAKE_INSTALL_PREFIX detected. Leaving it untouched.")
+endif()
+
 if (CMAKE_GENERATOR STREQUAL Xcode)
     add_definitions(-DGL_SILENCE_DEPRECATION)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
@@ -17,7 +29,7 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
     if("${BREW}" STRGREATER "")
         message(STATUS "Running on macOS Darwin using ${BREW}")
         execute_process(COMMAND ${BREW} --prefix llvm OUTPUT_VARIABLE BREW_LLVM_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
-        execute_process(COMMAND ${BREW} --prefix flann OUTPUT_VARIABLE BREW_FLANN_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
+        execute_process(COMMAND ${BREW} --prefix libomp OUTPUT_VARIABLE BREW_LIBOMP_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif("${BREW}" STRGREATER "")
     
     message(STATUS "Trying to find llvm using ${BREW_LLVM_PREFIX}/lib/cmake/llvm")
@@ -38,7 +50,6 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
         
         set(CMAKE_XCODE_ATTRIBUTE_COMPILER_INDEX_STORE_ENABLE "NO")
 
-        execute_process(COMMAND ${BREW} --prefix libomp OUTPUT_VARIABLE BREW_LIBOMP_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
         if(EXISTS ${BREW_LIBOMP_PREFIX})
             message(STATUS "Found OpenMP in ${BREW_LIBOMP_PREFIX}")
             set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
@@ -54,15 +65,6 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
         message(WARNING "No OpenMP support detected, using Grand Central Dispatch instead.")
         add_definitions( -D__USE_GCD__)
     endif(EXISTS ${LLVM_INSTALL_PREFIX})
-
-    #finding flann
-    if(EXISTS ${BREW_FLANN_PREFIX})
-        message(STATUS "Flann found from brew at ${BREW_FLANN_PREFIX}.")
-        include_directories("${BREW_FLANN_PREFIX}/include")
-    else()
-        # there should probably be an alternative in here for setting the flann path
-        message(WARNING "Flann not found.")
-    endif(EXISTS ${BREW_FLANN_PREFIX})
 #Win/Linux
 else()
   find_package(OpenMP REQUIRED)
