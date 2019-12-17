@@ -1,10 +1,22 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 3.9)
 
+# Set C++11 language standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable the INSTALL project for building by default in VS
+set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
+
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
+# If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    message(STATUS "Default CMAKE_INSTALL_PREFIX detected. Setting to build directory.")
+    set (CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Default install path" FORCE )
+else()
+    message(STATUS "Custom CMAKE_INSTALL_PREFIX detected. Leaving it untouched.")
+endif()
+
 if (CMAKE_GENERATOR STREQUAL Xcode)
     add_definitions(-DGL_SILENCE_DEPRECATION)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
