@@ -95,7 +95,8 @@ namespace hdi{
       _perplexity_multiplier(3),
       _num_trees(4),
       _num_checks(1024),
-	  _aknn_algorithm(hdi::utils::KNN_FLANN),
+      _aknn_algorithm(hdi::utils::KNN_FLANN),
+      _aknn_metric(hdi::utils::KNN_METRIC_EUCLIDEAN),
 	  _aknn_algorithmP1(16), // default parameter for HNSW
 	  _aknn_algorithmP2(200) // default parameter for HNSW
     {}
