@@ -419,28 +419,21 @@ namespace hdi{
               
               hdi::utils::secureLog(_logger, "Done building tree. Beginning nearest neighbor search... ");
               
-              int nthreads = std::thread::hardware_concurrency() - 1;
-              std::vector<std::thread> threads(nthreads);
-              for (int t = 0; t < nthreads; t++) {
-                  threads[t] = std::thread(std::bind(
-                          [&](const int begin, const int end, const int t)
-                          {
-                              for(int n = begin; n < end; n++)
-                              {
-                                  // Find nearest neighbors
-                                  std::vector<int> closest;
-                                  std::vector<double> closest_distances;
-                                  tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
-                                  
-                                  // Copy current row
-                                  for(unsigned int m = 0; m < nn; m++) {
-                                      neighborhood_graph[n * nn + m] = closest[m];
-                                      distance_based_probabilities[n * nn + m] = closest_distances[m] * closest_distances[m];
-                                  }
-                              }
-                          },t*_num_dps/nthreads,(t+1)==nthreads?_num_dps:(t+1)*_num_dps/nthreads,t));
+
+#pragma omp parallel for
+              for(int n = 0; n < _num_dps; n++)
+              {
+                  // Find nearest neighbors
+                  std::vector<int> closest;
+                  std::vector<double> closest_distances;
+                  tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
+                  
+                  // Copy current row
+                  for(unsigned int m = 0; m < nn; m++) {
+                      neighborhood_graph[n * nn + m] = closest[m];
+                      distance_based_probabilities[n * nn + m] = closest_distances[m] * closest_distances[m];
+                  }
               }
-              std::for_each(threads.begin(), threads.end(), [](std::thread& x){x.join();});
           }
           delete tree;
 #endif // __USE_ANNOY__
