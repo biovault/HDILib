@@ -145,11 +145,9 @@ namespace hdi{
       ~WeightedSPTree();
       void setData(scalar_type* inp_data, const scalar_type* weights);
       WeightedSPTree* getParent();
-      void construct(Cell boundary);
       bool insert(unsigned int new_index);
       void subdivide();
       bool isCorrect();
-      void rebuildTree();
       void getAllIndices(unsigned int* indices);
       unsigned int getDepth();
       void computeNonEdgeForces(unsigned int point_index, hp_scalar_type theta, hp_scalar_type neg_f[], hp_scalar_type& sum_Q)const;
@@ -161,7 +159,6 @@ namespace hdi{
       void init(WeightedSPTree* inp_parent, unsigned int D, scalar_type* inp_data, const scalar_type* weights, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
       void fill(unsigned int N);
       unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
-      bool isChild(unsigned int test_index, unsigned int start, unsigned int end);
     };
 
 /////////////////////////////////////////////////////////////////

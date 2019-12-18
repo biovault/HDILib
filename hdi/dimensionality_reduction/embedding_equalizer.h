@@ -51,13 +51,6 @@ namespace hdi{
       typedef std::vector<std::unordered_map<uint32_t,uint32_t>> connections_type;
 
     public:
-      class Params{
-      public:
-        Params();
-      };
-
-
-    public:
       EmbeddingEqualizer();
 
       void initialize(data::Embedding<scalar_type>* embedding_master, data::Embedding<scalar_type>* embedding_slave);
