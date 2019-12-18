@@ -286,7 +286,7 @@ namespace hdi {
 
       //MAGIC NUMBER
       if (exaggeration > 1.2) {
-        embedding->scaleIfSmallerThan(0.1);
+        embedding->scaleIfSmallerThan(0.1f);
       }
       else {
         embedding->zeroCentered();

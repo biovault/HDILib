@@ -51,8 +51,8 @@ namespace hdi{
       _initialized(false),
       _embedding_master(nullptr),
       _embedding_slave(nullptr),
-      _step_size(0.02),
-      _momentum(0.8),
+      _step_size{ static_cast<scalar_type>(0.02) },
+      _momentum{ static_cast<scalar_type>(0.8) },
       _connections(nullptr)
     {
 
