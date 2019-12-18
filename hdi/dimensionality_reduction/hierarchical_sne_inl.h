@@ -105,7 +105,7 @@ namespace hdi{
       _mcmcs_walk_length(10),
       _hard_cut_off(false),
       _hard_cut_off_percentage(0.1f),
-      _rs_reduction_factor_per_layer(.1),
+      _rs_reduction_factor_per_layer{ static_cast<scalar_type>(.1) },
       _rs_outliers_removal_jumps(10),
       _num_walks_per_landmark(100),
       _transition_matrix_prune_thresh(1.5),
@@ -808,7 +808,7 @@ namespace hdi{
 
               auto scale_size = scale.size();
               //removed the threshold depending on the scale -> it makes sense to remove only uneffective neighbors based at every scale -> memory is still under control
-              map_helpers_type::initialize(scale._transition_matrix[l],temp_trans_mat.begin(),temp_trans_mat.end(), 0.001);
+              map_helpers_type::initialize(scale._transition_matrix[l],temp_trans_mat.begin(),temp_trans_mat.end(), static_cast<mapped_type>(0.001));
               map_helpers_type::shrinkToFit(scale._transition_matrix[l]);
               progress.step();
             }

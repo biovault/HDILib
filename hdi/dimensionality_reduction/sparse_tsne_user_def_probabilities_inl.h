@@ -390,7 +390,7 @@ namespace hdi{
 
       //MAGIC NUMBER
       if(exaggerationFactor() > 1.2){
-        _embedding->scaleIfSmallerThan(0.1);
+        _embedding->scaleIfSmallerThan(0.1f);
       }else{
         _embedding->zeroCentered();
       }
