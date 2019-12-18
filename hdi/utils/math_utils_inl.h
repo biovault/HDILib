@@ -265,7 +265,6 @@ namespace hdi{
 
       bool found = false;
       double beta = 1.;
-      double sigma = std::sqrt(1/(2*beta));
       double min_beta = -std::numeric_limits<double>::max();
       double max_beta =  std::numeric_limits<double>::max();
     

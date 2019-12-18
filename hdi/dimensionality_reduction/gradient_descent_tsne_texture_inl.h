@@ -126,7 +126,6 @@ namespace hdi {
       {//Aux data
         _params = params;
         unsigned int size = probabilities.size();
-        unsigned int size_sq = probabilities.size()*probabilities.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -164,7 +163,6 @@ namespace hdi {
       {//Aux data
         _params = params;
         unsigned int size = distribution.size();
-        unsigned int size_sq = distribution.size()*distribution.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());

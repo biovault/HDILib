@@ -34,7 +34,7 @@ namespace hdi {
     }
 
     Bounds2D GpgpuSneRaster::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
-      const float* points = embedding->getContainer().data();
+      const float* const points = embedding->getContainer().data();
 
       Bounds2D bounds;
       bounds.min.x = std::numeric_limits<float>::max();
@@ -43,8 +43,8 @@ namespace hdi {
       bounds.max.y = -std::numeric_limits<float>::max();
 
       for (int i = 0; i < embedding->numDataPoints(); ++i) {
-        float x = embedding->getContainer().data()[i * 2 + 0];
-        float y = embedding->getContainer().data()[i * 2 + 1];
+        float x = points[i * 2 + 0];
+        float y = points[i * 2 + 1];
 
         bounds.min.x = std::min<float>(x, bounds.min.x);
         bounds.max.x = std::max<float>(x, bounds.max.x);

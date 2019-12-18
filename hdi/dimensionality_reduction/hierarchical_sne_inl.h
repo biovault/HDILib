@@ -806,7 +806,6 @@ namespace hdi{
               for(auto& v: temp_trans_mat){sum += v.second;}
               for(auto& v: temp_trans_mat){v.second /= sum;}
 
-              auto scale_size = scale.size();
               //removed the threshold depending on the scale -> it makes sense to remove only uneffective neighbors based at every scale -> memory is still under control
               map_helpers_type::initialize(scale._transition_matrix[l],temp_trans_mat.begin(),temp_trans_mat.end(), static_cast<mapped_type>(0.001));
               map_helpers_type::shrinkToFit(scale._transition_matrix[l]);
