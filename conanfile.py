@@ -76,7 +76,7 @@ class HDILibConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy(pattern="LICENSE", dst="licenses", src=self.source_subfolder)
+        self.copy(pattern="LICENSE", dst="licenses", src=self.source_folder)
         # If the CMakeLists.txt has a proper install method, the steps below may be redundant
         # If so, you can just remove the lines below
         self.copy("*.h", dst="include", keep_path=True)
