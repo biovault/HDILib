@@ -15,7 +15,7 @@ class HDILibConan(ConanFile):
     license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
     exports = ["LICENSE.md"]      # Packages the license for the conanfile.py
     generators = "cmake"
-
+    
     # Options may need to change depending on the packaged library
     settings = {"os": None, "build_type": None, "compiler": None, "arch": None}
     options = {"shared": [True, False], "fPIC": [True, False]}
@@ -52,6 +52,9 @@ class HDILibConan(ConanFile):
             del self.options.fPIC 
 
     def _configure_cmake(self):
+        print("Source folder: ", self.source_folder, "Build folder: ", self.build_folder);
+        print(os.listdir(self.source_folder))
+        print(os.listdir(self.build_folder))
         print("Path at cmake configure", os.path.abspath(os.path.curdir)) 
         print(os.listdir(os.path.curdir))
         # Inject the conan dependency paths into the CMakeLists.txt
