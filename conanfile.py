@@ -20,7 +20,7 @@ class HDILibConan(ConanFile):
     settings = {"os": None, "build_type": None, "compiler": None, "arch": None}
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": True, "fPIC": True}
-    export_sources = "*"
+    export_sources = "hdi*", "CMakeLists.txt"
     requires = (
         "CRoaring/0.2.63@lkeb/stable",
         "hnswlib/latest@lkeb/stable"
