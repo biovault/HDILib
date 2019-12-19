@@ -13,14 +13,14 @@ class HDILibConan(ConanFile):
     url = "https://github.com/biovault/HDILib"
     author = "B. van Lew <b.van_lew@lumc.nl>" #conanfile author
     license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
-    exports = ["LICENSE.md"]      # Packages the license for the conanfile.py
+
     generators = "cmake"
     
     # Options may need to change depending on the packaged library
     settings = {"os": None, "build_type": None, "compiler": None, "arch": None}
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": True, "fPIC": True}
-    exports = "hdi*", "CMakeLists.txt"
+    exports = "hdi*", "CMakeLists.txt", "LICENSE"
     requires = (
         "CRoaring/0.2.63@lkeb/stable",
         "hnswlib/latest@lkeb/stable"
@@ -52,15 +52,6 @@ class HDILibConan(ConanFile):
             del self.options.fPIC 
 
     def _configure_cmake(self):
-        print("Root source")
-        print(os.listdir("/home/conan/.conan/data/HDILib/1.0.0-alpha1/lkeb/stable/source"))
-        print("Project dir")
-        print(os.listdir("/home/conan/project"))
-        print("Source folder: ", self.source_folder, "Build folder: ", self.build_folder);
-        print(os.listdir(self.source_folder))
-        print(os.listdir(self.build_folder))
-        print("Path at cmake configure", os.path.abspath(os.path.curdir)) 
-        print(os.listdir(os.path.curdir))
         # Inject the conan dependency paths into the CMakeLists.txt
         conanproj = ("PROJECT(${PROJECT})\n"
                 "include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)\n"
@@ -85,7 +76,7 @@ class HDILibConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy(pattern="LICENSE", dst="licenses", src=self._source_subfolder)
+        self.copy(pattern="LICENSE", dst="licenses", src=self.source_subfolder)
         # If the CMakeLists.txt has a proper install method, the steps below may be redundant
         # If so, you can just remove the lines below
         self.copy("*.h", dst="include", keep_path=True)
