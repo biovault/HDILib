@@ -52,6 +52,10 @@ class HDILibConan(ConanFile):
             del self.options.fPIC 
 
     def _configure_cmake(self):
+        print("Root source")
+        print(os.listdir("/home/conan/.conan/data/HDILib/1.0.0-alpha1/lkeb/stable/source"))
+        print("Project dir")
+        print(os.listdir("/home/conan/project"))
         print("Source folder: ", self.source_folder, "Build folder: ", self.build_folder);
         print(os.listdir(self.source_folder))
         print(os.listdir(self.build_folder))
