@@ -11,19 +11,16 @@ class HDILibConan(ConanFile):
     description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
-    branch = "master"
     author = "B. van Lew <b.van_lew@lumc.nl>" #conanfile author
     license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
-    exports = ["LICENSE.md"]      # Packages the license for the conanfile.py
-    generators = "cmake"
 
+    generators = "cmake"
+    
     # Options may need to change depending on the packaged library
     settings = {"os": None, "build_type": None, "compiler": None, "arch": None}
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": True, "fPIC": True}
-    export_sources = "CMakeLists.txt", "hdi/*"
-
-    _source_subfolder = name
+    exports = "hdi*", "CMakeLists.txt", "LICENSE"
     requires = (
         "CRoaring/0.2.63@lkeb/stable",
         "hnswlib/latest@lkeb/stable"
@@ -53,23 +50,14 @@ class HDILibConan(ConanFile):
     def config_options(self):
         if self.settings.os == 'Windows':
             del self.options.fPIC 
-    
-    def source(self):
-        source_url = self.url
-        self.run("git clone {0}.git".format(self.url))
-        os.chdir("./{0}".format(self._source_subfolder))
-        self.run("git checkout {0}".format(self.branch))
-        
-        # Patch CMakeLists.txt to support /MT /MD linkage in MSVC if 
-        # the packaged project doesn't have variables to set it properly
+
+    def _configure_cmake(self):
+        # Inject the conan dependency paths into the CMakeLists.txt
         conanproj = ("PROJECT(${PROJECT})\n"
                 "include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)\n"
                 "conan_basic_setup()\n"
         )
-        os.chdir("..")
-        tools.replace_in_file("HDILib/CMakeLists.txt", "PROJECT(${PROJECT})", conanproj)
-
-    def _configure_cmake(self):
+        tools.replace_in_file("CMakeLists.txt", "PROJECT(${PROJECT})", conanproj)
         if self.settings.os == "Macos":
             cmake = CMake(self, generator='Xcode')
         else:
@@ -79,7 +67,7 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             cmake.definitions["CMAKE_CXX_STANDARD"] = 14
             cmake.definitions["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
-        cmake.configure(source_folder=self._source_subfolder)
+        cmake.configure()
         cmake.verbose = True
         return cmake
 
@@ -88,7 +76,7 @@ class HDILibConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy(pattern="LICENSE", dst="licenses", src=self._source_subfolder)
+        self.copy(pattern="LICENSE", dst="licenses", src=self.source_folder)
         # If the CMakeLists.txt has a proper install method, the steps below may be redundant
         # If so, you can just remove the lines below
         self.copy("*.h", dst="include", keep_path=True)
