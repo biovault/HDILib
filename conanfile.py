@@ -20,6 +20,13 @@ class HDILibConan(ConanFile):
     settings = {"os": None, "build_type": None, "compiler": None, "arch": None}
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": True, "fPIC": True}
+    
+    scm = {
+        "type": "git",
+        "url": "auto",
+        "revision": "auto",
+        "submodule": "recursive"
+    }
     exports = "hdi*", "CMakeLists.txt", "LICENSE"
     requires = (
         "CRoaring/0.2.63@lkeb/stable",
