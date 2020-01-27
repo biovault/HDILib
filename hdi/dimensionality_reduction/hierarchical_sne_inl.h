@@ -278,17 +278,17 @@ namespace hdi{
         
       // Fallback to FLANN if others are not supported
       #ifndef HNSWLIB_SUPPORTED
-        if (params._aknn_algorithm == hdi::utils::KNN_HNSW)
+        if (_params._aknn_algorithm == hdi::utils::KNN_HNSW)
         {
             hdi::utils::secureLog(_logger, "HNSW not available, falling back to FLANN");
-            params._aknn_algorithm = hdi::utils::KNN_FLANN;
+            _params._aknn_algorithm = hdi::utils::KNN_FLANN;
         }
       #endif // HNSWLIB_SUPPORTED
                 
       #ifndef __USE_ANNOY__
-        if (params._aknn_algorithm == hdi::utils::KNN_ANNOY)
+        if (_params._aknn_algorithm == hdi::utils::KNN_ANNOY)
         {
-            params._aknn_algorithm = hdi::utils::KNN_FLANN;
+            _params._aknn_algorithm = hdi::utils::KNN_FLANN;
         }
       #endif // __USE_ANNOY__
 
