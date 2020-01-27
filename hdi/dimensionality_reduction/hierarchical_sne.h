@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include "hdi/utils/assert_by_exception.h"
 #include "hdi/utils/abstract_log.h"
+#include "hdi/utils/knn_utils.h"
 #include <map>
 #include <unordered_map>
 #include <random>
@@ -47,7 +48,7 @@
 namespace hdi{
   namespace dr{
 
-	  int HierarchicalSNE_NrOfKnnAlgorithms();
+    int HierarchicalSNE_NrOfKnnAlgorithms();
 	  
     //! Hierarchical Stochastic Neighbor Embedding algorithm
     /*!
@@ -95,7 +96,8 @@ namespace hdi{
         unsigned_int_type _aknn_num_trees; //! Number of trees in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
         unsigned_int_type _aknn_num_checks; //! Number of checks in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
 
-		int               _aknn_algorithm;   //! used to switch between FLANN and HNSW
+		hdi::utils::knn_library _aknn_algorithm;   //! used to switch between knn algorithms
+        hdi::utils::knn_distance_metric _aknn_metric; // knn distance metric
 		double            _aknn_algorithmP1; //! used for HNSW
 		double            _aknn_algorithmP2; //! used for HNSW
         /////////////////// Landmark Selection ////////////////////////

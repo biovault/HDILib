@@ -41,12 +41,6 @@
 #include "sptree.h"
 #include <random>
 
-#ifdef __APPLE__
-#include <dispatch/dispatch.h>
-#else
-#define __block
-#endif
-
 #pragma warning( push )
 #pragma warning( disable : 4267)
 #pragma warning( push )

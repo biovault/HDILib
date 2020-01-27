@@ -29,7 +29,7 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
     if("${BREW}" STRGREATER "")
         message(STATUS "Running on macOS Darwin using ${BREW}")
         execute_process(COMMAND ${BREW} --prefix llvm OUTPUT_VARIABLE BREW_LLVM_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
-        execute_process(COMMAND ${BREW} --prefix flann OUTPUT_VARIABLE BREW_FLANN_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
+        execute_process(COMMAND ${BREW} --prefix libomp OUTPUT_VARIABLE BREW_LIBOMP_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif("${BREW}" STRGREATER "")
     
     message(STATUS "Trying to find llvm using ${BREW_LLVM_PREFIX}/lib/cmake/llvm")
@@ -50,12 +50,12 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
         
         set(CMAKE_XCODE_ATTRIBUTE_COMPILER_INDEX_STORE_ENABLE "NO")
 
-        execute_process(COMMAND ${BREW} --prefix libomp OUTPUT_VARIABLE BREW_LIBOMP_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
         if(EXISTS ${BREW_LIBOMP_PREFIX})
             message(STATUS "Found OpenMP in ${BREW_LIBOMP_PREFIX}")
             set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
             set(OpenMP_CXX_LIB_NAMES "omp")
             set(OpenMP_omp_LIBRARY "${BREW_LIBOMP_PREFIX}/lib/libomp.dylib")
+            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
             include_directories("${BREW_LIBOMP_PREFIX}/include")
         else()
             message(WARNING "Brew found, but OpenMP support could not be detected, using Grand Central Dispatch instead.")
@@ -66,15 +66,6 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
         message(WARNING "No OpenMP support detected, using Grand Central Dispatch instead.")
         add_definitions( -D__USE_GCD__)
     endif(EXISTS ${LLVM_INSTALL_PREFIX})
-
-    #finding flann
-    if(EXISTS ${BREW_FLANN_PREFIX})
-        message(STATUS "Flann found from brew at ${BREW_FLANN_PREFIX}.")
-        include_directories("${BREW_FLANN_PREFIX}/include")
-    else()
-        # there should probably be an alternative in here for setting the flann path
-        message(WARNING "Flann not found.")
-    endif(EXISTS ${BREW_FLANN_PREFIX})
 #Win/Linux
 else()
   find_package(OpenMP REQUIRED)

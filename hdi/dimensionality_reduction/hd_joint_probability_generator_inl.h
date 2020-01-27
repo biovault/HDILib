@@ -38,30 +38,36 @@
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
+#include "hdi/utils/knn_utils.h"
 #include <random>
 #include <chrono>
 #include <unordered_set>
 #include <numeric>
+#include "omp.h"
 
 #ifdef HNSWLIB_FOUND
-#ifdef _MSC_VER
-#if (_MSC_VER >= 1910)
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //__cplusplus >=201103
-#else // _MSC_VER
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif
-#endif
+    #ifdef _MSC_VER
+        #if (_MSC_VER >= 1910)
+            #include "hnswlib/hnswlib.h"
+            #include "hnswlib/space_l2.h"
+            #define HNSWLIB_SUPPORTED
+        #endif //__cplusplus >=201103
+    #else // _MSC_VER
+        #include "hnswlib/hnswlib.h"
+        #include "hnswlib/space_l2.h"
+        #define HNSWLIB_SUPPORTED
+    #endif
+#endif // HNSWLIB_FOUND
+
+#ifdef __USE_ANNOY__
+    #include "annoylib.h"
+    #include "kissrandom.h"
+#endif // __USE_ANNOY__
+
 
 #ifdef __USE_GCD__
-#include <dispatch/dispatch.h>
-#else
-#define __block
-#endif
+    #include <dispatch/dispatch.h>
+#endif // __USE_GCD__
 
 #pragma warning( push )
 #pragma warning( disable : 4267)
@@ -90,7 +96,8 @@ namespace hdi{
       _perplexity_multiplier(3),
       _num_trees(4),
       _num_checks(1024),
-	  _aknn_algorithm(-1),
+      _aknn_algorithm(hdi::utils::KNN_FLANN),
+      _aknn_metric(hdi::utils::KNN_METRIC_EUCLIDEAN),
 	  _aknn_algorithmP1(16), // default parameter for HNSW
 	  _aknn_algorithmP2(200) // default parameter for HNSW
     {}
@@ -130,7 +137,6 @@ namespace hdi{
     HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::HDJointProbabilityGenerator():
       _logger(nullptr)
     {
-  
     }
 
     template <typename scalar, typename sparse_scalar_matrix>
@@ -175,41 +181,69 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeHighDimensionalDistances(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params){
-#ifdef  HNSWLIB_SUPPORTED
-		if (params._aknn_algorithm == -1)
-#endif
-		{
-			hdi::utils::secureLog(_logger, "Computing nearest neighborhoods...");
-			flann::Matrix<scalar_type> dataset(high_dimensional_data, num_dps, num_dim);
-			flann::Matrix<scalar_type> query(high_dimensional_data, num_dps, num_dim);
 
-			flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(params._num_trees));
-			const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
-			distances_squared.resize(num_dps*nn);
-			indices.resize(num_dps*nn);
-			{
-				utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
-				index.buildIndex();
-			}
-	  {
-		  utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
-		  flann::Matrix<int> indices_mat(indices.data(), query.rows, nn);
-		  flann::Matrix<scalar_type> dists_mat(distances_squared.data(), query.rows, nn);
-		  flann::SearchParams flann_params(params._num_checks);
-		  flann_params.cores = 0; //all cores
-		  index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
-	  }
-		}
-#ifdef  HNSWLIB_SUPPORTED
-		else
+// Fallback to FLANN if others are not supported
+#ifndef HNSWLIB_SUPPORTED
+        if (params._aknn_algorithm == hdi::utils::KNN_HNSW)
+        {
+            hdi::utils::secureLog(_logger, "HNSW not available, falling back to FLANN");
+            params._aknn_algorithm = hdi::utils::KNN_FLANN;
+        }
+#endif // HNSWLIB_SUPPORTED
+        
+#ifndef __USE_ANNOY__
+        if (params._aknn_algorithm == hdi::utils::KNN_ANNOY)
+        {
+            params._aknn_algorithm = hdi::utils::KNN_FLANN;
+        }
+#endif // __USE_ANNOY__
+
+		if (params._aknn_algorithm == hdi::utils::KNN_FLANN)
+        {
+            hdi::utils::secureLog(_logger, "Computing approximated knn with Flann...");
+            flann::Matrix<scalar_type> dataset(high_dimensional_data, num_dps, num_dim);
+            flann::Matrix<scalar_type> query(high_dimensional_data, num_dps, num_dim);
+
+            flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(params._num_trees));
+            const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
+            distances_squared.resize(num_dps*nn);
+            indices.resize(num_dps*nn);
+            {
+                utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
+                index.buildIndex();
+            }
+            {
+                utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
+                flann::Matrix<int> indices_mat(indices.data(), query.rows, nn);
+                flann::Matrix<scalar_type> dists_mat(distances_squared.data(), query.rows, nn);
+                flann::SearchParams flann_params(params._num_checks);
+                flann_params.cores = 0; //all cores
+                index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
+            }
+        }
+		else if (params._aknn_algorithm == hdi::utils::KNN_HNSW)
 		{
-			hdi::utils::secureLog(_logger, "Computing nearest neighborhoods with HNSWLIB...");
-			hnswlib::L2Space l2space(num_dim);
-			hnswlib::HierarchicalNSW<scalar> appr_alg(&l2space, num_dps, params._aknn_algorithmP1, params._aknn_algorithmP2, 0);
+#ifdef HNSWLIB_SUPPORTED
+            hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
+            
+            hnswlib::SpaceInterface<float> *space = NULL;
+            switch (params._aknn_metric) {
+              case hdi::utils::KNN_METRIC_EUCLIDEAN:
+                space = new hnswlib::L2Space(num_dim);
+                break;
+              case hdi::utils::KNN_METRIC_INNER_PRODUCT:
+                space = new hnswlib::InnerProductSpace(num_dim);
+                break;
+              default:
+                space = new hnswlib::L2Space(num_dim);
+                break;
+            }
+            
+			hnswlib::HierarchicalNSW<scalar> appr_alg(space, num_dps, params._aknn_algorithmP1, params._aknn_algorithmP2, 0);
 			{
 				utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
 				appr_alg.addPoint((void*)high_dimensional_data, (std::size_t) 0);
-#pragma  omp parallel for
+#pragma omp parallel for
 				for (int i = 1; i < num_dps; ++i)
 				{
 					appr_alg.addPoint((void*)(high_dimensional_data + (i*num_dim)), (hnswlib::labeltype) i);
@@ -220,7 +254,7 @@ namespace hdi{
 			indices.resize(num_dps*nn);
 			{
 				utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
-#pragma  omp parallel for
+#pragma omp parallel for
 				for (int i = 0; i < num_dps; ++i)
 				{
 					auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i*num_dim), (hnswlib::labeltype)nn);
@@ -239,9 +273,92 @@ namespace hdi{
 					}
 				}
 			}
+#endif // HNSWLIB_SUPPORTED
 		}
-#endif
-      
+        else if (params._aknn_algorithm == hdi::utils::KNN_ANNOY)
+        {
+#ifdef __USE_ANNOY__
+            int k = (int) params._perplexity * params._perplexity_multiplier + 1;
+            int search_k = k * params._num_trees;
+            
+            distances_squared.resize(num_dps * k);
+            indices.resize(num_dps * k);
+            
+            AnnoyIndexInterface<int, double>* tree = NULL;
+            switch (params._aknn_metric) {
+              case hdi::utils::KNN_METRIC_EUCLIDEAN:
+                  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
+                  tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random>(num_dim);
+                break;
+              case hdi::utils::KNN_METRIC_COSINE:
+                hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
+                tree = new AnnoyIndex<int, double, Angular, Kiss32Random>(num_dim);
+                break;
+              case hdi::utils::KNN_METRIC_MANHATTAN:
+                hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
+                tree = new AnnoyIndex<int, double, Manhattan, Kiss32Random>(num_dim);
+                break;
+              //case hdi::utils::KNN_METRIC_HAMMING:
+              //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
+              //  tree = new AnnoyIndex<int, double, Hamming, Kiss32Random>(num_dim);
+              //  break;
+              case hdi::utils::KNN_METRIC_DOT:
+                hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
+                tree = new AnnoyIndex<int, double, DotProduct, Kiss32Random>(num_dim);
+                break;
+              default:
+                hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
+                tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random>(num_dim);
+                break;
+            }
+
+            {
+                utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
+                
+                for (int i = 0; i < num_dps; ++i){
+                    double* vec = new double [num_dim];
+                    for (int z = 0; z < num_dim; ++z){
+                        vec[z] = high_dimensional_data[i * num_dim + z];
+                    }
+                    tree->add_item(i, vec);
+                }
+                tree->build(params._num_trees);
+    
+                // Sample check if it returns enough neighbors
+                std::vector<int> closest;
+                std::vector<double> closest_distances;
+                for (int n = 0; n < 100; n++){
+                    tree->get_nns_by_item(n, k, search_k, &closest, &closest_distances);
+                    unsigned int neighbors_count = closest.size();
+                    if (neighbors_count < k) {
+                        printf("Requesting %d neighbors, but ANNOY returned only %u. Please increase search_k\n", k, neighbors_count);
+                        return;
+                    }
+                }
+            }
+            
+            hdi::utils::secureLog(_logger, "Done building tree. Beginning nearest neighbor search... ");
+            {
+                utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._aknn_time);
+                
+#pragma omp parallel for
+                for(int n = 0; n < num_dps; n++)
+                {
+                    // Find nearest neighbors
+                    std::vector<int> closest;
+                    std::vector<double> closest_distances;
+                    tree->get_nns_by_item(n, k, search_k, &closest, &closest_distances);
+                    
+                    // Copy current row
+                    for(unsigned int m = 0; m < k; m++) {
+                        indices[n * k + m] = closest[m];
+                        distances_squared[n * k + m] = closest_distances[m] * closest_distances[m];
+                    }
+                }
+            }
+            delete tree;
+#endif // __USE_ANNOY__
+        }
     }
 
     template <typename scalar, typename sparse_scalar_matrix>
