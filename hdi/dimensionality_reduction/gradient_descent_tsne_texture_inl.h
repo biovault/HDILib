@@ -68,7 +68,7 @@ namespace hdi {
       _exaggeration_baseline(1)
     {
 #ifndef __APPLE__
-		_gpgpu_type = AUTO_DETECT;
+      _gpgpu_type = AUTO_DETECT;
 #endif
     }
 
@@ -136,14 +136,14 @@ namespace hdi {
       }
 
 #ifndef __APPLE__
-    if (_gpgpu_type == AUTO_DETECT)
-      setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
-    if (_gpgpu_type == COMPUTE_SHADER)
-      _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
-    else// (_tsne_type == RASTER)
-      _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      if (_gpgpu_type == AUTO_DETECT)
+        setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
+      if (_gpgpu_type == COMPUTE_SHADER)
+        _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      else// (_tsne_type == RASTER)
+        _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else
-    _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #endif
 
       _iteration = 0;
@@ -185,17 +185,17 @@ namespace hdi {
       _initialized = true;
       utils::secureLog(_logger, "Initialization complete!");
     }
-    
+
     void GradientDescentTSNETexture::updateParams(TsneParameters params) {
-        if (!_initialized) {
-            throw std::runtime_error("GradientDescentTSNETexture must be initialized before updating the tsne parameters");
-        }
-        _params = params;
+      if (!_initialized) {
+        throw std::runtime_error("GradientDescentTSNETexture must be initialized before updating the tsne parameters");
+      }
+      _params = params;
 #ifndef __APPLE__
-        _gpgpu_compute_tsne.updateParams(params);
+      _gpgpu_compute_tsne.updateParams(params);
 #else
 
-        _gpgpu_raster_tsne.updateParams(params);
+      _gpgpu_raster_tsne.updateParams(params);
 #endif
     }
 
@@ -301,9 +301,9 @@ namespace hdi {
         for (int i = j + 1; i < n; ++i) {
           const double euclidean_dist_sq(
             utils::euclideanDistanceSquared<float>(
-              _embedding->getContainer().begin() + j*_params._embedding_dimensionality,
+              _embedding->getContainer().begin() + j * _params._embedding_dimensionality,
               _embedding->getContainer().begin() + (j + 1)*_params._embedding_dimensionality,
-              _embedding->getContainer().begin() + i*_params._embedding_dimensionality,
+              _embedding->getContainer().begin() + i * _params._embedding_dimensionality,
               _embedding->getContainer().begin() + (i + 1)*_params._embedding_dimensionality
               )
           );
@@ -321,7 +321,7 @@ namespace hdi {
       //}
 
       double kl = 0;
-      
+
       for (int i = 0; i < n; ++i) {
         for (const auto& pij : _P[i]) {
           uint32_t j = pij.first;
@@ -329,9 +329,9 @@ namespace hdi {
           // Calculate Qij
           const double euclidean_dist_sq(
             utils::euclideanDistanceSquared<float>(
-              _embedding->getContainer().begin() + j*_params._embedding_dimensionality,
+              _embedding->getContainer().begin() + j * _params._embedding_dimensionality,
               _embedding->getContainer().begin() + (j + 1)*_params._embedding_dimensionality,
-              _embedding->getContainer().begin() + i*_params._embedding_dimensionality,
+              _embedding->getContainer().begin() + i * _params._embedding_dimensionality,
               _embedding->getContainer().begin() + (i + 1)*_params._embedding_dimensionality
               )
           );
@@ -343,7 +343,7 @@ namespace hdi {
           //{
           //  std::cout << "KLC: " << klc << " i: " << i << "neighbour: " << neighbour_id << std::endl;
           //}
-          
+
           kl += klc;
         }
       }

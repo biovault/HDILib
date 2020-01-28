@@ -45,18 +45,18 @@
 #include "hdi/data/flow_model.h"
 #include "hdi/data/map_mem_eff.h"
 
-namespace hdi{
-  namespace dr{
+namespace hdi {
+  namespace dr {
 
     int HierarchicalSNE_NrOfKnnAlgorithms();
-	  
+
     //! Hierarchical Stochastic Neighbor Embedding algorithm
     /*!
       Algorithm for the generation of a hierarchical representation of the data as presented in the Hierarchical Stochastic Neighbor Embedding paper
       \author Nicola Pezzotti
     */
     template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<uint32_t, float> > >
-    class HierarchicalSNE{
+    class HierarchicalSNE {
     public:
       typedef sparse_scalar_matrix sparse_scalar_matrix_type;
       typedef scalar scalar_type;
@@ -66,9 +66,9 @@ namespace hdi{
       typedef uint32_t data_handle_type;
 
     public:
-      class Scale{
+      class Scale {
       public:
-        unsigned_int_type size()const{return _landmark_to_original_data_idx.size();}
+        unsigned_int_type size()const { return _landmark_to_original_data_idx.size(); }
 
       public:
         scalar_type mimMemoryOccupation()const;
@@ -88,7 +88,7 @@ namespace hdi{
 
     public:
       //! Parameters used for the initialization of the algorithm
-      class Parameters{
+      class Parameters {
       public:
         Parameters();
         int _seed; //! Seed for random algorithms. If a negative value is provided, a time-based seed is used.
@@ -96,11 +96,11 @@ namespace hdi{
         unsigned_int_type _aknn_num_trees; //! Number of trees in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
         unsigned_int_type _aknn_num_checks; //! Number of checks in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
 
-		hdi::utils::knn_library _aknn_algorithm;   //! used to switch between knn algorithms
+        hdi::utils::knn_library _aknn_algorithm;   //! used to switch between knn algorithms
         hdi::utils::knn_distance_metric _aknn_metric; // knn distance metric
-		double            _aknn_algorithmP1; //! used for HNSW
-		double            _aknn_algorithmP2; //! used for HNSW
-        /////////////////// Landmark Selection ////////////////////////
+        double            _aknn_algorithmP1; //! used for HNSW
+        double            _aknn_algorithmP2; //! used for HNSW
+            /////////////////// Landmark Selection ////////////////////////
         bool _monte_carlo_sampling; //! Select landmarks with a Markov Chain Monte Carlo sampling (MCMCS)
         unsigned_int_type _mcmcs_num_walks; //! Num walks per landmark in the MCMCS (beta in the paper)
         scalar_type _mcmcs_landmark_thresh; //! Threshold for landmark selection (beta threshold in the paper)
@@ -122,7 +122,7 @@ namespace hdi{
       //! \brief Collector of Statistics about the last scale created
       //! \note All time are in seconds with millisecond resolution
       //!
-      class Statistics{
+      class Statistics {
       public:
         Statistics();
         //! Reset the statistics
@@ -154,22 +154,22 @@ namespace hdi{
       //! \brief Clustering of the HSNE hierarchy
       //! \note Allows for a clusterization of the landmarks on different scales. Algorithms for connecting data points to clusters are provided
       //!
-      class ClusterTree{
+      class ClusterTree {
       public:
-        class Cluster{
+        class Cluster {
         public:
           typedef std::unordered_set<unsigned_int_type> landmark_set_type;
           static const int_type NULL_LINK = -1;
 
         public:
-          const int_type& id()const{return _id;}
-          int_type& id(){return _id;}
-          const int_type& parent_id()const{return _parent_id;}
-          int_type& parent_id(){return _parent_id;}
-          const landmark_set_type& landmarks()const{return _landmarks;}
-          landmark_set_type& landmarks(){return _landmarks;}
-          const std::string& notes()const{return _notes;}
-          std::string& notes(){return _notes;}
+          const int_type& id()const { return _id; }
+          int_type& id() { return _id; }
+          const int_type& parent_id()const { return _parent_id; }
+          int_type& parent_id() { return _parent_id; }
+          const landmark_set_type& landmarks()const { return _landmarks; }
+          landmark_set_type& landmarks() { return _landmarks; }
+          const std::string& notes()const { return _notes; }
+          std::string& notes() { return _notes; }
 
         private:
           int_type _id;
@@ -184,8 +184,8 @@ namespace hdi{
         typedef std::vector<cluster_vector_type> cluster_tree_type;
 
       public:
-        ClusterTree(unsigned_int_type num_scales=0):_cluster_tree(num_scales){}
-        ClusterTree(const HierarchicalSNE& hsne):_cluster_tree(hsne.hierarchy().size()){}
+        ClusterTree(unsigned_int_type num_scales = 0) :_cluster_tree(num_scales) {}
+        ClusterTree(const HierarchicalSNE& hsne) :_cluster_tree(hsne.hierarchy().size()) {}
 
         //! Get a free id at a given scale
         int_type getFreeClusterId(unsigned_int_type scale);
@@ -196,7 +196,7 @@ namespace hdi{
         //! Verify if the cluster is in the tree
         bool hasClusterId(unsigned_int_type scale, int_type cluster_id)const;
         //! Return the tree (only const)
-        const cluster_tree_type& clusterTree()const{return _cluster_tree;}
+        const cluster_tree_type& clusterTree()const { return _cluster_tree; }
         //! Return a cluster (only const)
         const cluster_type& cluster(unsigned_int_type scale_id, int_type cluster_id)const;
 
@@ -206,14 +206,14 @@ namespace hdi{
         bool checkTreeConsistency(const HierarchicalSNE& hsne);
 
         //! Associate a point (pnt_id in the original data) with a cluster in the tree
-        void computePointToClusterAssociation(const HierarchicalSNE& hsne, unsigned_int_type pnt_id, std::tuple<unsigned_int_type,int_type,scalar_type>& res);
+        void computePointToClusterAssociation(const HierarchicalSNE& hsne, unsigned_int_type pnt_id, std::tuple<unsigned_int_type, int_type, scalar_type>& res);
         //! Associate all the data points with a cluster in the tree
-        void computePointsToClusterAssociation(const HierarchicalSNE& hsne, std::vector<std::tuple<unsigned_int_type,int_type,scalar_type>>& res);
+        void computePointsToClusterAssociation(const HierarchicalSNE& hsne, std::vector<std::tuple<unsigned_int_type, int_type, scalar_type>>& res);
 
         //! Return the current log
-        utils::AbstractLog* logger()const{return _logger;}
+        utils::AbstractLog* logger()const { return _logger; }
         //! Set a pointer to an existing log
-        void setLogger(utils::AbstractLog* logger){_logger = logger;}
+        void setLogger(utils::AbstractLog* logger) { _logger = logger; }
 
       private:
         cluster_tree_type _cluster_tree;
@@ -224,9 +224,9 @@ namespace hdi{
     public:
       HierarchicalSNE();
       //! Set the dimensionality of the data
-      void setDimensionality(int dimensionality){
-        checkAndThrowLogic(!_initialized,"Class should be uninitialized to change the dimensionality"); 
-        checkAndThrowLogic(dimensionality > 0,"Invalid dimensionality");
+      void setDimensionality(int dimensionality) {
+        checkAndThrowLogic(!_initialized, "Class should be uninitialized to change the dimensionality");
+        checkAndThrowLogic(dimensionality > 0, "Invalid dimensionality");
         _dimensionality = dimensionality;
       }
       //! Initialize the class with the current data-points
@@ -239,39 +239,39 @@ namespace hdi{
       void clear();
       //!Add a new scale
       bool addScale();
-      
+
       //! Get the dimensionality of the data
-      unsigned_int_type dimensionality(){return _dimensionality;}
+      unsigned_int_type dimensionality() { return _dimensionality; }
       //! Get the high dimensional descriptor for a data point
       void getHighDimensionalDescriptor(scalar_vector_type& data_point, data_handle_type handle)const;
 
       //! Return the current log
-      utils::AbstractLog* logger()const{return _logger;}
+      utils::AbstractLog* logger()const { return _logger; }
       //! Set a pointer to an existing log
-      void setLogger(utils::AbstractLog* logger){_logger = logger;}
+      void setLogger(utils::AbstractLog* logger) { _logger = logger; }
 
       //! Return statistics on the computation of the last scale
-      const Statistics& statistics(){ return _statistics; }
+      const Statistics& statistics() { return _statistics; }
 
       //! Return the whole hierarchy
-      hierarchy_type& hierarchy(){return _hierarchy;}
+      hierarchy_type& hierarchy() { return _hierarchy; }
       //! Return the whole hierarchy
-      const hierarchy_type& hierarchy()const{return _hierarchy;}
+      const hierarchy_type& hierarchy()const { return _hierarchy; }
 
       //! Return a scale
-      scale_type& scale(unsigned_int_type scale_id){return _hierarchy[scale_id];}
+      scale_type& scale(unsigned_int_type scale_id) { return _hierarchy[scale_id]; }
       //! Return a scale
-      const scale_type& scale(unsigned_int_type scale_id)const{return _hierarchy[scale_id];}
+      const scale_type& scale(unsigned_int_type scale_id)const { return _hierarchy[scale_id]; }
 
       //! Return the top scale
-      scale_type& top_scale(){return _hierarchy[_hierarchy.size()-1];}
+      scale_type& top_scale() { return _hierarchy[_hierarchy.size() - 1]; }
       //! Return the top scale
-      const scale_type& top_scale()const{return _hierarchy[_hierarchy.size()-1];}
+      const scale_type& top_scale()const { return _hierarchy[_hierarchy.size() - 1]; }
 
 
 
       //! Return the indexes of landmarks at "scale_id-1" that are influenced by the landmarks in idxes of scale "scale_id"
-      void getInfluencedLandmarksInPreviousScale(unsigned_int_type scale_id, std::vector<unsigned_int_type>& idxes, std::map<unsigned_int_type,scalar_type>& neighbors)const;
+      void getInfluencedLandmarksInPreviousScale(unsigned_int_type scale_id, std::vector<unsigned_int_type>& idxes, std::map<unsigned_int_type, scalar_type>& neighbors)const;
       //! Return the indexes of landmarks at "scale_id-1" that are influenced by the landmarks in idxes of scale "scale_id"
       void getInfluencingLandmarksInNextScale(unsigned_int_type scale_id, std::vector<unsigned_int_type>& idxes, std::map<unsigned_int_type, scalar_type>& neighbors)const;
       //! Return a sparse matrix that assigns to each data point the probability of being influenced by landmarks in the top scale. It can be used for interpolation like in hybri schemes
@@ -281,7 +281,7 @@ namespace hdi{
       //! \note a negative value of the scale parameter will force the algo to use the top one
       void getInterpolationWeights(const std::vector<unsigned int>& data_points, sparse_scalar_matrix_type& influence, int scale = -1)const;
       //! Return the influence exercised on the data point by the landmarks in each scale
-      void getInfluenceOnDataPoint(unsigned_int_type dp, std::vector<std::unordered_map<unsigned_int_type,scalar_type>>& influence, scalar_type thresh = 0, bool normalized = true)const;
+      void getInfluenceOnDataPoint(unsigned_int_type dp, std::vector<std::unordered_map<unsigned_int_type, scalar_type>>& influence, scalar_type thresh = 0, bool normalized = true)const;
       //! Return the influence exercised on the data point by a subset of landmarks in a given scale
       void getAreaOfInfluence(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi)const;
       //! Return the influence exercised on the data point by a subset of landmarks in a given scale using a top-down approach
@@ -294,7 +294,7 @@ namespace hdi{
       void flowBetweenClusters(const std::vector<std::vector<std::unordered_set<unsigned_int_type>>>& clusters, data::FlowModel<Traits>& flow)const;
 
       template <class Functor>
-      static void computeAoI(const HierarchicalSNE<scalar_type,sparse_scalar_matrix_type>& hsne, unsigned_int_type scale, const std::vector<unsigned_int_type>& idxes, Functor& functor);
+      static void computeAoI(const HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>& hsne, unsigned_int_type scale, const std::vector<unsigned_int_type>& idxes, Functor& functor);
 
     private:
       //! Compute the neighborhood graph
@@ -308,8 +308,8 @@ namespace hdi{
       //! Compute a new scale with a out-of-core
       bool addScaleOutOfCoreImpl();
 
-      void selectLandmarks(const Scale& previous_scale,Scale& scale, unsigned_int_type& selected_landmarks);
-      void selectLandmarksWithStationaryDistribution(const Scale& previous_scale,Scale& scale, unsigned_int_type& selected_landmarks);
+      void selectLandmarks(const Scale& previous_scale, Scale& scale, unsigned_int_type& selected_landmarks);
+      void selectLandmarksWithStationaryDistribution(const Scale& previous_scale, Scale& scale, unsigned_int_type& selected_landmarks);
 
 
       //! Return the seed for the random number generation
@@ -327,7 +327,7 @@ namespace hdi{
     private:
       unsigned_int_type _dimensionality;
       unsigned_int_type _num_dps;
-       scalar_type* _high_dimensional_data; //! High-dimensional data
+      scalar_type* _high_dimensional_data; //! High-dimensional data
 
       bool _initialized; //! Initialization flag
       bool _verbose;
@@ -338,22 +338,22 @@ namespace hdi{
       Statistics _statistics;
     };
 
-///////////////   AOI STATS   ////////////////////////////
+    ///////////////   AOI STATS   ////////////////////////////
 
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     template <class Functor>
-    void HierarchicalSNE<scalar_type,sparse_scalar_matrix_type>::computeAoI(const HierarchicalSNE<scalar_type,sparse_scalar_matrix_type>& hsne, unsigned_int_type scale, const std::vector<unsigned_int_type>& idxes, Functor& functor){
+    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::computeAoI(const HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>& hsne, unsigned_int_type scale, const std::vector<unsigned_int_type>& idxes, Functor& functor) {
       std::vector<scalar_type> aoi;
-      hsne.getAreaOfInfluence(scale,idxes,aoi);
-      for(int i = 0; i < aoi.size(); ++i){
-        functor(i,aoi[i]);
+      hsne.getAreaOfInfluence(scale, idxes, aoi);
+      for (int i = 0; i < aoi.size(); ++i) {
+        functor(i, aoi[i]);
       }
     }
 
 
-///////////////   IO   ///////////////////////////////////
-    namespace IO{
+    ///////////////   IO   ///////////////////////////////////
+    namespace IO {
       template <typename hsne_type, class output_stream_type>
       void saveHSNE(const hsne_type& hsne, output_stream_type& stream, utils::AbstractLog* log = nullptr);
 
@@ -361,11 +361,11 @@ namespace hdi{
       void loadHSNE(hsne_type& hsne, input_stream_type& stream, utils::AbstractLog* log = nullptr);
     }
 
-//////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////
 #if 0
     template <class scalar_type>
     template <class Traits>
-    void HierarchicalSNE<scalar_type>::flowBetweenClusters(const std::vector<std::vector<std::unordered_set<unsigned_int_type>>>& clusters, data::FlowModel<Traits>& flow)const{
+    void HierarchicalSNE<scalar_type>::flowBetweenClusters(const std::vector<std::vector<std::unordered_set<unsigned_int_type>>>& clusters, data::FlowModel<Traits>& flow)const {
       typedef data::FlowModel<Traits> flow_model_type;
       typedef typename flow_model_type::flow_type flow_type;
       typedef typename flow_model_type::node_type node_type;
@@ -375,49 +375,49 @@ namespace hdi{
       flow = flow_model_type();
 
       unsigned_int_type scale = 0;
-      for(scale = 0; scale < clusters.size(); ++scale){
-        if(clusters[scale].size()!=0){
+      for (scale = 0; scale < clusters.size(); ++scale) {
+        if (clusters[scale].size() != 0) {
           break;
         }
         flow.addNode(node_type(node_per_level*scale));
 
-        if(scale > 0){
-          flow.addFlow(flow_type(link_id,node_per_level*(scale-1),node_per_level*scale,_num_dps));
+        if (scale > 0) {
+          flow.addFlow(flow_type(link_id, node_per_level*(scale - 1), node_per_level*scale, _num_dps));
           ++link_id;
         }
       }
 
-      for(; scale < clusters.size(); ++scale){
+      for (; scale < clusters.size(); ++scale) {
         flow.addNode(node_type(node_per_level*scale));//I add the node even if I don't have the flow
-        for(int c = 0; c < clusters[scale].size(); ++c){
-          flow.addNode(node_type(node_per_level*scale+c+1));
+        for (int c = 0; c < clusters[scale].size(); ++c) {
+          flow.addNode(node_type(node_per_level*scale + c + 1));
         }
-        if(scale == 0){
+        if (scale == 0) {
           continue;
         }
 
         //weight of the clusters -> first one reserved for unclusterized items
-        std::vector<std::vector<scalar_type> > clusters_weight(clusters[scale-1].size()+1,std::vector<scalar_type>(clusters[scale].size()+1,0));
+        std::vector<std::vector<scalar_type> > clusters_weight(clusters[scale - 1].size() + 1, std::vector<scalar_type>(clusters[scale].size() + 1, 0));
 
         //landmarks at previous scale
-        for(int pl = 0; pl < _hierarchy[scale]._area_of_influence.size(); ++pl){
+        for (int pl = 0; pl < _hierarchy[scale]._area_of_influence.size(); ++pl) {
           //weight of the landmark at the previous scale (or dp)
-          scalar_type pl_weight(_hierarchy[scale-1]._landmark_weight[pl]);
+          scalar_type pl_weight(_hierarchy[scale - 1]._landmark_weight[pl]);
           unsigned_int_type previuous_scale_cluster_id = 0;
           //see how the dp is distributed among the clusters
-          for(int c = 0; c < clusters[scale-1].size(); ++c){
-            if(clusters[scale-1][c].find(pl)!=clusters[scale-1][c].end()){
-              previuous_scale_cluster_id = c+1;
+          for (int c = 0; c < clusters[scale - 1].size(); ++c) {
+            if (clusters[scale - 1][c].find(pl) != clusters[scale - 1][c].end()) {
+              previuous_scale_cluster_id = c + 1;
               break;
             }
           }
 
-          for(auto cp: _hierarchy[scale]._area_of_influence[pl]){
+          for (auto cp : _hierarchy[scale]._area_of_influence[pl]) {
             unsigned_int_type this_scale_cluster_id = 0;
             //see how the dp is distributed among the clusters
-            for(int c = 0; c < clusters[scale].size(); ++c){
-              if(clusters[scale][c].find(cp.first)!=clusters[scale][c].end()){
-                this_scale_cluster_id = c+1;
+            for (int c = 0; c < clusters[scale].size(); ++c) {
+              if (clusters[scale][c].find(cp.first) != clusters[scale][c].end()) {
+                this_scale_cluster_id = c + 1;
                 break;
               }
             }
@@ -425,51 +425,51 @@ namespace hdi{
           }
         }
 
-        for(int c = 0; c < clusters_weight.size(); ++c){
-          for(int d = 0; d < clusters_weight[c].size(); ++d){
-            flow.addFlow(flow_type(link_id,node_per_level*(scale-1)+c,node_per_level*(scale)+d,clusters_weight[c][d]));
+        for (int c = 0; c < clusters_weight.size(); ++c) {
+          for (int d = 0; d < clusters_weight[c].size(); ++d) {
+            flow.addFlow(flow_type(link_id, node_per_level*(scale - 1) + c, node_per_level*(scale)+d, clusters_weight[c][d]));
             ++link_id;
           }
         }
 
       }
-/*
-      for(int i = 0; i < _num_dps; ++i){
-        assert(subset_orig_scale[i] < _hierarchy[orig_scale+1]._area_of_influence.size());
-        closeness[i] = _hierarchy[orig_scale+1]._area_of_influence[subset_orig_scale[i]];
+      /*
+            for(int i = 0; i < _num_dps; ++i){
+              assert(subset_orig_scale[i] < _hierarchy[orig_scale+1]._area_of_influence.size());
+              closeness[i] = _hierarchy[orig_scale+1]._area_of_influence[subset_orig_scale[i]];
 
-        for(int s = orig_scale+2; s <= dest_scale; ++s){
-          typename sparse_scalar_matrix_type::value_type temp_link;
-          for(auto l: closeness[i]){
-            for(auto new_l: _hierarchy[s]._area_of_influence[l.first]){
-              temp_link[new_l.first] += l.second * new_l.second;
-            }
-          }
-          closeness[i] = temp_link;
-        }
+              for(int s = orig_scale+2; s <= dest_scale; ++s){
+                typename sparse_scalar_matrix_type::value_type temp_link;
+                for(auto l: closeness[i]){
+                  for(auto new_l: _hierarchy[s]._area_of_influence[l.first]){
+                    temp_link[new_l.first] += l.second * new_l.second;
+                  }
+                }
+                closeness[i] = temp_link;
+              }
 
-*/
-      }
+      */
+    }
 #endif
 
-/*
-      unsigned_int_type scale  = 0;
-      for(scale = 0; scale < _multiscale_analysis.size(); ++scale){
-        if(_multiscale_analysis[scale].size()!=0){
-          break;
-        }
-        flow.addNode(node_type(node_per_level*(scale+1),"NonViz",qRgb(20,20,20)));
-        flow.addFlow(flow_type(link_id,node_per_level*(scale),node_per_level*(scale+1),1,qRgb(20,20,20)));
-        ++link_id;
-      }
-      for(; scale < _multiscale_analysis.size(); ++scale){
+    /*
+          unsigned_int_type scale  = 0;
+          for(scale = 0; scale < _multiscale_analysis.size(); ++scale){
+            if(_multiscale_analysis[scale].size()!=0){
+              break;
+            }
+            flow.addNode(node_type(node_per_level*(scale+1),"NonViz",qRgb(20,20,20)));
+            flow.addFlow(flow_type(link_id,node_per_level*(scale),node_per_level*(scale+1),1,qRgb(20,20,20)));
+            ++link_id;
+          }
+          for(; scale < _multiscale_analysis.size(); ++scale){
 
-        flow.addNode(node_type(node_per_level*(scale+1),"NonClust",qRgb(50,20,20)));
-        flow.addFlow(flow_type(link_id,node_per_level*(scale),node_per_level*(scale+1),1,qRgb(20,20,20)));
-        ++link_id;
-      }
-    }
-*/
+            flow.addNode(node_type(node_per_level*(scale+1),"NonClust",qRgb(50,20,20)));
+            flow.addFlow(flow_type(link_id,node_per_level*(scale),node_per_level*(scale+1),1,qRgb(20,20,20)));
+            ++link_id;
+          }
+        }
+    */
 
   }
 }

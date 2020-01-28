@@ -50,7 +50,7 @@ namespace hdi {
         _exaggeration_factor(4),
         _remove_exaggeration_iter(250),
         _exponential_decay_iter(150),
-		_presetEmbedding(false)
+        _presetEmbedding(false)
       { }
 
       int _seed;
@@ -65,7 +65,7 @@ namespace hdi {
       double _exaggeration_factor;                //! exaggeration factor for the attractive forces. Note: it shouldn't be too high when few points are used
       unsigned int _remove_exaggeration_iter;     //! iterations with complete exaggeration of the attractive forces
       unsigned int _exponential_decay_iter;       //! iterations required to remove the exaggeration using an exponential decay
-	  bool _presetEmbedding;					  //! Used at initialization to use the input embedding positions 
+      bool _presetEmbedding;					  //! Used at initialization to use the input embedding positions 
     };
   }
 }
