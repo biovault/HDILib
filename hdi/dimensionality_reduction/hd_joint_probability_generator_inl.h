@@ -34,11 +34,6 @@
 #ifndef HD_JOINT_PROBABILITY_GENERATOR_INL
 #define HD_JOINT_PROBABILITY_GENERATOR_INL
 
-#ifdef __USE_ANNOY__
-#include "annoylib.h"
-#include "kissrandom.h"
-#endif // __USE_ANNOY__
-
 #include "hdi/dimensionality_reduction/hd_joint_probability_generator.h"
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
@@ -63,6 +58,12 @@
 #define HNSWLIB_SUPPORTED
 #endif
 #endif // HNSWLIB_FOUND
+
+#ifdef __USE_ANNOY__
+#include <math.h>
+#include "annoylib.h"
+#include "kissrandom.h"
+#endif // __USE_ANNOY__
 
 
 #ifdef __USE_GCD__
