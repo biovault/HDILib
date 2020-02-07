@@ -65,6 +65,9 @@
 #endif
 #include "annoylib.h"
 #include "kissrandom.h"
+#ifndef WIN32
+#undef isnan
+#endif
 #endif // __USE_ANNOY__
 
 
