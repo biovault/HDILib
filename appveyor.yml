@@ -28,6 +28,7 @@ install:
   - pip.exe install conan --upgrade 
   - pip.exe install conan_package_tools bincrafters_package_tools
   - conan user # It creates the conan data directory
+  - git submodule update --init --recursive
 
 skip_commits:
     files:
