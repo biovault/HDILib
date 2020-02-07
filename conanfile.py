@@ -4,8 +4,6 @@ from conans import ConanFile, CMake, tools
 import os
 import json
 
-version = "1.0.0-alpha1"
-
 class HDILibConan(ConanFile):
     name = "HDILib"
     description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
@@ -30,15 +28,15 @@ class HDILibConan(ConanFile):
     exports = "hdi*", "CMakeLists.txt", "LICENSE"
     requires = (
         "CRoaring/0.2.63@lkeb/stable",
-        "hnswlib/latest@lkeb/stable"
     )
     # Flann builds are bit complex and certain versions fail with 
     # certain platform, and compiler combinations. Hence use 
     # either self built 1.8.5 for Windows or system supplied 
     # 1.8.4 on Linux and Macos
 
+
     def set_version(self):
-        self.version = version
+        self.version = "1.0.0-alpha1"
 
     def system_requirements(self):
         if tools.os_info.is_linux:
