@@ -60,7 +60,9 @@
 #endif // HNSWLIB_FOUND
 
 #ifdef __USE_ANNOY__
-#include <math.h>
+#ifndef WIN32
+#define isnan std::isnan
+#endif
 #include "annoylib.h"
 #include "kissrandom.h"
 #endif // __USE_ANNOY__
