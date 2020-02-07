@@ -12,6 +12,8 @@ class HDILibConan(ConanFile):
     url = "https://github.com/biovault/HDILib"
     author = "B. van Lew <b.van_lew@lumc.nl>" #conanfile author
     license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+    default_user = "lkeb"
+    default_channel = "stable"
 
     generators = "cmake"
     
