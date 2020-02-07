@@ -4,10 +4,10 @@ from conans import ConanFile, CMake, tools
 import os
 import json
 
+version = "1.0.0-alpha1"
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "1.0.0-alpha1"
     description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
@@ -36,6 +36,9 @@ class HDILibConan(ConanFile):
     # certain platform, and compiler combinations. Hence use 
     # either self built 1.8.5 for Windows or system supplied 
     # 1.8.4 on Linux and Macos
+
+    def set_version(self):
+        self.version = version
 
     def system_requirements(self):
         if tools.os_info.is_linux:
