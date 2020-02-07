@@ -2,7 +2,7 @@ build: false
 
 environment:
     PYTHON_HOME: "C:\\Python37"
-
+    CONAN_REFERENCE: "HDILib/1.0.0-alpha1"
     CONAN_USERNAME: "lkeb"
     CONAN_LOGIN_USERNAME: "admin"
     CONAN_PASSWORD:

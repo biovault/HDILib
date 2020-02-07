@@ -1,6 +1,6 @@
 env:
    global:
-     - CONAN_REFERENCE="hdps-core/0.1.0"
+     - CONAN_REFERENCE: "HDILib/1.0.0-alpha1"
      - CONAN_USERNAME="lkeb"
      - CONAN_CHANNEL="stable"     
      - CONAN_LOGIN_USERNAME="admin"
