@@ -16,14 +16,15 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
     #finding flann
     if(EXISTS ${BREW_FLANN_PREFIX})
         message(STATUS "Flann found from brew at ${BREW_FLANN_PREFIX}.")
-		set(HDI_FLANN_INCLUDE_DIR  ${BREW_FLANN_PREFIX}/include CACHE PATH "" FORCE) 
+		include_directories(${HDI_FLANN_INCLUDE_DIR})
     else()
         # there should probably be an alternative in here for setting the flann path
         message(WARNING "Flann not found.")
     endif(EXISTS ${BREW_FLANN_PREFIX})
 #Win/Linux
 else(CMAKE_GENERATOR STREQUAL Xcode)
-	set(HDI_FLANN_INCLUDE_DIR  $ENV{FLANN_DIR}/include CACHE PATH "" FORCE)    
+	include_directories($ENV{FLANN_DIR}/include)
+	 message(STATUS "Local Flann Include Dir:  $ENV{FLANN_DIR}/include")
 endif(CMAKE_GENERATOR STREQUAL Xcode)
 endif(HDI_FLANN_USED STREQUAL "Local")
 
@@ -60,10 +61,9 @@ else(MSVC)
 endif(MSVC)
 
 ExternalProject_Get_Property(flann SOURCE_DIR)
-set(FLANN_SOURCE_DIR ${SOURCE_DIR})
-set(HDI_FLANN_INCLUDE_DIR  ${FLANN_SOURCE_DIR}/src/cpp CACHE PATH "" FORCE)
-
+set(HDI_FLANN_BUILD_INCLUDE_DIR  ${SOURCE_DIR}/src/cpp CACHE PATH "" FORCE)
+include_directories(${HDI_FLANN_BUILD_INCLUDE_DIR})
+message (STATUS "Build Flann Include Dir: ${HDI_FLANN_BUILD_INCLUDE_DIR}")
 endif(HDI_FLANN_USED STREQUAL "Build")
 
-include_directories(${HDI_FLANN_INCLUDE_DIR})
-message (STATUS "Flann: ${HDI_FLANN_INCLUDE_DIR}")
+

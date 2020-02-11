@@ -24,7 +24,10 @@ file(GLOB SourceFiles *.cpp gpgpu_sne/*.cpp)
 
 add_library(${PROJECT} ${HeaderFiles} ${SourceFiles} )
 
-add_dependencies(${PROJECT} flann)
+# Need to wait until add_library call before depenency of Flann can be set in case Flann is to be build from scratch.
+if(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
+	add_dependencies(${PROJECT} flann)
+endif(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 
 ########### INSTALL ##############
 set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
