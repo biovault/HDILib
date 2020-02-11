@@ -27,7 +27,7 @@ class HDILibConan(ConanFile):
         "revision": "auto",
         "submodule": "recursive"
     }
-    exports = "hdi*", "CMakeLists.txt", "LICENSE"
+    exports = "hdi*", "CMakeLists.txt", "LICENSE", "CMake*", 
     requires = (
         "CRoaring/0.2.63@lkeb/stable",
         "hnswlib/latest@lkeb/stable"
