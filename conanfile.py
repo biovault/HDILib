@@ -4,7 +4,6 @@ from conans import ConanFile, CMake, tools
 import os
 import json
 
-
 class HDILibConan(ConanFile):
     name = "HDILib"
     version = "1.0.0-alpha1"
@@ -13,6 +12,8 @@ class HDILibConan(ConanFile):
     url = "https://github.com/biovault/HDILib"
     author = "B. van Lew <b.van_lew@lumc.nl>" #conanfile author
     license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+    default_user = "lkeb"
+    default_channel = "stable"
 
     generators = "cmake"
     
@@ -30,7 +31,6 @@ class HDILibConan(ConanFile):
     exports = "hdi*", "CMakeLists.txt", "LICENSE", "CMake*", 
     requires = (
         "CRoaring/0.2.63@lkeb/stable",
-        "hnswlib/latest@lkeb/stable"
     )
     # Flann builds are bit complex and certain versions fail with 
     # certain platform, and compiler combinations. Hence use 
