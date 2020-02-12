@@ -79,6 +79,7 @@ class HDILibConan(ConanFile):
         return cmake
 
     def build(self):
+        print('Build folder: ', self.build_folder)
         print(os.listdir(self.build_folder))
         print(os.listdir(os.path.join(self.build_folder, 'CMake')))
         cmake = self._configure_cmake()
