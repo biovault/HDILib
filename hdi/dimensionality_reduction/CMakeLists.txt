@@ -3,7 +3,7 @@ include_directories ("${CMAKE_SOURCE_DIR}")
 set(PROJECT "hdidimensionalityreduction")
 
 #FLANN
-include(${CMAKE_SOURCE_DIR}/CMake/Flann.cmake)
+include(${CMAKE_SOURCE_DIR}/CMake/FLANN.cmake)
 
 
 get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
