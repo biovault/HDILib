@@ -20,6 +20,14 @@ environment:
           CONAN_BUILD_TYPES: Release
           CONAN_VISUAL_RUNTIMES: MD
           BUILD_SHARED: True
+          
+### Limit build to 2017, x64 , Debug, Shared
+        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+          CONAN_VISUAL_VERSIONS: 15
+          CONAN_ARCHS: x86_64
+          CONAN_BUILD_TYPES: Debug
+          CONAN_VISUAL_RUNTIMES: MD
+          BUILD_SHARED: True          
 
 install:
   - set PATH=%PYTHON_HOME%;%PYTHON_HOME%/Scripts/;%PATH%

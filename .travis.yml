@@ -24,24 +24,12 @@ osx: &osx
 matrix:
    include:
       - <<: *linux
-        env: 
-            - CONAN_GCC_VERSIONS=5 
-            - CONAN_DOCKER_IMAGE=conanio/gcc5
-            - CONAN_BUILD_TYPES=Release
-            - CONAN_ARCHS=x86_64      
+        env: CONAN_GCC_VERSIONS=5 CONAN_DOCKER_IMAGE=conanio/gcc5 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86_64      
       - <<: *linux
-        env: 
-            - CONAN_GCC_VERSIONS=9 
-            - CONAN_DOCKER_IMAGE=conanio/gcc9
-            - CONAN_BUILD_TYPES=Release
-            - CONAN_ARCHS=x86_64
+        env: CONAN_GCC_VERSIONS=9 CONAN_DOCKER_IMAGE=conanio/gcc9 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86_64
       - <<: *osx
         osx_image: xcode10.3
-        env: 
-            - CONAN_APPLE_CLANG_VERSIONS=10.0
-            - CONAN_BUILD_TYPES=Release
-            - CONAN_ARCHS=x86_64
-            - CONAN_IS_TRAVIS_OSX=1
+        env: CONAN_APPLE_CLANG_VERSIONS=10.0 CONAN_BUILD_TYPES=Release CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1
 
 install:
   - chmod +x .ci/install.sh
