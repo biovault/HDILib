@@ -82,6 +82,10 @@ if (HDI_USE_ROARING)
     add_definitions(-DPREPROC_USE_ROARING)
 endif(HDI_USE_ROARING)
 
-add_subdirectory (hdi/dimensionality_reduction)
-add_subdirectory (hdi/data)
 add_subdirectory (hdi/utils)
+add_subdirectory (hdi/data)
+add_subdirectory (hdi/dimensionality_reduction)
+
+add_dependencies(hdidata hdiutils)
+add_dependencies(hdidimensionalityreduction hdiutils)
+add_dependencies(hdidimensionalityreduction hdidata)

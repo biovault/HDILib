@@ -3,8 +3,9 @@ include_directories ("${CMAKE_SOURCE_DIR}")
 set(PROJECT "hdidimensionalityreduction")
 
 #FLANN
-include(${CMAKE_SOURCE_DIR}/CMake/FLANN.cmake)
-
+SET(HDI_EXTERNAL_FLANN_INCLUDE_DIR  "HDI_EXTERNAL_FLANN_INCLUDE_DIR-NOTFOUND" CACHE PATH "External Flann Include Dir (Required)")
+include_directories(${HDI_EXTERNAL_FLANN_INCLUDE_DIR})
+message (STATUS "Flann: " ${HDI_EXTERNAL_FLANN_INCLUDE_DIR})
 
 get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
 include_directories(${HNSWLIB_INCLUDE_DIR})

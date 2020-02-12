@@ -18,7 +18,7 @@ class HDILibConan(ConanFile):
     generators = "cmake"
     
     # Options may need to change depending on the packaged library
-    settings = {"os": None, "build_type": None, "compiler": None, "arch": None}
+    settings = "os", "build_type", "compiler", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": True, "fPIC": True}
     
@@ -28,7 +28,7 @@ class HDILibConan(ConanFile):
         "revision": "auto",
         "submodule": "recursive"
     }
-    exports = "hdi*", "CMakeLists.txt", "LICENSE", "CMake*", 
+    exports = "hdi*", "CMakeLists.txt", "LICENSE", 
     requires = (
         "CRoaring/0.2.63@lkeb/stable",
     )
@@ -38,21 +38,18 @@ class HDILibConan(ConanFile):
     # 1.8.4 on Linux and Macos
 
     def system_requirements(self):
-        if tools.os_info.is_linux:
-            if tools.os_info.with_apt:
-                installer = tools.SystemPackageTool()
-                installer.install('libflann-dev')
         if tools.os_info.is_macos: 
             
             installer = tools.SystemPackageTool()  
             installer.install('llvm')
             installer.install('libomp')
-            installer.install('flann')
                
     def requirements(self):
         if self.settings.os == "Windows":
             self.requires("flann/1.8.5@lkeb/stable")
-            
+        else:
+            # Macos and flann use 1.8.4
+            self.requires("flann/1.8.4@lkeb/stable")            
         
     def config_options(self):
         if self.settings.os == 'Windows':
@@ -74,6 +71,8 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             cmake.definitions["CMAKE_CXX_STANDARD"] = 14
             cmake.definitions["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
+        cmake.definitions["HDI_EXTERNAL_FLANN_INCLUDE_DIR"] =  "${CONAN_INCLUDE_DIRS_FLANN}"   
+        cmake.definitions["HDI_USE_ROARING"] = "OFF"
         cmake.configure()
         cmake.verbose = True
         return cmake
@@ -81,7 +80,6 @@ class HDILibConan(ConanFile):
     def build(self):
         print('Build folder: ', self.build_folder)
         print(os.listdir(self.build_folder))
-        print(os.listdir(os.path.join(self.build_folder, 'CMake')))
         cmake = self._configure_cmake()
         cmake.build()
 
@@ -96,6 +94,7 @@ class HDILibConan(ConanFile):
         self.copy("*.dylib", dst="lib", keep_path=False)
         self.copy("*.a", dst="lib", keep_path=False)
         self.copy("*.lib", dst="lib", keep_path=False)
+        self.copy(pattern="*.pdb", dst="bin", keep_path=False)
 
 
     def package_info(self):
