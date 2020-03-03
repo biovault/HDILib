@@ -2,7 +2,7 @@ build: false
 
 environment:
     PYTHON_HOME: "C:\\Python37"
-    CONAN_VERSION: "1.0.0-alpha1"
+#    CONAN_VERSION: "1.0.0-alpha1"
     CONAN_LOGIN_USERNAME: "admin"
     CONAN_PASSWORD:
         secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
