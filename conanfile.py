@@ -54,11 +54,11 @@ class HDILibConan(ConanFile):
         if branch == 'master':
             self.version = 'latest'
         else: 
-            rel = rel_match(branch)
+            rel = rel_match.search(branch)
             if rel is not None:
                 self.version = rel.group(1) + rel.group(2)
             else: 
-                feat = feat_match(branch)
+                feat = feat_match.search(branch)
                 if feat is not None:
                     self.version = 'latest_feat_' + feat.group(1)
 
