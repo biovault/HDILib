@@ -47,12 +47,12 @@ class HDILibConan(ConanFile):
     def set_version(self):
         git = tools.Git(folder=self.recipe_folder)
         branch = git.get_branch()
-        
+        print("Building branch: ", branch) 
         rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
         feat_match = re.compile("feature/(.*)")
         self.version = self.default_version
-        if branch == 'master':
-            self.version = 'latest'
+        if branch == "master":
+            self.version = "latest"
         else: 
             rel = rel_match.search(branch)
             if rel is not None:
@@ -60,7 +60,7 @@ class HDILibConan(ConanFile):
             else: 
                 feat = feat_match.search(branch)
                 if feat is not None:
-                    self.version = 'latest_feat_' + feat.group(1)
+                    self.version = "latest_feat_" + feat.group(1)
 
         
     def system_requirements(self):
