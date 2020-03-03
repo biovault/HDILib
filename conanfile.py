@@ -25,7 +25,7 @@ class HDILibConan(ConanFile):
     
     scm = {
         "type": "git",
-        "url": "auto",
+        "url": "https://github.com/biovault/HDILib.git",
         "revision": "auto",
         "submodule": "recursive"
     }
