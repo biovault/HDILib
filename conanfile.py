@@ -61,6 +61,7 @@ class HDILibConan(ConanFile):
                 feat = feat_match.search(ci_branch)
                 if feat is not None:
                     self.version = "latest_feat_" + feat.group(1)
+        self.scm.revision = self.ci_branch            
 
         
     def system_requirements(self):
