@@ -26,7 +26,6 @@ class HDILibConan(ConanFile):
     scm = {
         "type": "git",
         "url": "https://github.com/biovault/HDILib.git",
-        "revision": "auto",
         "submodule": "recursive"
     }
     exports = "hdi*", "CMakeLists.txt", "LICENSE", 
@@ -61,7 +60,7 @@ class HDILibConan(ConanFile):
                 feat = feat_match.search(ci_branch)
                 if feat is not None:
                     self.version = "latest_feat_" + feat.group(1)
-        self.scm.revision = ci_branch            
+        self.scm["revision"] = ci_branch            
 
         
     def system_requirements(self):
