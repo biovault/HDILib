@@ -50,7 +50,7 @@ class HDILibConan(ConanFile):
         
         rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
         feat_match = re.compile("feature/(.*)")
-        self.version = default_version
+        self.version = self.default_version
         if branch == 'master':
             self.version = 'latest'
         else: 
