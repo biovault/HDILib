@@ -17,8 +17,7 @@ class HDILibConan(ConanFile):
     default_channel = "stable"
 
     generators = "cmake"
-    # default branch
-    ci_branch = None
+
     # Options may need to change depending on the packaged library
     settings = "os", "build_type", "compiler", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
@@ -46,9 +45,7 @@ class HDILibConan(ConanFile):
     # feature/blahblah - gets version "latest_feat_blahblah
     # otherwise use the self.version hardcoded is used
     def set_version(self):
-        if ci_branch is None:
-            self.version = self.default_version
-            return
+        ci_branch = os.getenv("HDILIB_CI_BRANCH", "master")
             
         print("Building branch: ", ci_branch) 
         rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
