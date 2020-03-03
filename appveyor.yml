@@ -9,7 +9,7 @@ environment:
     VS150COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\Tools\\"
     CONAN_UPLOAD: http://cytosplore.lumc.nl:8081/artifactory/api/conan/conan-local
     CONAN_REMOTE: lkebconan
-    CONAN_STABLE_BRANCH_PATTERN: "release/*"
+    CONAN_STABLE_BRANCH_PATTERN: "release/*|master"
     CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
     
     matrix:

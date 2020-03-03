@@ -37,6 +37,30 @@ class HDILibConan(ConanFile):
     # either self built 1.8.5 for Windows or system supplied 
     # 1.8.4 on Linux and Macos
 
+    # Set version based on branch according to the following:
+    #
+    # master - gets version "latest"
+    # release/x.y.z - gets version "x.y.z"
+    # feature/blahblah - gets version "latest_feat_blahblah
+    # otherwise use the self.version hardcoded is used
+    def set_version(self):
+        git = tools.Git(folder=self.recipe_folder)
+        branch = git.get_branch()
+        
+        rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
+        feat_match = re.compile("feature/(.*)")
+        if branch == 'master':
+            self.version = 'latest'
+        else: 
+            rel = rel_match(branch)
+            if rel is not None:
+                self.version = rel.group(1) + rel.group(2)
+            else: 
+            feat = feat_match(branch)
+            if feat is not None:
+                self.version = 'latest_feat_' + feat.group(1)
+
+        
     def system_requirements(self):
         if tools.os_info.is_macos: 
             
