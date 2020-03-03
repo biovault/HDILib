@@ -56,9 +56,9 @@ class HDILibConan(ConanFile):
             if rel is not None:
                 self.version = rel.group(1) + rel.group(2)
             else: 
-            feat = feat_match(branch)
-            if feat is not None:
-                self.version = 'latest_feat_' + feat.group(1)
+                feat = feat_match(branch)
+                if feat is not None:
+                    self.version = 'latest_feat_' + feat.group(1)
 
         
     def system_requirements(self):
