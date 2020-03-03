@@ -3,6 +3,7 @@
 from conans import ConanFile, CMake, tools
 import os
 import json
+import re
 
 class HDILibConan(ConanFile):
     name = "HDILib"
