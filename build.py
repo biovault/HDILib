@@ -12,7 +12,7 @@ def _is_shared(build):
 if __name__ == "__main__":
 
     branch = build_shared.get_repo_branch_from_ci() 
-    builder = build_template_default.get_builder(env_vars={"HDILIB_CI_BRANCH":branch}) 
+    os.environ["CONAN_HDILIB_CI_BRANCH"] = branch
     builder.remove_build_if(_is_shared)  
     builder.run()
   

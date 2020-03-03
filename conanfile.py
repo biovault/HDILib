@@ -45,7 +45,7 @@ class HDILibConan(ConanFile):
     # feature/blahblah - gets version "latest_feat_blahblah
     # otherwise use the self.version hardcoded is used
     def set_version(self):
-        ci_branch = os.getenv("HDILIB_CI_BRANCH", "master")
+        ci_branch = os.getenv("CONAN_HDILIB_CI_BRANCH", "master")
             
         print("Building branch: ", ci_branch) 
         rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
