@@ -17,7 +17,8 @@ class HDILibConan(ConanFile):
     default_channel = "stable"
 
     generators = "cmake"
-    
+    # default branch
+    ci_branch = None
     # Options may need to change depending on the packaged library
     settings = "os", "build_type", "compiler", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
@@ -45,20 +46,22 @@ class HDILibConan(ConanFile):
     # feature/blahblah - gets version "latest_feat_blahblah
     # otherwise use the self.version hardcoded is used
     def set_version(self):
-        git = tools.Git(folder=self.recipe_folder)
-        branch = git.get_branch()
-        print("Building branch: ", branch) 
+        if ci_branch is None:
+            self.version = self.default_version
+            return
+            
+        print("Building branch: ", ci_branch) 
         rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
         feat_match = re.compile("feature/(.*)")
-        self.version = self.default_version
-        if branch == "master":
+        
+        if ci_branch == "master":
             self.version = "latest"
         else: 
-            rel = rel_match.search(branch)
+            rel = rel_match.search(ci_branch)
             if rel is not None:
                 self.version = rel.group(1) + rel.group(2)
             else: 
-                feat = feat_match.search(branch)
+                feat = feat_match.search(ci_branch)
                 if feat is not None:
                     self.version = "latest_feat_" + feat.group(1)
 
