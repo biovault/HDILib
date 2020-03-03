@@ -6,7 +6,7 @@ import json
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "1.0.0-alpha1"
+    default_version = "1.0.0-alpha1"
     description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
@@ -49,6 +49,7 @@ class HDILibConan(ConanFile):
         
         rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
         feat_match = re.compile("feature/(.*)")
+        self.version = default_version
         if branch == 'master':
             self.version = 'latest'
         else: 
