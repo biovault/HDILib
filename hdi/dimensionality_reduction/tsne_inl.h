@@ -137,7 +137,7 @@ namespace hdi{
         _previous_gradient.resize(size()*params._embedding_dimensionality,0);
         _gain.resize(size()*params._embedding_dimensionality,1);
         _sigmas.resize(size());
-        _init_params = _init_params;
+        _init_params = params;
       }
 
       //compute distances between data-points
