@@ -38,6 +38,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <string>
 
 namespace hdi{
   namespace data{
