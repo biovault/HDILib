@@ -9,6 +9,24 @@ set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
+
+# Disallow in-source builds. 
+# Build in sub dir e.g. source/build* is still allowed!
+if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+   message(FATAL_ERROR "In-source builds are not allowed!\n"
+    "Make sure to remove CMakeCache.txt and CMakeFiles/ "
+    "from the source directory!")
+endif()
+
+# This flag is used to allow conan to install the dependencies
+option(HDILIB_BUILD_WITH_CONAN "Should Conan package manager be used?" OFF)
+#The cmake make sub directory contains the ConanSetup.cmake 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+  "${PROJECT_SOURCE_DIR}/cmake")
+
+# CONAN is only used for setting up dependencies if the HDILIB_BUILD_WITH_CONAN is ON
+include(ConanSetup)
+
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     message(STATUS "Default CMAKE_INSTALL_PREFIX detected. Setting to build directory.")
