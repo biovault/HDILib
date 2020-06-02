@@ -59,7 +59,7 @@ class HDILibConan(ConanFile):
             else: 
                 feat = feat_match.search(ci_branch)
                 if feat is not None:
-                    self.version = "latest_feat_" + feat.group(1)
+                    self.version = feat.group(1)
         self.scm["revision"] = ci_branch            
 
         
