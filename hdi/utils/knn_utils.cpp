@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2019, BIOVAULT (Leiden University Medical Center, Delft University of Technology)
+ * Copyright (c) 2020, BIOVAULT (Leiden University Medical Center, Delft University of Technology)
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,36 +30,51 @@
  *
  */
 
+#include "knn_utils.h"
+
 #ifndef KNN_H
 #define KNN_H
-#include <vector>
 
 namespace hdi{
   namespace utils{
-
-    
-    enum knn_library
+           
+    std::vector<int> supported_knn_libraries()
     {
-      KNN_FLANN = -1,
-      KNN_HNSW = 0,
-      KNN_ANNOY = 1
-    };
-    
-    //! returns which knn libraries are supported (based on compiler
-    std::vector<int> supported_knn_libraries();
+      std::vector<int> result(1, KNN_FLANN);
+#ifdef HNSWLIB_SUPPORTED
+      result.push_back(KNN_HNSW);
+#endif
+#ifdef __USE_ANNOY__
+      result.push_back(KNN_ANNOY);
+#endif
+      return result;
+    }
 
-    std::vector<int> supported_knn_library_distance_metrics(int knn_lib);
-
-    enum knn_distance_metric
+  
+    std::vector<int> supported_knn_library_distance_metrics(int knn_lib)
     {
-      KNN_METRIC_EUCLIDEAN = 0,
-      KNN_METRIC_COSINE = 1,
-      KNN_METRIC_INNER_PRODUCT = 2,
-      KNN_METRIC_MANHATTAN = 3,
-      KNN_METRIC_HAMMING = 4,
-      KNN_METRIC_DOT = 5
-    };
+      switch (knn_lib)
+      {
+        case KNN_FLANN: return std::vector<int>(1, KNN_METRIC_EUCLIDEAN);
+        case KNN_HNSW: {
+          std::vector<int> result(2);
+          result[0] = KNN_METRIC_EUCLIDEAN;
+          result[1] = KNN_METRIC_INNER_PRODUCT;
+          return result;
 
+        }
+        case KNN_ANNOY: {
+          std::vector<int> result(5);
+          result[0] = KNN_METRIC_EUCLIDEAN;
+          result[1] = KNN_METRIC_COSINE;
+          result[2] = KNN_METRIC_MANHATTAN;
+          result[3] = KNN_METRIC_DOT;
+          return result;
+        }
+
+        default: throw std::out_of_range("knn_lib value out of range");
+      }
+    }
   }
 }
 #endif // KNN_H
