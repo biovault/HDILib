@@ -3,6 +3,17 @@ if(NOT HDILIB_BUILD_WITH_CONAN)
 endif()
 
 message(STATUS "Start ConanSetup")
+
+
+# Build-with-Conan only supports one configuration at a time (per .sln file, for Visual Studio).
+if(CMAKE_BUILD_TYPE AND CMAKE_CONFIGURATION_TYPES)
+    get_property(hdilib_generator_is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    if(hdilib_generator_is_multi_config)
+        set(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE})
+    endif()
+endif()
+
+
 # Download the conan cmake macros automatically.
 if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
    message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
