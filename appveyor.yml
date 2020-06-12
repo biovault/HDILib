@@ -64,9 +64,9 @@ notifications:
     message: "URL is {{buildUrl}} Commit ID {{commitId}}. Messages {{jobs.0.messages.0.message}}"
     on_build_success: true
     on_build_failure: true
-    on_build_status_changed: true     
-        
-test_script:
-  - python build.py
+    on_build_status_changed: true   
+    
+build_script:
+  - cmd: python build.py
   
 after_test:  
