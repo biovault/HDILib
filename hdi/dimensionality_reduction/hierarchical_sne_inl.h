@@ -1155,59 +1155,10 @@ namespace hdi {
       //#endif
     }
 
+    
+
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluence(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi)const {
-      typedef typename sparse_scalar_matrix_type::value_type map_type;
-      typedef typename map_type::key_type key_type;
-      typedef typename map_type::mapped_type mapped_type;
-      typedef hdi::data::MapHelpers<key_type, mapped_type, map_type> map_helpers_type;
-      checkAndThrowLogic(scale_id < _hierarchy.size(), "getAreaOfInfluence (3)");
-      aoi.clear();
-      aoi.resize(scale(0).size(), 0);
-      std::unordered_set<unsigned int> set_selected_idxes;
-      set_selected_idxes.insert(selection.begin(), selection.end());
-
-      if (scale_id == 0) {
-        for (int i = 0; i < selection.size(); ++i) {
-          aoi[selection[i]] = 1;
-        }
-      }
-      else {
-
-        //#ifdef __USE_GCD__
-        //        std::cout << "GCD dispatch, hierarchical_sne_inl 854.\n";
-        //        dispatch_apply(scale(0).size(), dispatch_get_global_queue(0, 0), ^(size_t i) {
-        //#else
-#pragma omp parallel for
-        for (int i = 0; i < scale(0).size(); ++i) {
-          //#endif //__USE_GCD__
-
-          typename sparse_scalar_matrix_type::value_type closeness = scale(1)._area_of_influence[i];
-          for (int s = 2; s <= scale_id; ++s) {
-            std::map<key_type, mapped_type> temp_link;
-            for (auto l : closeness) {
-              for (auto new_l : scale(s)._area_of_influence[l.first]) {
-                temp_link[new_l.first] += l.second * new_l.second;
-              }
-            }
-            closeness.clear();
-            map_helpers_type::initialize(closeness, temp_link.begin(), temp_link.end());
-          }
-          for (auto e : closeness) {
-            if (set_selected_idxes.find(e.first) != set_selected_idxes.end()) {
-              aoi[i] += e.second;
-            }
-          }
-        }
-        //#ifdef __USE_GCD__
-        //        );
-        //#endif
-      }
-
-    }
-
-    template <typename scalar_type, typename sparse_scalar_matrix_type>
-    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluenceFaster(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi)const {
       typedef typename sparse_scalar_matrix_type::value_type map_type;
       typedef typename map_type::key_type key_type;
       typedef typename map_type::mapped_type mapped_type;
