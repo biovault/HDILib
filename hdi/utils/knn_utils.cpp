@@ -32,8 +32,7 @@
 
 #include "knn_utils.h"
 
-#ifndef KNN_H
-#define KNN_H
+
 
 namespace hdi{
   namespace utils{
@@ -77,4 +76,4 @@ namespace hdi{
     }
   }
 }
-#endif // KNN_H
+
