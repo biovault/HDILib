@@ -45,10 +45,10 @@ namespace hdi{
       KNN_ANNOY = 1
     };
     
-    //! returns which knn libraries are supported (based on compiler
+    //! returns which knn libraries are supported.
     std::vector<int> supported_knn_libraries();
 
-    std::vector<int> supported_knn_library_distance_metrics(int knn_lib);
+    
 
     enum knn_distance_metric
     {
@@ -60,6 +60,8 @@ namespace hdi{
       KNN_METRIC_DOT = 5
     };
 
+    //! returns a vector with distance metrics supported for a specific knn library
+    std::vector<int> supported_knn_library_distance_metrics(int knn_lib);
   }
 }
 #endif // KNN_H
