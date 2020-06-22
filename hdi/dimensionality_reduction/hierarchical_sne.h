@@ -285,7 +285,7 @@ namespace hdi {
       //! Return the influence exercised on the data point by a subset of landmarks in a given scale
       void getAreaOfInfluence(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi)const;
       //! Return the influence exercised on the data point by a subset of landmarks in a given scale
-      void getAreaOfInfluence2(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi)const;
+      void getAreaOfInfluenceFaster(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi)const;
       //! Return the influence exercised on the data point by a subset of landmarks in a given scale using a top-down approach
       void getAreaOfInfluenceTopDown(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi)const;
 
