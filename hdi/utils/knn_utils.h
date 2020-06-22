@@ -36,20 +36,14 @@
 
 namespace hdi{
   namespace utils{
-
-    
+  
     enum knn_library
     {
       KNN_FLANN = -1,
       KNN_HNSW = 0,
       KNN_ANNOY = 1
     };
-    
-    //! returns which knn libraries are supported.
-    std::vector<int> supported_knn_libraries();
-
-    
-
+ 
     enum knn_distance_metric
     {
       KNN_METRIC_EUCLIDEAN = 0,
@@ -59,9 +53,6 @@ namespace hdi{
       KNN_METRIC_HAMMING = 4,
       KNN_METRIC_DOT = 5
     };
-
-    //! returns a vector with distance metrics supported for a specific knn library
-    std::vector<int> supported_knn_library_distance_metrics(int knn_lib);
   }
 }
 #endif // KNN_H
