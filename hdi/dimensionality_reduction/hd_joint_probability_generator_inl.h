@@ -376,7 +376,6 @@ namespace hdi {
       utils::secureLog(_logger, "Computing joint-probability distribution...");
       const int n = distribution.size();
 
-      // const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
 #ifdef __USE_GCD__
       __block scalar_vector_type temp_vector(distances_squared.size(), 0);
 #else
@@ -408,7 +407,7 @@ namespace hdi {
       for (int j = 0; j < n; ++j) {
         for (int k = 1; k < nn; ++k) {
           const unsigned int i = j * nn + k;
-          // if items do not have all the same number of neighbors indicate this with -1
+          // if items do not have all the same number of neighbors this is indicated by -1
           if (indices[i] == -1)
             continue;
           distribution[j][indices[i]] = temp_vector[i];

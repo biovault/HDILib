@@ -106,8 +106,8 @@ namespace hdi{
       void computeProbabilityDistributions(/*const*/ scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& probabilities, std::vector<int>& indices, Parameters params = Parameters());
       void computeProbabilityDistributionsFromDistanceMatrix(const std::vector<scalar_type>& squared_distance_matrix, unsigned int num_dps, sparse_scalar_matrix& distribution, Parameters params = Parameters());
      
-      //! Compute a gaussian distribution for each data-point
-      void computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, int nn, sparse_scalar_matrix& matrix, Parameters& params);
+      //! Compute a gaussian distribution for each data-point - interface for pre-calculated kNN
+      void computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, int nn, sparse_scalar_matrix& distribution, Parameters& params);
 
       //! Return the current log
       utils::AbstractLog* logger()const{return _logger;}
@@ -119,11 +119,11 @@ namespace hdi{
 
     private:
       //! Compute the euclidean distances between points
-      void computeHighDimensionalDistances(/*const*/ scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& dsitances, std::vector<int>& indices, Parameters& params);
+      void computeHighDimensionalDistances(/*const*/ scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params);
       //! Compute a gaussian distribution for each data-point
-      void computeGaussianDistributions(const std::vector<scalar_type>& dsitances, const std::vector<int>& indices, sparse_scalar_matrix& matrix, Parameters& params);
+      void computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, sparse_scalar_matrix& matrix, Parameters& params);
       //! Compute a gaussian distribution for each data-point
-      void computeGaussianDistributions(const std::vector<scalar_type>& dsitances, const std::vector<int>& indices, std::vector<scalar_type>& probabilities, Parameters& params);
+      void computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, std::vector<scalar_type>& probabilities, Parameters& params);
       //! Create joint distribution
       void symmetrize(sparse_scalar_matrix& matrix);
 
