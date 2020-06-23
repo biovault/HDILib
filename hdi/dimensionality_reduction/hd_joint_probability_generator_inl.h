@@ -369,6 +369,53 @@ namespace hdi {
       }
     }
 
+
+    template <typename scalar, typename sparse_scalar_matrix>
+    void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, int nn, sparse_scalar_matrix& distribution, Parameters& params) {
+      utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
+      utils::secureLog(_logger, "Computing joint-probability distribution...");
+      const int n = distribution.size();
+
+      // const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
+#ifdef __USE_GCD__
+      __block scalar_vector_type temp_vector(distances_squared.size(), 0);
+#else
+      scalar_vector_type temp_vector(distances_squared.size(), 0);
+#endif //__USE_GCD__
+
+#ifdef __USE_GCD__
+      std::cout << "GCD dispatch, hd_joint_probability_generator 193.\n";
+      dispatch_apply(n, dispatch_get_global_queue(0, 0), ^ (size_t j) {
+#else
+#pragma omp parallel for
+      for (int j = 0; j < n; ++j) {
+#endif //__USE_GCD__
+        const auto sigma = utils::computeGaussianDistributionWithFixedPerplexity<scalar_vector_type>(
+          distances_squared.begin() + j * nn, //check squared
+          distances_squared.begin() + (j + 1)*nn,
+          temp_vector.begin() + j * nn,
+          temp_vector.begin() + (j + 1)*nn,
+          params._perplexity,
+          200,
+          1e-5,
+          0
+          );
+      }
+#ifdef __USE_GCD__
+      );
+#endif
+
+      for (int j = 0; j < n; ++j) {
+        for (int k = 1; k < nn; ++k) {
+          const unsigned int i = j * nn + k;
+          // if items do not have all the same number of neighbors indicate this with -1
+          if (indices[i] == -1)
+            continue;
+          distribution[j][indices[i]] = temp_vector[i];
+        }
+      }
+      }
+
     template <typename scalar, typename sparse_scalar_matrix>
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeGaussianDistributions(const std::vector<scalar_type>& distances_squared, const std::vector<int>& indices, sparse_scalar_matrix& distribution, Parameters& params) {
       utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._distribution_time);
