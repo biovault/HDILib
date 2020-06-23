@@ -16,38 +16,37 @@ namespace hdi {
       return numSupported;
     }
 
-    std::vector<int> supported_knn_libraries()
+    std::map<std::string, int> supported_knn_libraries()
     {
-      std::vector<int> result(1, hdi::utils::KNN_FLANN);
+      std::map<std::string, int> result;
+      result["FLANN"] = hdi::utils::KNN_FLANN;
 #ifdef HNSWLIB_SUPPORTED
-      result.push_back(hdi::utils::KNN_HNSW);
+      result["HNSW"] = hdi::utils::KNN_HNSW;
 #endif
 #ifdef __USE_ANNOY__
-      result.push_back(hdi::utils::KNN_ANNOY);
+      result["ANNOY"] = hdi::utils::KNN_ANNOY;
 #endif
       return result;
     }
 
-    std::vector<int> supported_knn_library_distance_metrics(int knn_lib)
+    std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib)
     {
+      std::map<std::string, int> result;
+      result["Euclidean"] = hdi::utils::KNN_METRIC_EUCLIDEAN;
+
       switch (knn_lib)
       {
       case hdi::utils::KNN_FLANN: {
-        return std::vector<int>(1, hdi::utils::KNN_METRIC_EUCLIDEAN);
+        return result;
       }
       case hdi::utils::KNN_HNSW: {
-        std::vector<int> result(2);
-        result[0] = hdi::utils::KNN_METRIC_EUCLIDEAN;
-        result[1] = hdi::utils::KNN_METRIC_INNER_PRODUCT;
+        result["Inner Product"] = hdi::utils::KNN_METRIC_INNER_PRODUCT;
         return result;
-
       }
       case hdi::utils::KNN_ANNOY: {
-        std::vector<int> result(5);
-        result[0] = hdi::utils::KNN_METRIC_EUCLIDEAN;
-        result[1] = hdi::utils::KNN_METRIC_COSINE;
-        result[2] = hdi::utils::KNN_METRIC_MANHATTAN;
-        result[3] = hdi::utils::KNN_METRIC_DOT;
+        result["Cosine"] = hdi::utils::KNN_METRIC_COSINE;
+        result["Manhattan"] = hdi::utils::KNN_METRIC_MANHATTAN;
+        result["Dot"] = hdi::utils::KNN_METRIC_DOT;
         return result;
       }
 
@@ -57,7 +56,6 @@ namespace hdi {
       }
     }
   }
-
 }
 
 

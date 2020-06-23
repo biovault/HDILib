@@ -32,17 +32,18 @@
 
 #ifndef KNN_SUPPORT_H
 #define KNN_SUPPORT_H
-#include <vector>
+#include <map>
+
 
 namespace hdi {
   namespace dr {
     int HierarchicalSNE_NrOfKnnAlgorithms();
 
     //! returns which knn libraries are supported.
-    std::vector<int> supported_knn_libraries();
+    std::map<std::string, int> supported_knn_libraries();
 
-    //! returns a vector with distance metrics supported for a specific knn library
-    std::vector<int> supported_knn_library_distance_metrics(int knn_lib);
+    //! returns a map with distance metrics supported for a specific knn library
+    std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib);
   }
 }
 
