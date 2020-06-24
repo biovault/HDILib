@@ -76,7 +76,7 @@ else()
   endif()
 endif()
 
-option(HDI_USE_ROARING "Use roaring bitmaps" ON)
+option(HDI_USE_ROARING "Use roaring bitmaps" OFF)
 
 if (HDI_USE_ROARING)
     add_definitions(-DPREPROC_USE_ROARING)

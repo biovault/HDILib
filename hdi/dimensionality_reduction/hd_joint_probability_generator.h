@@ -37,7 +37,7 @@
 #include <stdint.h>
 #include "hdi/utils/assert_by_exception.h"
 #include "hdi/utils/abstract_log.h"
-#include "hdi/utils/knn_utils.h"
+#include "hdi/dimensionality_reduction/knn_utils.h"
 #include <map>
 #include <unordered_map>
 #include <random>
@@ -73,8 +73,8 @@ namespace hdi{
         int         _perplexity_multiplier; //! Multiplied by the perplexity gives the number of nearest neighbors used
         int         _num_trees;             //! Number of trees used int the AKNN
         int         _num_checks;            //! Number of checks used int the AKNN
-        hdi::utils::knn_library _aknn_algorithm;
-        hdi::utils::knn_distance_metric _aknn_metric;
+        hdi::dr::knn_library _aknn_algorithm;
+        hdi::dr::knn_distance_metric _aknn_metric;
         double      _aknn_algorithmP1;
         double      _aknn_algorithmP2;
       };

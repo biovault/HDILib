@@ -1,5 +1,6 @@
-#include "knn_support.h"
-#include "../utils/knn_utils.h"
+#include "knn_utils.h"
+#include <stdexcept>
+
 
 namespace hdi {
   namespace dr {
@@ -19,12 +20,12 @@ namespace hdi {
     std::map<std::string, int> supported_knn_libraries()
     {
       std::map<std::string, int> result;
-      result["FLANN"] = hdi::utils::KNN_FLANN;
+      result["FLANN"] = hdi::dr::KNN_FLANN;
 #ifdef HNSWLIB_SUPPORTED
-      result["HNSW"] = hdi::utils::KNN_HNSW;
+      result["HNSW"] = hdi::dr::KNN_HNSW;
 #endif
 #ifdef __USE_ANNOY__
-      result["ANNOY"] = hdi::utils::KNN_ANNOY;
+      result["ANNOY"] = hdi::dr::KNN_ANNOY;
 #endif
       return result;
     }
@@ -32,21 +33,21 @@ namespace hdi {
     std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib)
     {
       std::map<std::string, int> result;
-      result["Euclidean"] = hdi::utils::KNN_METRIC_EUCLIDEAN;
+      result["Euclidean"] = hdi::dr::KNN_METRIC_EUCLIDEAN;
 
       switch (knn_lib)
       {
-      case hdi::utils::KNN_FLANN: {
+      case hdi::dr::KNN_FLANN: {
         return result;
       }
-      case hdi::utils::KNN_HNSW: {
-        result["Inner Product"] = hdi::utils::KNN_METRIC_INNER_PRODUCT;
+      case hdi::dr::KNN_HNSW: {
+        result["Inner Product"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
         return result;
       }
-      case hdi::utils::KNN_ANNOY: {
-        result["Cosine"] = hdi::utils::KNN_METRIC_COSINE;
-        result["Manhattan"] = hdi::utils::KNN_METRIC_MANHATTAN;
-        result["Dot"] = hdi::utils::KNN_METRIC_DOT;
+      case hdi::dr::KNN_ANNOY: {
+        result["Cosine"] = hdi::dr::KNN_METRIC_COSINE;
+        result["Manhattan"] = hdi::dr::KNN_METRIC_MANHATTAN;
+        result["Dot"] = hdi::dr::KNN_METRIC_DOT;
         return result;
       }
 
