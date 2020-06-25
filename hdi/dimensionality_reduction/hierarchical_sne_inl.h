@@ -1178,22 +1178,22 @@ namespace hdi {
 #pragma omp parallel for schedule(dynamic,1)
         for (int i = 0; i < scale(0).size(); ++i) {
 
-          const auto& closeness = scale(1)._area_of_influence[i];
-          std::vector<std::pair<key_type, mapped_type>> closenessMap(closeness.begin(), closeness.end()); // using std::vector for quick access
+          const auto& areaOfInfluenceScale1 = scale(1)._area_of_influence[i];
+          std::vector<std::pair<key_type, mapped_type>> closeness(areaOfInfluenceScale1.begin(), areaOfInfluenceScale1.end()); // using std::vector for quick access
 
           for (int s = 2; s <= scale_id; ++s) {
             std::unordered_map<key_type, mapped_type> temp_link; // using unordered_map for quick insertion
-            for (auto l : closenessMap) {
+            for (auto l : closeness) {
               for (auto new_l : scale(s)._area_of_influence[l.first]) {
                 temp_link[new_l.first] += l.second * new_l.second;
               }
             }
-            closenessMap.resize(temp_link.size());
-            std::copy(temp_link.cbegin(), temp_link.cend(), closenessMap.begin());
+            closeness.resize(temp_link.size());
+            std::copy(temp_link.cbegin(), temp_link.cend(), closeness.begin());
           }
 
           std::unordered_set<unsigned_int_type> set_selected_idxes(selection.cbegin(), selection.cend()); // unordered set since we need all items to be unique and optimized find version
-          for (auto e : closenessMap) {
+          for (auto e : closeness) {
             if (set_selected_idxes.find(e.first) != set_selected_idxes.end()) {
               aoi[i] += e.second;
             }
