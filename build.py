@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 
 from bincrafters import build_template_default
 from bincrafters import build_shared
@@ -11,6 +12,7 @@ def _is_shared(build):
     
 if __name__ == "__main__":
 
+    print(os.getcwd())
     branch = build_shared.get_repo_branch_from_ci() 
     os.environ["CONAN_HDILIB_CI_BRANCH"] = branch
     builder = build_template_default.get_builder() 
