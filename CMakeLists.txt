@@ -41,9 +41,12 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
 endif()
 
+
+
 message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 #Setting custom compilers for MacOS
 if (CMAKE_GENERATOR STREQUAL Xcode)
+if(XCODE_VERSION LESS 11.5)
     find_program(BREW NAMES brew)
     if("${BREW}" STRGREATER "")
         message(STATUS "Running on macOS Darwin using ${BREW}")
@@ -92,7 +95,11 @@ else()
     message (STATUS "OpenMP found")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    include_directories("${OpenMP_CXX_INCLUDE_DIRS}")
+  else()
+    message(STATUS "OpenMP not found. Try to install it using 'brew install libomp'")
   endif()
+endif()
 endif()
 
 option(HDI_USE_ROARING "Use roaring bitmaps" OFF)
