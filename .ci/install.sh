@@ -3,6 +3,8 @@
 set -ex
 
 if [[ "$(uname -s)" == 'Darwin' ]]; then
+    HOMEBREW_NO_AUTO_UPDATE=1 brew install openblas
+    HOMEBREW_NO_AUTO_UPDATE=1 brew install numpy
     brew update || brew update
     brew cleanup
     brew upgrade python
