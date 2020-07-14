@@ -56,12 +56,18 @@ namespace hdi{
       KNN_METRIC_DOT = 5
     };
 
+	//! Returns the number of supported KNN libraries. 
+	//! This function should be considered deprecated and kept for backward comppatibility. New code should use the supported_knn_libraries function.
     int HierarchicalSNE_NrOfKnnAlgorithms();
 
-    //! returns which knn libraries are supported.
+    //! Returns both the name/label and index of the supported KNN libraries since this can depend on compiler support. 
+	//! This function is especially useful for building user-interfaces where the user can select which KNN library to use for a specific task (e.g. t-SNE or HSNE). 
+	//! Alternatively it can be used to offer a look-up table to translate the currently set KNN Library index back to human readable text.
     std::map<std::string, int> supported_knn_libraries();
 
-    //! returns a map with distance metrics supported for a specific knn library
+    //! Returns the name/label and index of distance metrics supported by a specific KNN library.
+	//! This function is especially useful for building user-interfaces where the user can select both a KNN library and a distance metric since not every KNN library supports the same distance metric. 
+	//! Alternatively it can be used to offer a look-up table to translate the currently set KNN distance metric index back to human readable text.
     std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib);
   }
 }
