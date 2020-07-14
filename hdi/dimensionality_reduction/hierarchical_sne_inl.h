@@ -1157,6 +1157,7 @@ namespace hdi {
 
     
 
+    //! This function computes the cumulative area of influence (aoi) of a "selection"of  landmark points at scale "scale_id" for each point at the data level. This process is described in Section 3.3 of https://doi.org/10.1111/cgf.12878
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluence(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi)const {
       typedef typename sparse_scalar_matrix_type::value_type map_type;
@@ -1165,37 +1166,42 @@ namespace hdi {
       typedef hdi::data::MapHelpers<key_type, mapped_type, map_type> map_helpers_type;
       checkAndThrowLogic(scale_id < _hierarchy.size(), "getAreaOfInfluence (3)");
 
+	  // initialize the area of influence vector
       aoi.assign(scale(0).size(), 0);
 
+	  // at scale 0 every point has a maximum area of influence (1) on itself.
       if (scale_id == 0) {
-#pragma omp parallel for 
+		#pragma omp parallel for 
         for (int i = 0; i < selection.size(); ++i) {
           aoi[selection[i]] = 1;
         }
       }
       else {
-
-#pragma omp parallel for schedule(dynamic,1)
+		  // compute for every point at the data level the area of influence (aoi) of the "selection" landmark points at scale scale_id through a chain of sparse matrix multiplications
+		#pragma omp parallel for schedule(dynamic,1) // we use schedule(dynamic,1) here because not every iteration of this parallel for loop takes equal time.
         for (int i = 0; i < scale(0).size(); ++i) {
 
-          const auto& areaOfInfluenceScale1 = scale(1)._area_of_influence[i];
-          std::vector<std::pair<key_type, mapped_type>> closeness(areaOfInfluenceScale1.begin(), areaOfInfluenceScale1.end()); // using std::vector for quick access
-
-          for (int s = 2; s <= scale_id; ++s) {
-            std::unordered_map<key_type, mapped_type> temp_link; // using unordered_map for quick insertion
-            for (auto l : closeness) {
-              for (auto new_l : scale(s)._area_of_influence[l.first]) {
-                temp_link[new_l.first] += l.second * new_l.second;
+		  // for scale 1 get the area of influence of all scale 1 landmark points on data level point "i".
+          const auto& aoi_scale_1_landmarks_on_point_i = scale(1)._area_of_influence[i]; // the influence matrix at scale 1
+          std::vector<std::pair<key_type, mapped_type>> cumulative_aoi_current_scale_landmarks_on_point_i(aoi_scale_1_landmarks_on_point_i.begin(), aoi_scale_1_landmarks_on_point_i.end());  // The cumulative area of influence of the landmarks at the current scale, initialized for current scale 1.  Using std::vector for quick look-up
+		  
+          for (int next_scale = 2; next_scale <= scale_id; ++next_scale) { // next climb up the scale hierarchy and for each next scale and compute the cumulative influence of the landmark points on data point "i".
+            std::unordered_map<key_type, mapped_type> cumulative_aoi_next_scale_landmarks_on_point_i; // using unordered_map for quick insertion since ordering it not needed but we do want to avoid multiple entries per data/landmark point.
+            for (auto current_scale_landmark : cumulative_aoi_current_scale_landmarks_on_point_i) {  // for each landmark point at the current scale
+              for (auto next_scale_landmark : scale(next_scale)._area_of_influence[current_scale_landmark.first]) { // get the area of influence of the landmarks of the next scale for each landmark at the current scale
+                cumulative_aoi_next_scale_landmarks_on_point_i[next_scale_landmark.first] += current_scale_landmark.second * next_scale_landmark.second; // compute the cumulative area of influence of the next scale landmarks by multiplying the cumulative area of influence of the current scale landmarks with the area of influence of the next scale landmarks
               }
             }
-            closeness.resize(temp_link.size());
-            std::copy(temp_link.cbegin(), temp_link.cend(), closeness.begin());
+			//  copy the cumulative influence of the next scale_landmarks_on_point_i to the current scale in time for the next iteration
+            cumulative_aoi_current_scale_landmarks_on_point_i.resize(cumulative_aoi_next_scale_landmarks_on_point_i.size());
+            std::copy(cumulative_aoi_next_scale_landmarks_on_point_i.cbegin(), cumulative_aoi_next_scale_landmarks_on_point_i.cend(), cumulative_aoi_current_scale_landmarks_on_point_i.begin());
           }
-
-          std::unordered_set<unsigned_int_type> set_selected_idxes(selection.cbegin(), selection.cend()); // unordered set since we need all items to be unique and optimized find version
-          for (auto e : closeness) {
-            if (set_selected_idxes.find(e.first) != set_selected_idxes.end()) {
-              aoi[i] += e.second;
+		  // by now the current scale for cumulative_influence_current_scale_landmarks_on_point_i is scale_id and so the indices in "selection" match the indices in cumulative_influence_current_scale_landmarks_on_point_i
+          std::unordered_set<unsigned_int_type> set_selected_idxes(selection.cbegin(), selection.cend()); // unordered set since we need all items to be unique 
+		  // for each landmark  at scale scale_id with an influence of data point i check if that landmark is in the selection and if it is add the area of influence to the cumulative area of influence of the selection on point i
+          for (auto cumulative_aoi_scale_id_landmark : cumulative_aoi_current_scale_landmarks_on_point_i) {
+			  if (set_selected_idxes.find(cumulative_aoi_scale_id_landmark.first) != set_selected_idxes.end()) {
+				aoi[i] += cumulative_aoi_scale_id_landmark.second;
             }
           }
         }
