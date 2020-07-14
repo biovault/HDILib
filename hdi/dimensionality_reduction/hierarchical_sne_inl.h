@@ -1177,6 +1177,8 @@ namespace hdi {
         }
       }
       else {
+		  const std::unordered_set<unsigned_int_type> selected_landmarks_at_scale_scale_id(selection.cbegin(), selection.cend()); // unordered set since we need all items to be unique 
+
 		  // compute for every point at the data level the area of influence (aoi) of the "selection" landmark points at scale scale_id through a chain of sparse matrix multiplications
 		#pragma omp parallel for schedule(dynamic,1) // we use schedule(dynamic,1) here because not every iteration of this parallel for loop takes equal time.
         for (int i = 0; i < scale(0).size(); ++i) {
@@ -1196,11 +1198,11 @@ namespace hdi {
             cumulative_aoi_current_scale_landmarks_on_point_i.resize(cumulative_aoi_next_scale_landmarks_on_point_i.size());
             std::copy(cumulative_aoi_next_scale_landmarks_on_point_i.cbegin(), cumulative_aoi_next_scale_landmarks_on_point_i.cend(), cumulative_aoi_current_scale_landmarks_on_point_i.begin());
           }
+		  
 		  // by now the current scale for cumulative_influence_current_scale_landmarks_on_point_i is scale_id and so the indices in "selection" match the indices in cumulative_influence_current_scale_landmarks_on_point_i
-          std::unordered_set<unsigned_int_type> set_selected_idxes(selection.cbegin(), selection.cend()); // unordered set since we need all items to be unique 
-		  // for each landmark  at scale scale_id with an influence of data point i check if that landmark is in the selection and if it is add the area of influence to the cumulative area of influence of the selection on point i
+          // for each landmark  at scale scale_id with an influence of data point i check if that landmark is in the selection and if it is add the area of influence to the cumulative area of influence of the selection on point i
           for (auto cumulative_aoi_scale_id_landmark : cumulative_aoi_current_scale_landmarks_on_point_i) {
-			  if (set_selected_idxes.find(cumulative_aoi_scale_id_landmark.first) != set_selected_idxes.end()) {
+			  if (selected_landmarks_at_scale_scale_id.find(cumulative_aoi_scale_id_landmark.first) != selected_landmarks_at_scale_scale_id.end()) {
 				aoi[i] += cumulative_aoi_scale_id_landmark.second;
             }
           }
