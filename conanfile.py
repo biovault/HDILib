@@ -4,6 +4,7 @@ from conans import ConanFile, CMake, tools
 import os
 import json
 import re
+from packaging import version
 
 class HDILibConan(ConanFile):
     name = "HDILib"
@@ -67,8 +68,9 @@ class HDILibConan(ConanFile):
         if tools.os_info.is_macos: 
             
             installer = tools.SystemPackageTool()  
-            installer.install('llvm')
-            installer.install('libomp')
+            target = os.environ.get('MACOSX_DEPLOYMENT_TARGET', '10.13')
+            if version.parse(target) > verson.parse('10.12')
+                installer.install('libomp')
                
     def requirements(self):
         if self.settings.os == "Windows":
