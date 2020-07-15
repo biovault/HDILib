@@ -37,7 +37,7 @@
 #include <stdint.h>
 #include "hdi/utils/assert_by_exception.h"
 #include "hdi/utils/abstract_log.h"
-#include "hdi/utils/knn_utils.h"
+#include "hdi/dimensionality_reduction/knn_utils.h"
 #include <map>
 #include <unordered_map>
 #include <random>
@@ -96,8 +96,8 @@ namespace hdi {
         unsigned_int_type _aknn_num_trees; //! Number of trees in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
         unsigned_int_type _aknn_num_checks; //! Number of checks in the Approximated KNN algorithm (See Approximated and User Steerable tSNE paper)
 
-        hdi::utils::knn_library _aknn_algorithm;   //! used to switch between knn algorithms
-        hdi::utils::knn_distance_metric _aknn_metric; // knn distance metric
+        hdi::dr::knn_library _aknn_algorithm;   //! used to switch between knn algorithms
+        hdi::dr::knn_distance_metric _aknn_metric; // knn distance metric
         double            _aknn_algorithmP1; //! used for HNSW
         double            _aknn_algorithmP2; //! used for HNSW
             /////////////////// Landmark Selection ////////////////////////
@@ -284,7 +284,7 @@ namespace hdi {
       void getInfluenceOnDataPoint(unsigned_int_type dp, std::vector<std::unordered_map<unsigned_int_type, scalar_type>>& influence, scalar_type thresh = 0, bool normalized = true)const;
       //! Return the influence exercised on the data point by a subset of landmarks in a given scale
       void getAreaOfInfluence(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi)const;
-      //! Return the influence exercised on the data point by a subset of landmarks in a given scale using a top-down approach
+       //! Return the influence exercised on the data point by a subset of landmarks in a given scale using a top-down approach
       void getAreaOfInfluenceTopDown(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi)const;
 
       //! TODO
