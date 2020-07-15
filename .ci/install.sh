@@ -3,7 +3,7 @@
 set -ex
 
 if [[ "$(uname -s)" == 'Darwin' ]]; then
-    brew upgrade python
+    brew outdated python || brew upgrade python
     brew outdated pyenv || brew upgrade pyenv
     brew install pyenv-virtualenv
     brew install cmake || brew upgrade cmake || true

@@ -66,10 +66,9 @@ class HDILibConan(ConanFile):
         
     def system_requirements(self):
         if tools.os_info.is_macos: 
-            
-            installer = tools.SystemPackageTool()  
             target = os.environ.get('MACOSX_DEPLOYMENT_TARGET', '10.13')
-            if version.parse(target) > verson.parse('10.12')
+            if version.parse(target) > version.parse('10.12'):
+                installer = tools.SystemPackageTool()  
                 installer.install('libomp')
                
     def requirements(self):

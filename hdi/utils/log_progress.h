@@ -35,7 +35,9 @@
 
 #include "hdi/utils/abstract_log.h"
 #include <string>
+#if defined(_OPENMP)
 #include <omp.h>
+#endif
 
 namespace hdi{
   namespace utils{
@@ -61,7 +63,9 @@ namespace hdi{
       #pragma omp atomic
         ++_current_step;
         //only the first thread is allowed to generate a tick
+#if defined(_OPENMP)
         if(omp_get_thread_num() == 0){
+#endif
           double perc = double(_current_step)/_num_steps;
           int tick = perc*(_num_ticks+1);
           if(tick > _current_tick){
@@ -70,7 +74,9 @@ namespace hdi{
             ss << perc*100 << "%";
             _log->display(ss.str(),true);
           }
+#if defined(_OPENMP)
         }
+#endif
       }
 
     private:
