@@ -72,6 +72,7 @@ find_package(OpenMP)
 
 if(OPENMP_FOUND)
 	message (STATUS "OpenMP found ${OpenMP_CXX_LIB_NAMES}")
+	include_directories(${OpenMP_CXX_INCLUDE_DIRS})
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}") 
 elseif(CMAKE_GENERATOR STREQUAL Xcode)
