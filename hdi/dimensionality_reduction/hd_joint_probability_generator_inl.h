@@ -43,7 +43,9 @@
 #include <chrono>
 #include <unordered_set>
 #include <numeric>
+#if defined(_OPENMP)
 #include "omp.h"
+#endif
 
 #ifdef HNSWLIB_FOUND
 #ifdef _MSC_VER

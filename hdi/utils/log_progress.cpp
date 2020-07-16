@@ -33,7 +33,9 @@
 #include <iostream>
 #include "hdi/utils/log_progress.h"
 #include <cassert>
+#if defined(_OPENMP)
 #include <omp.h>
+#endif
 
 namespace hdi{
   namespace utils{

@@ -33,7 +33,9 @@
 
 #ifndef HIERARCHICAL_SNE_INL
 #define HIERARCHICAL_SNE_INL
+#if defined(_OPENMP)
 #include <omp.h>
+#endif
 #include "hdi/dimensionality_reduction/hierarchical_sne.h"
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
