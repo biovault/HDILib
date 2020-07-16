@@ -1,6 +1,19 @@
 #include "knn_utils.h"
 #include <stdexcept>
 
+#ifdef HNSWLIB_FOUND
+#ifdef _MSC_VER
+#if(_MSC_VER >= 1900)
+#include "hnswlib/hnswlib.h"
+#include "hnswlib/space_l2.h"
+#define HNSWLIB_SUPPORTED
+#endif
+#else // _MSC_VER
+#include "hnswlib/hnswlib.h"
+#include "hnswlib/space_l2.h"
+#define HNSWLIB_SUPPORTED
+#endif // _MSC_VER
+#endif //HNSWLIB_FOUND
 
 namespace hdi {
   namespace dr {
