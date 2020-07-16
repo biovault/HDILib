@@ -1157,6 +1157,9 @@ namespace hdi {
       //#endif
     }
 
+    
+
+    //! This function computes the cumulative area of influence (aoi) of a "selection"of  landmark points at scale "scale_id" for each point at the data level. This process is described in Section 3.3 of https://doi.org/10.1111/cgf.12878
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluence(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi)const {
       typedef typename sparse_scalar_matrix_type::value_type map_type;
@@ -1164,49 +1167,56 @@ namespace hdi {
       typedef typename map_type::mapped_type mapped_type;
       typedef hdi::data::MapHelpers<key_type, mapped_type, map_type> map_helpers_type;
       checkAndThrowLogic(scale_id < _hierarchy.size(), "getAreaOfInfluence (3)");
-      aoi.clear();
-      aoi.resize(scale(0).size(), 0);
-      std::unordered_set<unsigned int> set_selected_idxes;
-      set_selected_idxes.insert(selection.begin(), selection.end());
 
+	  // initialize the area of influence vector
+      aoi.assign(scale(0).size(), 0);
+
+	  // at scale 0 every point has a maximum area of influence (1) on itself.
       if (scale_id == 0) {
+		#pragma omp parallel for 
         for (int i = 0; i < selection.size(); ++i) {
           aoi[selection[i]] = 1;
         }
       }
       else {
-
-        //#ifdef __USE_GCD__
-        //        std::cout << "GCD dispatch, hierarchical_sne_inl 854.\n";
-        //        dispatch_apply(scale(0).size(), dispatch_get_global_queue(0, 0), ^(size_t i) {
-        //#else
-#pragma omp parallel for
-        for (int i = 0; i < scale(0).size(); ++i) {
-          //#endif //__USE_GCD__
-
-          typename sparse_scalar_matrix_type::value_type closeness = scale(1)._area_of_influence[i];
-          for (int s = 2; s <= scale_id; ++s) {
-            std::map<key_type, mapped_type> temp_link;
-            for (auto l : closeness) {
-              for (auto new_l : scale(s)._area_of_influence[l.first]) {
-                temp_link[new_l.first] += l.second * new_l.second;
-              }
-            }
-            closeness.clear();
-            map_helpers_type::initialize(closeness, temp_link.begin(), temp_link.end());
-          }
-          for (auto e : closeness) {
-            if (set_selected_idxes.find(e.first) != set_selected_idxes.end()) {
-              aoi[i] += e.second;
-            }
-          }
-        }
-        //#ifdef __USE_GCD__
-        //        );
-        //#endif
-      }
-
-    }
+		  const std::unordered_set<unsigned_int_type> selected_scale_id_landmarks(selection.cbegin(), selection.cend()); // unordered set since we need all items to be unique 
+		  // Compute for every point at the data level the area of influence (aoi) 
+		  // of the "selection" landmark points at scale scale_id through a chain of sparse matrix multiplications
+		  #pragma omp parallel for schedule(dynamic,1)
+		  for (int i = 0; i < scale(0).size(); ++i) {
+			  const auto& scale_1_aois = scale(1)._area_of_influence[i];
+			  // Declare a holder for the super scale landmarks aois, using std::vector for quick look-up 
+			  std::vector<std::pair<key_type, mapped_type>> super_aois(scale_1_aois.begin(), scale_1_aois.end());
+			  // Walk the scale hierarchy from super-scale to sub-scale
+			  // For each scale compute the cumulative influence 
+			  // of the landmark points from the lower scale on data point "i" at the current scale.
+			  for (int s = 2; s <= scale_id; ++s) {
+				  // Use unordered_map for quick insertion
+				  // Ordering is not needed but we do want to avoid multiple entries per data/landmark point.
+				  std::unordered_map<key_type, mapped_type> current_aoi_cumulative;
+				  // Factor in the influence of all the super scale landmark aois
+				  for (auto super_aoi : super_aois) {
+					  for (auto current_aoi : scale(s)._area_of_influence[super_aoi.first]) {
+						  // compute cumulative aoi sum of products 
+						  current_aoi_cumulative[current_aoi.first] += super_aoi.second * current_aoi.second;
+					  }
+				  }
+				  // Copy the influence of the current_aoi_cumulative to the super scale aoi holder for the next iteration
+				  super_aois.resize(current_aoi_cumulative.size());
+				  std::copy(current_aoi_cumulative.cbegin(), current_aoi_cumulative.cend(), super_aois.begin());
+			  }
+			  // Now the current scale for super_aois is scale_id.
+			  // So the indices in "selection" match the indices in super_aois
+			  // Check if that landmark is in the selection,
+			  // if so add the area of influence to the cumulative area of influence of the selection on point i
+			  for (auto scale_id_aoi : super_aois) {
+				  if (selected_scale_id_landmarks.find(scale_id_aoi.first) != selected_scale_id_landmarks.end()) {
+					  aoi[i] += scale_id_aoi.second;
+				  }
+			  }
+		  }
+	  }
+	}
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluenceTopDown(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi)const {
