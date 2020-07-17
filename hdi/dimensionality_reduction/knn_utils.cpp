@@ -4,14 +4,12 @@
 #ifdef HNSWLIB_FOUND
 #ifdef _MSC_VER
 #if(_MSC_VER >= 1900)
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
 #define HNSWLIB_SUPPORTED
-#endif
+#endif //(_MSC_VER >= 1900)
 #else // _MSC_VER
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
+#if (__cplusplus >=201103)
 #define HNSWLIB_SUPPORTED
+#endif //(__cplusplus >=201103)
 #endif // _MSC_VER
 #endif //HNSWLIB_FOUND
 
