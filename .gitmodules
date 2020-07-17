@@ -3,4 +3,4 @@
 	url = https://github.com/nmslib/hnswlib.git
 [submodule "external/annoy"]
 	path = external/annoy
-	url = https://github.com/thoellt/annoy.git
+	url = https://github.com/spotify/annoy.git
