@@ -62,6 +62,13 @@ if (HDI_USE_ROARING)
     add_definitions(-DPREPROC_USE_ROARING)
 endif(HDI_USE_ROARING)
 
+if(MSVC)
+	add_definitions(/arch:AVX)
+	add_definitions(-DUSE_SSE) # needed so SSE functions are available in HNSWLib
+	add_definitions(-DUSE_AVX) # USE_AVX is used both in HNSWLib and Annoy. Setting it from CMake is the most convenient
+	message(STATUS "AVX and/or SSE instructions enabled for HNSWLib and/or Annoy")
+endif(MSVC)
+
 add_subdirectory (hdi/utils)
 add_subdirectory (hdi/data)
 add_subdirectory (hdi/dimensionality_reduction)
