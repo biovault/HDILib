@@ -8,7 +8,7 @@ from packaging import version
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    default_version = "1.0.0-alpha1"
+    default_version = "1.2.1"
     description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
