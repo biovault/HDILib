@@ -463,7 +463,7 @@ namespace hdi {
                     //It could be that the point itself is not the nearest one if two points are identical... I want the point itself to be the first one!
           if (neighborhood_graph[d*nn] != d) {
             int to_swap = d * nn;
-            for (; to_swap < d*nn + nn; ++to_swap) {
+            for (; to_swap < d*nn + (nn-1); ++to_swap) {
               if (neighborhood_graph[to_swap] == d)
                 break;
             }
