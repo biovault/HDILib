@@ -298,15 +298,15 @@ namespace hdi {
         switch (params._aknn_metric) {
         case hdi::dr::KNN_METRIC_EUCLIDEAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random>(num_dim);
+          tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random,AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         case hdi::dr::KNN_METRIC_COSINE:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new AnnoyIndex<int, double, Angular, Kiss32Random>(num_dim);
+          tree = new AnnoyIndex<int, double, Angular, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         case hdi::dr::KNN_METRIC_MANHATTAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new AnnoyIndex<int, double, Manhattan, Kiss32Random>(num_dim);
+          tree = new AnnoyIndex<int, double, Manhattan, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
           //case hdi::dr::KNN_METRIC_HAMMING:
           //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
@@ -314,11 +314,11 @@ namespace hdi {
           //  break;
         case hdi::dr::KNN_METRIC_DOT:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new AnnoyIndex<int, double, DotProduct, Kiss32Random>(num_dim);
+          tree = new AnnoyIndex<int, double, DotProduct, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         default:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random>(num_dim);
+          tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         }
 
