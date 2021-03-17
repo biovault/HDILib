@@ -49,6 +49,6 @@ install:
   - ./.ci/install.sh
 
 script:
-  - chmod +x .ci/entry.sh
+  - chmod +x .ci/pemsetup.sh
   - chmod +x .ci/run.sh
   - ./.ci/run.sh
