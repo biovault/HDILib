@@ -22,3 +22,6 @@ pip install conan --upgrade
 pip install conan_package_tools bincrafters_package_tools packaging
 
 conan user
+echo Extend conan cacert.pem
+conanhome=`conan config home`
+cat cert.pem >> $conanhome/cacert.pem
