@@ -13,9 +13,10 @@ def _is_shared(build):
 if __name__ == "__main__":
 
     print(os.getcwd())
+
     branch = build_shared.get_repo_branch_from_ci() 
     os.environ["CONAN_HDILIB_CI_BRANCH"] = branch
-    builder = build_template_default.get_builder() 
+    builder = build_template_default.get_builder(docker_entry_script=".ci/pemsetup.sh") 
     builder.remove_build_if(_is_shared)  
     builder.run()
   

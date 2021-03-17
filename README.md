@@ -57,6 +57,16 @@ Reference to cite when you use HDI in a research paper:
 ```
 
 ## Building
+
+### GIT Cloning 
+When cloning the repo be aware that it includes submodules. With the latest git versions you shoule use the following command:
+
+```
+git clone --recurse-submodules https://github.com/biovault/HDILib.git
+```
+
+### Ubuntu
+
 On **Ubuntu 16.04** you can build and install HDI by running the following commands
 
 ```bash
@@ -68,26 +78,7 @@ make -j 8
 sudo make install
 ```
 
-### HDILib has integrated external dependencies as submodules. This section on building with conan is retained as documentation of the CI/CD process
-
-**Begin CI/CD only section**
-
- - In a python (3.6 or 3.7) environment: 
-``` 
-pip install conan
-```
- - Add the biovault conan remote (for prebuilt packages):
-```
-conan remote add conan-biovault https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
-```
- - Make a build directory below the HDILib project root. 
-    For example: *./_build_release* or *./_build_debug*
-    (<u>when using conan the source directories are shared but 
-    separate build directories should be used for release and debug.</u>)
- - In the python environment (with conan and cmake accessible) 
- cd to the build directory and issue the following (for VisualStudio 2017):
-
-**End CI/CD only section**
+### Windows
 
 On **Windows** use CMake
 
@@ -105,3 +96,30 @@ cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DHDILIB_BU
 ## Applications
 
 A suite of command line and visualization applications is available in the [original High Dimensional Inspector](https://github.com/biovault/High-Dimensional-Inspector) repository.
+
+### CI/CD process
+
+HDILib has all external dependencies as submodules. Conan is only used in the CI/CD process for upload to the artifactory. The conanfile uses the cmake tool as builder.
+
+ - In a python (3.6 or 3.7) environment: 
+``` 
+pip install conan
+```
+ - Add the biovault conan remote (for prebuilt packages/upload):
+```
+conan remote add conan-biovault https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
+```
+ - Make a build directory below the HDILib project root. 
+    For example: *./_build_release* or *./_build_debug*
+    (<u>when using conan the source directories are shared but 
+    separate build directories should be used for release and debug.</u>)
+ - In the python environment (with conan and cmake accessible) 
+ cd to the build directory and issue the following (for VisualStudio 2017):
+
+#### CI/CD note on https
+Openssl in the python libraries does not have a recent list of CA-authorities, 
+that includes the authority for lkeb-artifactory GEANT issued certificate.
+Therefore it is essential to append the lkb-artifactory cert.pem to the
+cert.pem file in the conan home directory for a successful https connection. 
+See the CI scripts for details.
+
