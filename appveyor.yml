@@ -7,7 +7,7 @@ environment:
     CONAN_PASSWORD:
         secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
     VS150COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\Tools\\"
-    CONAN_UPLOAD: http://cytosplore.lumc.nl:8081/artifactory/api/conan/conan-local
+    CONAN_UPLOAD: http://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
     CONAN_REMOTE: lkebconan
     CONAN_STABLE_BRANCH_PATTERN: "release/*|master"
     CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
@@ -49,6 +49,8 @@ install:
   - pip.exe install conan --upgrade 
   - pip.exe install conan_package_tools bincrafters_package_tools
   - conan user # It creates the conan data directory
+  - for /f "delims=" %%i in ('conan config home') do set CONANPEMHOME=%%i
+  - type cert.pem >> %CONANPEMHOME%\cacert.pem
   - git submodule update --init --recursive
 
 skip_commits:

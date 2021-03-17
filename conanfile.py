@@ -30,9 +30,9 @@ class HDILibConan(ConanFile):
         "submodule": "recursive"
     }
     exports = "hdi*", "CMakeLists.txt", "LICENSE", 
-    requires = (
-        "CRoaring/0.2.63@lkeb/stable",
-    )
+    #requires = (
+    #    "CRoaring/0.2.63@lkeb/stable",
+    #)
     # Flann builds are bit complex and certain versions fail with 
     # certain platform, and compiler combinations. Hence use 
     # either self built 1.8.5 for Windows or system supplied 

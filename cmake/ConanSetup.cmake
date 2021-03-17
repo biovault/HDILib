@@ -24,27 +24,12 @@ endif()
 
 include(${CMAKE_BINARY_DIR}/cmake/conan.cmake)
 
-file(TIMESTAMP ${CMAKE_BINARY_DIR}/conan_install_timestamp.txt file_timestamp "%Y.%m.%d")
-string(TIMESTAMP timestamp "%Y.%m.%d")
-
 # env variable CI exists and is true for Appevor, Travis, CircleCI, GitLab, GitHub Actions
 # on Azure it's TF_BUILD :-(
 if($ENV{CI} or $ENV{TF_BUILD})
     set(IS_CI TRUE)
 else()
     set(IS_CI FALSE)
-endif()
-    
-# Run conan install update only once a day
-if("${file_timestamp}" VERSION_LESS ${timestamp} OR IS_CI)
-    file(WRITE ${CMAKE_BINARY_DIR}/conan_install_timestamp.txt "${timestamp}\n")
-    set(CONAN_UPDATE UPDATE)
-    conan_add_remote(NAME conan-hdim INDEX 0 
-        URL http://cytosplore.lumc.nl:8081/artifactory/api/conan/conan-local)
-    conan_add_remote(NAME bincrafters INDEX 1
-        URL https://api.bintray.com/conan/bincrafters/public-conan)
-else()
-    message(STATUS "Conan: Skipping update step.")
 endif()
 
 if(MSVC)
