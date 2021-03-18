@@ -56,12 +56,6 @@ else()
     message(WARNING, "OpenMP not found!")    
 endif()
 
-option(HDI_USE_ROARING "Use roaring bitmaps" ON)
-
-if (HDI_USE_ROARING)
-    add_definitions(-DPREPROC_USE_ROARING)
-endif(HDI_USE_ROARING)
-
 if(MSVC)
 	add_definitions(/arch:AVX)
 	add_definitions(-DUSE_SSE) # needed so SSE functions are available in HNSWLib

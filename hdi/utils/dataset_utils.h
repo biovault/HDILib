@@ -48,10 +48,6 @@
 #include <set>
 #include <unordered_map>
 
-#ifdef PREPROC_USE_ROARING
-    #include "roaring.hh"
-#endif
-
 namespace hdi{
   namespace utils{
 
@@ -107,11 +103,6 @@ namespace hdi{
 
       template <typename scalar_type>
       void loadMitoticFiguresAndVolume(data::PanelData<scalar_type>& panel_data, std::vector<unsigned int>& labels, std::string filename_data, std::string filename_labels, unsigned int num_images);
-
-#ifdef PREPROC_USE_ROARING
-      void loadTwitterFollowers(const std::string& folder, std::vector<Roaring>& follower_to_target, std::vector<Roaring>& target_to_follower,
-                    std::unordered_map<std::string,uint32_t>& follower_id, std::unordered_map<std::string,uint32_t>& target_id);
-#endif
 
       //////////////////////////////////////////////////////////////
 
