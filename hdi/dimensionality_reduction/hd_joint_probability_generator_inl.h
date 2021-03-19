@@ -43,6 +43,7 @@
 #include <chrono>
 #include <unordered_set>
 #include <numeric>
+#include <thread>
 #if defined(_OPENMP)
 #include "omp.h"
 #endif
@@ -253,11 +254,10 @@ namespace hdi {
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
           appr_alg.addPoint((void*)high_dimensional_data, (std::size_t) 0);
-#pragma omp parallel for
-          for (int i = 1; i < num_dps; ++i)
-          {
+          unsigned num_threads = std::thread::hardware_concurrency();
+          hnswlib::ParallelFor(1, num_dps, num_threads, [&](size_t i, size_t threadId) {
             appr_alg.addPoint((void*)(high_dimensional_data + (i*num_dim)), (hnswlib::labeltype) i);
-          }
+          });
         }
         const unsigned int nn = params._perplexity*params._perplexity_multiplier + 1;
         distances_squared.resize(num_dps*nn);
