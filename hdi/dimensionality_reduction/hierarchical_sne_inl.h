@@ -343,7 +343,7 @@ namespace hdi {
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
         appr_alg.addPoint((void*)_high_dimensional_data, (std::size_t) 0);
         unsigned num_threads = std::thread::hardware_concurrency();
-        hnswlib::ParallelFor(1, num_dps, num_threads, [&](size_t i, size_t threadId) {
+        hnswlib::ParallelFor(1, _num_dps, num_threads, [&](size_t i, size_t threadId) {
           appr_alg.addPoint((void*)(high_dimensional_data + (i * _dimensionality)), (hnswlib::labeltype) i);
           });
         utils::secureLog(_logger, "\tAKNN queries...");
