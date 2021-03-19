@@ -35,6 +35,8 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <thread>
+#include <mutex>
 
 namespace hdi{
   namespace dr{

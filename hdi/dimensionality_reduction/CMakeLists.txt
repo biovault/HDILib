@@ -30,6 +30,13 @@ if(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 	add_dependencies(${PROJECT} flann)
 endif(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 
+if(UNIX)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+    target_link_libraries(${PROJECT} PRIVATE Threads::Threads)
+endif(UNIX)
+
+
 ########### INSTALL ##############
 set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
