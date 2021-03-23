@@ -2,9 +2,11 @@
 
 from conans import ConanFile, CMake, tools
 import os
-import json
 import re
+import subprocess
+import sys
 from packaging import version
+from pathlib import Path
 
 class HDILibConan(ConanFile):
     name = "HDILib"
@@ -23,16 +25,14 @@ class HDILibConan(ConanFile):
     settings = "os", "build_type", "compiler", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": True, "fPIC": True}
-    
+
     scm = {
         "type": "git",
         "url": "https://github.com/biovault/HDILib.git",
         "submodule": "recursive"
     }
     exports = "hdi*", "CMakeLists.txt", "LICENSE", 
-    #requires = (
-    #    "CRoaring/0.2.63@lkeb/stable",
-    #)
+
     # Flann builds are bit complex and certain versions fail with 
     # certain platform, and compiler combinations. Hence use 
     # either self built 1.8.5 for Windows or system supplied 
@@ -46,41 +46,47 @@ class HDILibConan(ConanFile):
     # otherwise use the self.version hardcoded is used
     def set_version(self):
         ci_branch = os.getenv("CONAN_HDILIB_CI_BRANCH", "master")
-            
+
         print("Building branch: ", ci_branch) 
         rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
         feat_match = re.compile("feature/(.*)")
-        
+
         if ci_branch == "master":
             self.version = "latest"
-        else: 
+        else:
             rel = rel_match.search(ci_branch)
             if rel is not None:
                 self.version = rel.group(1) + rel.group(2)
-            else: 
+            else:
                 feat = feat_match.search(ci_branch)
                 if feat is not None:
                     self.version = feat.group(1)
-        self.scm["revision"] = ci_branch            
+        self.scm["revision"] = ci_branch
 
-        
+    def _get_python_cmake(self):
+        if None is not os.environ.get("APPVEYOR", None):
+            pypath = Path(sys.executable)
+            cmakePath = Path(pypath.parents[0], "Scripts/cmake.exe")
+            return cmakePath
+        return "cmake"
+
     def system_requirements(self):
-        if tools.os_info.is_macos: 
+        if tools.os_info.is_macos:
             target = os.environ.get('MACOSX_DEPLOYMENT_TARGET', '10.13')
             if version.parse(target) > version.parse('10.12'):
-                installer = tools.SystemPackageTool()  
+                installer = tools.SystemPackageTool()
                 installer.install('libomp')
-               
+
     def requirements(self):
         if self.settings.os == "Windows":
             self.requires("flann/1.8.5@lkeb/stable")
         else:
             # Macos and flann use 1.8.4
-            self.requires("flann/1.8.4@lkeb/stable")            
-        
+            self.requires("flann/1.8.4@lkeb/stable")
+
     def config_options(self):
         if self.settings.os == 'Windows':
-            del self.options.fPIC 
+            del self.options.fPIC
 
     def _configure_cmake(self):
         # Inject the conan dependency paths into the CMakeLists.txt
@@ -98,31 +104,32 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             cmake.definitions["CMAKE_CXX_STANDARD"] = 14
             cmake.definitions["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
-        cmake.definitions["HDI_EXTERNAL_FLANN_INCLUDE_DIR"] =  "${CONAN_INCLUDE_DIRS_FLANN}"   
+        cmake.definitions["HDI_EXTERNAL_FLANN_INCLUDE_DIR"] =  "${CONAN_INCLUDE_DIRS_FLANN}"
         cmake.definitions["HDI_USE_ROARING"] = "OFF"
+        cmake.definitions["HDILib_VERSION"] = self.version
+        print(f"Set version to {self.version}")
         cmake.configure()
         cmake.verbose = True
         return cmake
 
     def build(self):
-        print('Build folder: ', self.build_folder)
-        print(os.listdir(self.build_folder))
         cmake = self._configure_cmake()
         cmake.build()
+        install_dir = Path(self.build_folder).joinpath("install")
+        install_dir.mkdir(exist_ok=True)
+        config = str(self.settings.build_type)
+        print(f"Installing: install for {config} build")
+        cmakepath = self._get_python_cmake()
+        result = subprocess.run([f"{str(cmakepath)}",
+                        "--install", self.build_folder,
+                        "--config", config,
+                        "--verbose",
+                        "--prefix", str(install_dir)], capture_output=True)
+        print(f"Install for {config} build - complete. \n Output: {result.stdout} \n Errors: {result.stderr}")
 
     def package(self):
-        self.copy(pattern="LICENSE", dst="licenses", src=self.source_folder)
-        # If the CMakeLists.txt has a proper install method, the steps below may be redundant
-        # If so, you can just remove the lines below
-        self.copy("*.h", dst="include", keep_path=True)
-        self.copy("*.hpp", dst="include", keep_path=True)       
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.dylib", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
-        self.copy("*.lib", dst="lib", keep_path=False)
-        self.copy(pattern="*.pdb", dst="bin", keep_path=False)
-
+        install_dir = Path(self.build_folder).joinpath("install")
+        self.copy(pattern="*", src=str(install_dir))
 
     def package_info(self):
         self.cpp_info.libs = tools.collect_libs(self)

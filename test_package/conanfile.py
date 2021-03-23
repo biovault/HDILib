@@ -1,5 +1,6 @@
 import os
 import platform
+from pathlib import Path
 
 from conans import ConanFile, CMake, tools
 
@@ -9,21 +10,22 @@ from conans import ConanFile, CMake, tools
 
 class HDILibTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    generators = "cmake"
+    generators = "cmake", "cmake_paths", "cmake_find_package"
     # lz4/1.9.2 is in conan center
     requires = (
         "lz4/1.9.2"
     )
-    
+
     def system_requirements(self):
         if tools.os_info.is_linux:
             installer = tools.SystemPackageTool()
             installer.install("libomp-dev")
-            
+
     def build(self):
         cmake = CMake(self)
         # Current dir is "test_package/build/<build_id>" and CMakeLists.txt is
         # in "test_package"
+        cmake.definitions["CMAKE_TOOLCHAIN_FILE"] = "conan_paths.cmake"
         cmake.configure()
         cmake.build()
 
@@ -31,12 +33,12 @@ class HDILibTestConan(ConanFile):
         self.copy("*.dll", dst="bin", src="bin")
         self.copy("*.dylib*", dst="bin", src="lib")
         self.copy('*.so*', dst='bin', src='lib')
-        self.copy("HDILib", dst="HDILib", folder=True)
 
     def test(self):
         if not tools.cross_building(self.settings):
             os.chdir("bin")
             if platform.system() == 'Windows':
-                self.run(".%sexample.exe" % os.sep)
+                examplePath = Path("./", str(self.build_folder), "bin", "example.exe")
+                self.run(f"{str(examplePath)}")
             else:
-                self.run(".%sexample" % os.sep)                
+                self.run(".%sexample" % os.sep)

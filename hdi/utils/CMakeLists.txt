@@ -3,25 +3,42 @@ include_directories ("${CMAKE_SOURCE_DIR}")
 set(PROJECT "hdiutils")
 
 # Gather list of all .h files in "/"
-file(GLOB HeaderFiles *.h)
+file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h glad/*.h glad/KHR/*.h)
 file(GLOB SourceFiles *.cpp)
 
-add_library(${PROJECT} ${HeaderFiles} ${SourceFiles} ${Resources} )
+add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 if (UNIX)
     target_link_libraries (hdiutils ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
 endif (UNIX)
 
 ########### INSTALL ##############
-set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+#set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 install(TARGETS ${PROJECT}
-    CONFIGURATIONS Debug
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/Debug
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_PREFIX}/include/hdi/utils
+    EXPORT ${PROJECT}Targets
+    LIBRARY DESTINATION lib/$<CONFIGURATION>
+    ARCHIVE DESTINATION lib/$<CONFIGURATION>
+    COMPONENT hdiutils
 )
-install(TARGETS ${PROJECT}
-    CONFIGURATIONS Release
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/Release
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_PREFIX}/include/hdi/utils
+
+# Preserve the header hierarchy by explicit install
+# the CMake PUBLIC_HEADER target property flattens it if used.
+install(CODE "foreach(HEADER ${HeaderFiles})
+        message(STATUS \"Installing: \${HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/utils\")
+        execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                \"${CMAKE_CURRENT_SOURCE_DIR}/\${HEADER}\" 
+                \"${CMAKE_INSTALL_PREFIX}/include/hdi/utils/\${HEADER}\"
+        )
+
+    endforeach()"
+    COMPONENT PUBLIC_HEADERS
+)
+
+install(EXPORT ${PROJECT}Targets
+        FILE ${PROJECT}Targets.cmake
+        NAMESPACE HDI::
+        DESTINATION lib/cmake/HDILib
+        COMPONENT HDIUTILS_TARGET
 )

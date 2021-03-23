@@ -1,0 +1,24 @@
+# Note: We are using HDI as the namespace and the file
+# prefix instead of the PROJECT_NAME
+# Component names include the HDI prefix (as defined in their PROJECT setting)
+
+@PACKAGE_INIT@
+
+set_and_check(HDILib_INCLUDE_DIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
+set_and_check(HDILib_LIB_DIR "@PACKAGE_LIB_INSTALL_DIR@")
+list(APPEND HDILib_LINK_LIBS HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata)
+
+set(_supported_components  hdidimensionalityreduction hdiutils hdidata)
+
+set(HDILib_FOUND 1)
+# Get all of the requested components (list the find_package COMPONENTS)
+foreach(_comp ${HDILib_FIND_COMPONENTS})
+  if (NOT _comp IN_LIST _supported_components)
+    message(STATUS "Component ${_comp} not supported")
+    set(HDILib_FOUND 0)
+    set(HDILib_NOT_FOUND_MESSAGE "Unsupported component: ${_comp}")
+  endif()
+  include("${CMAKE_CURRENT_LIST_DIR}/${_comp}Targets.cmake")
+endforeach()
+
+#check_required_components("HDI")

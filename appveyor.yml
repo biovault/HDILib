@@ -1,52 +1,55 @@
 build: false
 
 environment:
-    PYTHON_HOME: "C:\\Python37"
-#    CONAN_VERSION: "1.0.0-alpha1"
-    CONAN_LOGIN_USERNAME: "admin"
-    CONAN_PASSWORD:
-        secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
-    VS150COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\Tools\\"
-    CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
-    CONAN_REMOTE: lkebconan
-    CONAN_STABLE_BRANCH_PATTERN: "release/*|master"
-    CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
-    
-    matrix:
-### Limit build to 2017, x64 , Release, Shared
-        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-          CONAN_VISUAL_VERSIONS: 15
-          CONAN_ARCHS: x86_64
-          CONAN_BUILD_TYPES: Release
-          CONAN_VISUAL_RUNTIMES: MD
-          BUILD_SHARED: True
-          
-### Limit build to 2017, x64 , Debug, Shared
-        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-          CONAN_VISUAL_VERSIONS: 15
-          CONAN_ARCHS: x86_64
-          CONAN_BUILD_TYPES: Debug
-          CONAN_VISUAL_RUNTIMES: MDd
-          BUILD_SHARED: True          
+  PYTHON_HOME: "C:\\Python37"
+  CONAN_LOGIN_USERNAME: "admin"
+  CONAN_PASSWORD:
+      secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
+  VS150COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\Tools\\"
+  CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
+  CONAN_REMOTE: lkebconan
+  CONAN_STABLE_BRANCH_PATTERN: "release/*|master"
+  CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
+  BUILD_SHARED: True
 
-### Limit build to 2019, x64 , Release, Shared
-        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-          CONAN_VISUAL_VERSIONS: 16
-          CONAN_ARCHS: x86_64
-          CONAN_BUILD_TYPES: Release
-          CONAN_VISUAL_RUNTIMES: MD
-          BUILD_SHARED: True
-          
-### Limit build to 2019, x64 , Debug, Shared
-        - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-          CONAN_VISUAL_VERSIONS: 16
-          CONAN_ARCHS: x86_64
-          CONAN_BUILD_TYPES: Debug
-          CONAN_VISUAL_RUNTIMES: MDd
-          BUILD_SHARED: True       
+  matrix:
+
+# VS 2017
+
+     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+
+       CONAN_VISUAL_VERSIONS: 15
+       CONAN_ARCHS: x86_64
+       CONAN_BUILD_TYPES: Release
+       CONAN_VISUAL_RUNTIMES: MD
+       REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
+
+     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+       CONAN_VISUAL_VERSIONS: 15
+       CONAN_ARCHS: x86_64
+       CONAN_BUILD_TYPES: Debug
+       CONAN_VISUAL_RUNTIMES: MDd
+       REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
+
+# VS 2019
+
+     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+       CONAN_VISUAL_VERSIONS: 16
+       CONAN_ARCHS: x86_64
+       CONAN_BUILD_TYPES: Release
+       CONAN_VISUAL_RUNTIMES: MD
+
+     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+       CONAN_VISUAL_VERSIONS: 16
+       CONAN_ARCHS: x86_64
+       CONAN_BUILD_TYPES: Debug
+       CONAN_VISUAL_RUNTIMES: MDd
+
+
 install:
   - set PATH=%PYTHON_HOME%;%PYTHON_HOME%/Scripts/;%PATH%
-  - pip.exe install conan --upgrade 
+  - pip.exe install conan --upgrade
+  - pip.exe install cmake --upgrade
   - pip.exe install conan_package_tools bincrafters_package_tools
   - conan user # It creates the conan data directory
   - for /f "delims=" %%i in ('conan config home') do set CONANPEMHOME=%%i
@@ -57,18 +60,19 @@ skip_commits:
     files:
         - README.md
         - travis.yml
-        
+
 notifications:
   - provider: Email
-    to: 
+    to:
         - b.van_lew@lumc.nl
     subject: Test HDILib {{status}}
     message: "URL is {{buildUrl}} Commit ID {{commitId}}. Messages {{jobs.0.messages.0.message}}"
     on_build_success: true
     on_build_failure: true
-    on_build_status_changed: true   
-    
+    on_build_status_changed: true
+
 build_script:
-  - cmd: python build.py
-  
-after_test:  
+  - .\\.ci\\fix_cmake.bat
+  - python build.py
+
+

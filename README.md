@@ -65,6 +65,16 @@ When cloning the repo be aware that it includes submodules. With the latest git 
 git clone --recurse-submodules https://github.com/biovault/HDILib.git
 ```
 
+### Requirements
+
+HDILib has all external dependencies as submodules except for flann.
+
+1. Windows build requires: flann 1.8.5
+2. Ubuntu/Mac builds require: flann 1.8.4
+
+Flann can be built from the source (https://github.com/mariusmuja/flann) or conan can be used to
+install a prebuild version (see CI/CD section below)
+
 ### Ubuntu
 
 On **Ubuntu 16.04** you can build and install HDI by running the following commands
@@ -84,7 +94,7 @@ On **Windows** use CMake
 
 ```
 cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DHDILIB_BUILD_WITH_CONAN=ON
-```      
+```
     (*Note: this assumes that the build dir is one level down from the project root.
     The default of HDILIB_BUILD_WITH_CONAN is OFF*)
  - If all goes well Conan will have installed the dependencies in its cache and 
@@ -99,27 +109,27 @@ A suite of command line and visualization applications is available in the [orig
 
 ### CI/CD process
 
-HDILib has all external dependencies as submodules. Conan is only used in the CI/CD process for upload to the artifactory. The conanfile uses the cmake tool as builder.
+Conan is used in the CI/CD process to retrieve a prebuilt flann from the lkeb-artifactory and to upload the completed HDILib to the artifactory. The conanfile uses the cmake tool as builder.
 
- - In a python (3.6 or 3.7) environment: 
-``` 
+ - In a python (3.6 or 3.7) environment:
+```
 pip install conan
 ```
  - Add the biovault conan remote (for prebuilt packages/upload):
 ```
 conan remote add conan-biovault https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
 ```
- - Make a build directory below the HDILib project root. 
+ - Make a build directory below the HDILib project root.
     For example: *./_build_release* or *./_build_debug*
-    (<u>when using conan the source directories are shared but 
+    (<u>when using conan the source directories are shared but
     separate build directories should be used for release and debug.</u>)
- - In the python environment (with conan and cmake accessible) 
+ - In the python environment (with conan and cmake accessible)
  cd to the build directory and issue the following (for VisualStudio 2017):
 
 #### CI/CD note on https
-Openssl in the python libraries does not have a recent list of CA-authorities, 
+Openssl in the python libraries does not have a recent list of CA-authorities,
 that includes the authority for lkeb-artifactory GEANT issued certificate.
 Therefore it is essential to append the lkb-artifactory cert.pem to the
-cert.pem file in the conan home directory for a successful https connection. 
+cert.pem file in the conan home directory for a successful https connection.
 See the CI scripts for details.
 

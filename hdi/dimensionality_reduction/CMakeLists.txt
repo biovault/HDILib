@@ -20,10 +20,11 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__USE_ANNOY__")
 
 
 # Gather list of all .h files in "/"
-file(GLOB HeaderFiles *.h gpgpu_sne/*.h)
-file(GLOB SourceFiles *.cpp gpgpu_sne/*.cpp)
+file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
+message(STATUS "################# ${HeaderFiles} ##############")
+file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
 
-add_library(${PROJECT} ${HeaderFiles} ${SourceFiles} )
+add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
 # Need to wait until add_library call before depenency of Flann can be set in case Flann is to be build from scratch.
 if(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
@@ -31,15 +32,32 @@ if(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 endif(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 
 ########### INSTALL ##############
-set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+#set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 install(TARGETS ${PROJECT}
-    CONFIGURATIONS Debug
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/Debug
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction
+    EXPORT ${PROJECT}Targets
+    LIBRARY DESTINATION lib/$<CONFIGURATION>
+    ARCHIVE DESTINATION lib/$<CONFIGURATION>
+    COMPONENT hdidimensionalityreduction
 )
-install(TARGETS ${PROJECT}
-    CONFIGURATIONS Release
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/Release
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction
+
+# Preserve the header hierarchy by explicit install
+# the CMake PUBLIC_HEADER target property flattens it if used.
+install(CODE "foreach(HEADER ${HeaderFiles})
+        message(STATUS \"Installing: \${HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
+        execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                \"${CMAKE_CURRENT_SOURCE_DIR}/\${HEADER}\" 
+                \"${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction/\${HEADER}\"
+        )
+
+    endforeach()"
+    COMPONENT PUBLIC_HEADERS
+)
+
+install(EXPORT ${PROJECT}Targets
+        FILE ${PROJECT}Targets.cmake
+        NAMESPACE HDI::
+        DESTINATION lib/cmake/HDILib
+        COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
 )

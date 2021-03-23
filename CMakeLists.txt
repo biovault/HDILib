@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.9)
+cmake_minimum_required (VERSION 3.18)
 
 # Set C++11 language standard
 set(CMAKE_CXX_STANDARD 11)
@@ -10,6 +10,7 @@ set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
 
+set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
@@ -53,7 +54,7 @@ if(OPENMP_FOUND)
 elseif(CMAKE_GENERATOR STREQUAL Xcode)
 	add_definitions( -D__USE_GCD__)
 else()
-    message(WARNING, "OpenMP not found!")    
+    message(WARNING, "OpenMP not found!")
 endif()
 
 if(MSVC)
@@ -70,3 +71,38 @@ add_subdirectory (hdi/dimensionality_reduction)
 add_dependencies(hdidata hdiutils)
 add_dependencies(hdidimensionalityreduction hdiutils)
 add_dependencies(hdidimensionalityreduction hdidata)
+
+# NOTE CMake installs are defined in the sub-projects.
+# ***Create a HdpsCore package to support the find_package command**
+
+# Helper macro for packaging
+include(CMakePackageConfigHelpers)
+
+# Generate the version file for use with find_package
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
+  VERSION "${HDILib_VERSION}"
+  # When the hdps core is stable compatibility can 
+  # change to AnyNewerVersion or SameMajorVersion
+  COMPATIBILITY ExactVersion
+)
+
+set(INCLUDE_INSTALL_DIR include)
+set(LIB_INSTALL_DIR lib)
+set(CURRENT_BUILD_DIR "${CMAKE_BINARY_DIR}")
+
+# create config file
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
+  PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR CURRENT_BUILD_DIR
+  INSTALL_DESTINATION lib/cmake/HDILib
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO
+)
+
+# install the package files files
+install(FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
+          "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
+        DESTINATION lib/cmake/HDILib
+        COMPONENT HDI_PACKAGE
+)
