@@ -33,6 +33,12 @@ else()
         target_link_libraries(example PRIVATE lz4::lz4 ${HDILib_LINK_LIBS} HDI::hdidata ${CMAKE_DL_LIBS}  ${OPENGL_LIBRARIES})
     endif()
 endif()
+if(UNIX)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+    target_link_libraries(example PRIVATE Threads::Threads)
+endif(UNIX)
+
 target_include_directories(example PRIVATE ${HDILib_INCLUDE_DIR})
 
 install(TARGETS example
