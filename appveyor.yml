@@ -24,12 +24,12 @@ environment:
        CONAN_VISUAL_RUNTIMES: MD
        REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
 
-     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-       CONAN_VISUAL_VERSIONS: 15
-       CONAN_ARCHS: x86_64
-       CONAN_BUILD_TYPES: Debug
-       CONAN_VISUAL_RUNTIMES: MDd
-       REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
+    #  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    #    CONAN_VISUAL_VERSIONS: 15
+    #    CONAN_ARCHS: x86_64
+    #    CONAN_BUILD_TYPES: Debug
+    #    CONAN_VISUAL_RUNTIMES: MDd
+    #    REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
 
 # VS 2019
 
@@ -39,11 +39,11 @@ environment:
        CONAN_BUILD_TYPES: Release
        CONAN_VISUAL_RUNTIMES: MD
 
-     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-       CONAN_VISUAL_VERSIONS: 16
-       CONAN_ARCHS: x86_64
-       CONAN_BUILD_TYPES: Debug
-       CONAN_VISUAL_RUNTIMES: MDd
+    #  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    #    CONAN_VISUAL_VERSIONS: 16
+    #    CONAN_ARCHS: x86_64
+    #    CONAN_BUILD_TYPES: Debug
+    #    CONAN_VISUAL_RUNTIMES: MDd
 
 
 install:

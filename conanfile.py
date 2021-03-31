@@ -88,7 +88,7 @@ class HDILibConan(ConanFile):
         if self.settings.os == 'Windows':
             del self.options.fPIC
 
-    def _configure_cmake(self):
+    def _configure_cmake(self, build_type):
         # Inject the conan dependency paths into the CMakeLists.txt
         conanproj = ("PROJECT(${PROJECT})\n"
                 "include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)\n"
@@ -96,9 +96,9 @@ class HDILibConan(ConanFile):
         )
         tools.replace_in_file("CMakeLists.txt", "PROJECT(${PROJECT})", conanproj)
         if self.settings.os == "Macos":
-            cmake = CMake(self, generator='Xcode')
+            cmake = CMake(self, generator='Xcode', build_type=build_type)
         else:
-            cmake = CMake(self)
+            cmake = CMake(self, build_type=build_type)
         if self.settings.os == "Windows" and self.options.shared:
             cmake.definitions["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
         if self.settings.os == "Linux" or self.settings.os == "Macos":
@@ -113,18 +113,30 @@ class HDILibConan(ConanFile):
         return cmake
 
     def build(self):
-        cmake = self._configure_cmake()
-        cmake.build()
+
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
         config = str(self.settings.build_type)
         print(f"Installing: install for {config} build")
         cmakepath = self._get_python_cmake()
+
+        cmake_debug = self._configure_cmake('Debug')
+        cmake_debug.build()
         result = subprocess.run([f"{str(cmakepath)}",
                         "--install", self.build_folder,
-                        "--config", config,
+                        "--config", "Debug",
                         "--verbose",
                         "--prefix", str(install_dir)], capture_output=True)
+
+        cmake_release = self._configure_cmake('Release')
+        cmake_release.build()
+        result = subprocess.run([f"{str(cmakepath)}",
+                        "--install", self.build_folder,
+                        "--config", "Release",
+                        "--verbose",
+                        "--prefix", str(install_dir)], capture_output=True)
+
+
         print(f"Install for {config} build - complete. \n Output: {result.stdout} \n Errors: {result.stderr}")
 
     def package(self):
