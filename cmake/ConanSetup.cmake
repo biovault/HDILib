@@ -1,4 +1,5 @@
 if(NOT HDILIB_BUILD_WITH_CONAN)
+    message(STATUS "***********Not using ConanSetup**************")
     return()
 endif()
 

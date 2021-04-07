@@ -19,19 +19,20 @@ class HDILibConan(ConanFile):
     default_user = "lkeb"
     default_channel = "stable"
 
-    generators = "cmake"
+    generators = ["cmake_multi", "cmake_find_package_multi"]
 
     # Options may need to change depending on the packaged library
-    settings = "os", "build_type", "compiler", "arch"
+    settings = "os", "compiler", "arch", "build_type"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": True, "fPIC": True}
 
-    scm = {
-        "type": "git",
-        "url": "https://github.com/biovault/HDILib.git",
-        "submodule": "recursive"
-    }
-    exports = "hdi*", "CMakeLists.txt", "LICENSE", 
+    #scm = {
+    #    "type": "git",dir
+    #    "url": "https://github.com/biovault/HDILib.git",
+    #    "submodule": "recursive"
+    #}
+    #, "conanbuildinfo.txt", "conanbuildinfo_debug.cmake", "conanbuildinfo_release.cmake", "conanbuildinfo_multi.cmake"
+    exports = "hdi*", "external*", "cmake*", "*.cmake", "CMakeLists.txt", "LICENSE"
 
     # Flann builds are bit complex and certain versions fail with 
     # certain platform, and compiler combinations. Hence use 
@@ -47,7 +48,7 @@ class HDILibConan(ConanFile):
     def set_version(self):
         ci_branch = os.getenv("CONAN_HDILIB_CI_BRANCH", "master")
 
-        print("Building branch: ", ci_branch) 
+        #print("Building branch: ", ci_branch) 
         rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
         feat_match = re.compile("feature/(.*)")
 
@@ -61,7 +62,7 @@ class HDILibConan(ConanFile):
                 feat = feat_match.search(ci_branch)
                 if feat is not None:
                     self.version = feat.group(1)
-        self.scm["revision"] = ci_branch
+        #self.scm["revision"] = ci_branch
 
     def _get_python_cmake(self):
         if None is not os.environ.get("APPVEYOR", None):
@@ -78,11 +79,19 @@ class HDILibConan(ConanFile):
                 installer.install('libomp')
 
     def requirements(self):
+        if self.settings.build_type == "None":
+             print("Skip root package requirements for build_type NONE")
+             return
         if self.settings.os == "Windows":
             self.requires("flann/1.8.5@lkeb/stable")
         else:
             # Macos and flann use 1.8.4
             self.requires("flann/1.8.4@lkeb/stable")
+        # self.requires.add("lz4/1.9.2")
+
+    def configure(self):
+        if self.settings.compiler == "Visual Studio":
+            del self.settings.compiler.runtime
 
     def config_options(self):
         if self.settings.os == 'Windows':
@@ -91,7 +100,7 @@ class HDILibConan(ConanFile):
     def _configure_cmake(self, build_type):
         # Inject the conan dependency paths into the CMakeLists.txt
         conanproj = ("PROJECT(${PROJECT})\n"
-                "include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)\n"
+                "include(${CMAKE_BINARY_DIR}/conanbuildinfo_multi.cmake)\n"
                 "conan_basic_setup()\n"
         )
         tools.replace_in_file("CMakeLists.txt", "PROJECT(${PROJECT})", conanproj)
@@ -113,7 +122,7 @@ class HDILibConan(ConanFile):
         return cmake
 
     def build(self):
-
+        print(f"Build folder {self.build_folder} \n Package folder {self.package_folder}\n Source folder {self.source_folder}")
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
         config = str(self.settings.build_type)
@@ -142,6 +151,16 @@ class HDILibConan(ConanFile):
     def package(self):
         install_dir = Path(self.build_folder).joinpath("install")
         self.copy(pattern="*", src=str(install_dir))
+        # Add the debug support files to the package
+        # (*.pdb) if building the Visual Studio version
+        if self.settings.compiler == "Visual Studio":
+            self.copy("*.pdb", dst="lib/Debug", keep_path=False)
+
+    def package_id(self):
+        # The package contains both Debug and Release build types
+        del self.info.settings.build_type
+        if self.settings.compiler == "Visual Studio":
+            del self.settings.compiler.runtime
 
     def package_info(self):
         self.cpp_info.libs = tools.collect_libs(self)

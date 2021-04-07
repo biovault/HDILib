@@ -20,31 +20,16 @@ environment:
 
        CONAN_VISUAL_VERSIONS: 15
        CONAN_ARCHS: x86_64
-       CONAN_BUILD_TYPES: Release
-       CONAN_VISUAL_RUNTIMES: MD
+       CONAN_BUILD_TYPES: "Release,Debug"
+       #CONAN_VISUAL_RUNTIMES: "MD,MDd"
        REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
-
-    #  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-    #    CONAN_VISUAL_VERSIONS: 15
-    #    CONAN_ARCHS: x86_64
-    #    CONAN_BUILD_TYPES: Debug
-    #    CONAN_VISUAL_RUNTIMES: MDd
-    #    REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
 
 # VS 2019
 
      - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
        CONAN_VISUAL_VERSIONS: 16
        CONAN_ARCHS: x86_64
-       CONAN_BUILD_TYPES: Release
-       CONAN_VISUAL_RUNTIMES: MD
-
-    #  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-    #    CONAN_VISUAL_VERSIONS: 16
-    #    CONAN_ARCHS: x86_64
-    #    CONAN_BUILD_TYPES: Debug
-    #    CONAN_VISUAL_RUNTIMES: MDd
-
+       #CONAN_VISUAL_RUNTIMES: MD
 
 install:
   - set PATH=%PYTHON_HOME%;%PYTHON_HOME%/Scripts/;%PATH%
@@ -73,6 +58,13 @@ notifications:
 
 build_script:
   - .\\.ci\\fix_cmake.bat
+  # configure for the multi package
+  - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
+  - conan install . -s build_type=Debug -s compiler.runtime=MDd --profile action_build
+  # test_package is release only
+  - cd test_package
+  - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
+  - cd ..
   - python build.py
 
 

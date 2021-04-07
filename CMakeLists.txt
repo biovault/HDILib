@@ -20,14 +20,16 @@ if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
 endif()
 
 # This flag is used to allow conan to install the dependencies
-option(HDILIB_BUILD_WITH_CONAN "Should Conan package manager be used?" OFF)
+#option(HDILIB_BUILD_WITH_CONAN "Should Conan package manager be used?" OFF)
 #The cmake make sub directory contains the ConanSetup.cmake 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${PROJECT_SOURCE_DIR}/cmake")
 
 # CONAN is only used for setting up dependencies if the HDILIB_BUILD_WITH_CONAN is ON
-include(ConanSetup)
-message(STATUS "*** (HDI_EXTERNAL_FLANN_INCLUDE_DIR) ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
+#include(ConanSetup)
+#message(STATUS "*** (HDI_EXTERNAL_FLANN_INCLUDE_DIR) ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
+find_package(flann PATHS ${CMAKE_CURRENT_LIST_DIR} REQUIRED)
+#message(STATUS "******* moudle path ${CMAKE_MODULE_PATH} ***************")
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
