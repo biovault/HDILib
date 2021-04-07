@@ -59,6 +59,7 @@ notifications:
 build_script:
   - .\\.ci\\fix_cmake.bat
   # configure the build action
+  - conan remote add %CONAN_REMOTE% %CONAN_UPLOAD%
   - conan profile new action_build
   - conan profile update settings.os=Windows action_build
   - conan profile update settings.os_build=Windows action_build
