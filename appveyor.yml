@@ -75,6 +75,7 @@ build_script:
   - cd test_package
   - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
   - cd ..
-  - python build.py
+  - conan create . lkeb/stable --profile action_build
+  # - python build.py
 
 
