@@ -66,7 +66,7 @@ build_script:
   - conan profile update settings.arch_build=%CONAN_ARCHS% action_build
   - conan profile update settings.compiler="Visual Studio" action_build
   - conan profile update settings.compiler.version=%CONAN_VISUAL_VERSIONS% action_build
-  - conan profile update options.:shared="True" action_build
+  #- conan profile update options.shared="True" action_build
   - set CONAN_BASE_PROFILE=action_build
   # configure for the multi package
   - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
