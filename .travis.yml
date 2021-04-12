@@ -23,9 +23,9 @@ osx: &osx
 matrix:
    include:
         - <<: *linux
-        env: DOCKER_IMAGE=conanio/gcc8
+          env: DOCKER_IMAGE=conanio/gcc8
         - <<: *linux
-        env: DOCKER_IMAGE=conanio/gcc9
+          env: DOCKER_IMAGE=conanio/gcc9
       # - <<: *linux
       #   env: CONAN_GCC_VERSIONS=8 CONAN_DOCKER_IMAGE=conanio/gcc8 CONAN_ARCHS=x86_64
       # - <<: *linux
@@ -38,15 +38,15 @@ matrix:
       #   env: CONAN_APPLE_CLANG_VERSIONS=10.0 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.13 HOMEBREW_NO_AUTO_UPDATE=1
 
 before_install:
-- docker pull $DOCKER_IMAGE
-- docker run -itd -v "$(pwd):/home/conan/project" --name build_container $DOCKER_IMAGE
-- docker exec build_container conan remote add lkeb-artifactory $CONAN_UPLOAD
-- docker exec build_container bash -c "cd project && .ci/pemsetup.sh"
-- docker exec build_container bash -c "conan profile new action_build --force --detect && conan profile show action_build"
-- docker exec build_container bash -c "cd project && conan install . -s build_type=Release --profile action_build"
-- docker exec build_container bash -c "cd project && conan install . -s build_type=Debug --profile action_build"
-- docker exec build_container bash -c "cd project/test_package && conan install . -s build_type=Release --profile action_build"
-- docker exec build_container bash -c "cd project && conan create . lkeb/stable --profile action_build"
+  - docker pull $DOCKER_IMAGE
+  - docker run -itd -v "$(pwd):/home/conan/project" --name build_container $DOCKER_IMAGE
+  - docker exec build_container conan remote add lkeb-artifactory $CONAN_UPLOAD
+  - docker exec build_container bash -c "cd project && .ci/pemsetup.sh"
+  - docker exec build_container bash -c "conan profile new action_build --force --detect && conan profile show action_build"
+  - docker exec build_container bash -c "cd project && conan install . -s build_type=Release --profile action_build"
+  - docker exec build_container bash -c "cd project && conan install . -s build_type=Debug --profile action_build"
+  - docker exec build_container bash -c "cd project/test_package && conan install . -s build_type=Release --profile action_build"
+  - docker exec build_container bash -c "cd project && conan create . lkeb/stable --profile action_build"
 
 # install:
 #   - chmod +x .ci/install.sh
@@ -56,4 +56,4 @@ script:
 #  - chmod +x .ci/pemsetup.sh
 #  - chmod +x .ci/run.sh
 #  - ./.ci/run.sh
-- docker exec build_container bash -c "cd project && conan create . $CONAN_REFERENCE --profile action_build"
+  - docker exec build_container bash -c "cd project && conan create . $CONAN_REFERENCE --profile action_build"
