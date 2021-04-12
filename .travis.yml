@@ -41,8 +41,9 @@ before_install:
   - chmod +x .ci/pemsetup.sh
   - docker pull $DOCKER_IMAGE
   - docker run -itd -v "$(pwd):/home/conan/project" --name build_container $DOCKER_IMAGE
-  - docker exec build_container bash -c "conan remote add lkeb-artifactory $CONAN_UPLOAD"
+  - docker exec build_container bash -c "conan user"
   - docker exec build_container bash -c "cd project && .ci/pemsetup.sh"
+  - docker exec build_container bash -c "conan remote add lkeb-artifactory $CONAN_UPLOAD"
   - docker exec build_container bash -c "conan profile new action_build --force --detect && conan profile show action_build"
   - docker exec build_container bash -c "cd project && conan install . -s build_type=Release --profile action_build"
   - docker exec build_container bash -c "cd project && conan install . -s build_type=Debug --profile action_build"
