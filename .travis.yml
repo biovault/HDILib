@@ -41,6 +41,7 @@ before_install:
   - chmod +x .ci/pemsetup.sh
   - docker pull $DOCKER_IMAGE
   - docker run -itd -v "$(pwd):/home/conan/project" --name build_container $DOCKER_IMAGE
+  - docker exec build_container bash -c "pip3 install --upgrade conan"
   - docker exec build_container bash -c "conan user"
   - docker exec build_container bash -c "cd project && .ci/pemsetup.sh"
   - docker exec build_container bash -c "conan remote add lkeb-artifactory $CONAN_UPLOAD"
