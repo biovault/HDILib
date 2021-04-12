@@ -38,6 +38,7 @@ matrix:
       #   env: CONAN_APPLE_CLANG_VERSIONS=10.0 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.13 HOMEBREW_NO_AUTO_UPDATE=1
 
 before_install:
+  - chmod +x .ci/pemsetup.sh
   - docker pull $DOCKER_IMAGE
   - docker run -itd -v "$(pwd):/home/conan/project" --name build_container $DOCKER_IMAGE
   - docker exec build_container conan remote add lkeb-artifactory $CONAN_UPLOAD
