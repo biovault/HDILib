@@ -10,54 +10,45 @@ ignore:
     - README.md
     - appveyor.yml
 
-linux: &linux
-   os: linux
-   dist: xenial
-   language: python
-   python: "3.7"
-   services:
-     - docker
-osx: &osx
+linux_defaults: &linux_defaults
+  os: linux
+  dist: xenial
+  language: python
+  python: "3.7"
+  services:
+    - docker
+  before_install:
+    - chmod +x .ci/pemsetup.sh
+    - chmod +x .ci/conan_dependencies.sh
+    - docker pull $DOCKER_IMAGE
+    - docker run -itd -v "$(pwd):/home/conan/project" --name build_container $DOCKER_IMAGE
+  install:
+    - docker exec build_container bash -c "project/.ci/conan_dependencies.sh project"
+  script:
+    - docker exec build_container bash -c "cd project && conan create . $CONAN_REFERENCE --profile action_build"
+
+osx_defaults: &osx_defaults
   os: osx
   language: generic
-matrix:
+  before_install:
+    - chmod +x .ci/pemsetup.sh
+    - chmod +x .ci/conan_dependencies.sh
+  install:
+    - .ci/conan_dependencies.sh
+  script:
+    - conan create . $CONAN_REFERENCE --profile action_build
+
+jobs:
    include:
-        - <<: *linux
+        - name: Linux gcc8
           env: DOCKER_IMAGE=conanio/gcc8
-        - <<: *linux
+          <<: *linux_defaults
+        - name: Linux gcc9
           env: DOCKER_IMAGE=conanio/gcc9
-      # - <<: *linux
-      #   env: CONAN_GCC_VERSIONS=8 CONAN_DOCKER_IMAGE=conanio/gcc8 CONAN_ARCHS=x86_64
-      # - <<: *linux
-      #   env: CONAN_GCC_VERSIONS=9 CONAN_DOCKER_IMAGE=conanio/gcc9 CONAN_ARCHS=x86_64
-      # - <<: *osx
-      #   osx_image: xcode9.4
-      #   env: CONAN_APPLE_CLANG_VERSIONS=9.1 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.9 HOMEBREW_NO_AUTO_UPDATE=1
-      # - <<: *osx
+          <<: *linux_defaults
+        - name: OSX clang9.1
+          osx_image: xcode9.4
+          env: CONAN_APPLE_CLANG_VERSIONS=9.1 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.9 HOMEBREW_NO_AUTO_UPDATE=1
+          <<: *osx_defaults
       #   osx_image: xcode10.3
       #   env: CONAN_APPLE_CLANG_VERSIONS=10.0 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.13 HOMEBREW_NO_AUTO_UPDATE=1
-
-before_install:
-  - chmod +x .ci/pemsetup.sh
-  - docker pull $DOCKER_IMAGE
-  - docker run -itd -v "$(pwd):/home/conan/project" --name build_container $DOCKER_IMAGE
-  - docker exec build_container bash -c "pip3 install --upgrade conan"
-  - docker exec build_container bash -c "conan user"
-  - docker exec build_container bash -c "cd project && .ci/pemsetup.sh"
-  - docker exec build_container bash -c "conan remote add lkeb-artifactory $CONAN_UPLOAD"
-  - docker exec build_container bash -c "conan remote list"
-  - docker exec build_container bash -c "conan profile new action_build --force --detect && conan profile show action_build"
-  - docker exec build_container bash -c "cd project && conan install . -s build_type=Release --profile action_build"
-  - docker exec build_container bash -c "cd project && conan install . -s build_type=Debug --profile action_build"
-  - docker exec build_container bash -c "cd project/test_package && conan install . -s build_type=Release --profile action_build"
-  - docker exec build_container bash -c "cd project && conan create . lkeb/stable --profile action_build"
-
-# install:
-#   - chmod +x .ci/install.sh
-#   - ./.ci/install.sh
-
-script:
-#  - chmod +x .ci/pemsetup.sh
-#  - chmod +x .ci/run.sh
-#  - ./.ci/run.sh
-  - docker exec build_container bash -c "cd project && conan create . $CONAN_REFERENCE --profile action_build"
