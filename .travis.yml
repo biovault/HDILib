@@ -21,7 +21,7 @@ linux_defaults: &linux_defaults
     - chmod +x .ci/pemsetup.sh
     - chmod +x .ci/conan_dependencies.sh
     - docker pull $DOCKER_IMAGE
-    - docker run -itd -v "$(pwd):/home/conan/project" --name build_container $DOCKER_IMAGE
+    - docker run -itd -v "$(pwd):/home/conan/project" -e CONAN_UPLOAD=$CONAN_UPLOAD --name build_container $DOCKER_IMAGE
   install:
     - docker exec build_container bash -c "project/.ci/conan_dependencies.sh project"
   script:
