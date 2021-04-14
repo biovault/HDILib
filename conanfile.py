@@ -113,7 +113,7 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             cmake.definitions["CMAKE_CXX_STANDARD"] = 14
             cmake.definitions["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
-        cmake.definitions["HDI_EXTERNAL_FLANN_INCLUDE_DIR"] =  "${CONAN_INCLUDE_DIRS_FLANN}"
+        cmake.definitions["HDI_EXTERNAL_FLANN_INCLUDE_DIR"] = "${CONAN_INCLUDE_DIRS_FLANN}"
         cmake.definitions["HDI_USE_ROARING"] = "OFF"
         cmake.definitions["HDILib_VERSION"] = self.version
         print(f"Set version to {self.version}")

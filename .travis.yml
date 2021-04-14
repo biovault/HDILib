@@ -24,7 +24,7 @@ linux_defaults: &linux_defaults
   install:
     - docker exec build_container bash -c "project/.ci/conan_dependencies.sh project"
   script:
-    - .ci/set_travis_conan_reference.sh HDILib lkeb/stable
+    - source .ci/set_travis_conan_reference.sh HDILib lkeb/stable && echo $CONAN_REFERENCE
     - docker exec build_container bash -c "cd project && conan create . $CONAN_REFERENCE --profile action_build"
   after_success:
     - docker exec build_container bash -c "cd project && conan upload -r lkeb-artifactory -c $CONAN_REFERENCE"
@@ -39,7 +39,7 @@ osx_defaults: &osx_defaults
   install:
     - .ci/conan_dependencies.sh
   script:
-    - .ci/set_travis_conan_reference.sh HDILib lkeb/stable
+    - source .ci/set_travis_conan_reference.sh HDILib lkeb/stable && echo $CONAN_REFERENCE
     - conan create . $CONAN_REFERENCE --profile action_build
   after_success:
     - conan upload -r lkeb-artifactory -c $CONAN_REFERENCE
