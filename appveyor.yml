@@ -2,7 +2,7 @@ build: false
 
 environment:
   PYTHON_HOME: "C:\\Python37"
-  CONAN_LOGIN_USERNAME: "admin"
+  CONAN_LOGIN_NAME: "admin"
   CONAN_PASSWORD:
       secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
   VS150COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\Tools\\"
@@ -69,6 +69,7 @@ build_script:
   - conan profile update settings.compiler.version=%CONAN_VISUAL_VERSIONS% action_build
   #- conan profile update options.shared="True" action_build
   - set CONAN_BASE_PROFILE=action_build
+  - powershell %cd%\.ci\set_appveyor_conan_reference.ps1 HDILib biovault/stable
   # configure for the multi package
   - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
   - conan install . -s build_type=Debug -s compiler.runtime=MDd --profile action_build
@@ -78,5 +79,9 @@ build_script:
   - cd ..
   - conan create . lkeb/stable --profile action_build
   # - python build.py
+
+on_success:
+  - conan user -p $CONAN_PASSWORD $CONAN_LOGIN_NAME -r lkeb-artifactory
+  - conan upload -r lkeb-artifactory --all --force -c $CONAN_REFERENCE
 
 
