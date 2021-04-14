@@ -1,10 +1,8 @@
 env:
    global:
-#     - CONAN_VERSION="1.0.0-alpha1" 
      - CONAN_LOGIN_USERNAME="admin"
-     - CONAN_PASSWORD=$CONAN_PASSWORD_SECRET  
+     - CONAN_PASSWORD=$CONAN_PASSWORD_SECRET
      - CONAN_UPLOAD="https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local"
-     - CONAN_REFERENCE="lkeb/stable"
 
 ignore:
     - README.md
@@ -20,12 +18,16 @@ linux_defaults: &linux_defaults
   before_install:
     - chmod +x .ci/pemsetup.sh
     - chmod +x .ci/conan_dependencies.sh
+    - chmod +x .ci/set_travis_conan_reference.sh
     - docker pull $DOCKER_IMAGE
-    - docker run -itd -v "$(pwd):/home/conan/project" -e CONAN_UPLOAD=$CONAN_UPLOAD --name build_container $DOCKER_IMAGE
+    - docker run -itd -v "$(pwd):/home/conan/project" -e CONAN_UPLOAD=$CONAN_UPLOAD -e CONAN_LOGIN_NAME=$CONAN_LOGIN_NAME -e CONAN_PASSWORD=$CONAN_PASSWORD --name build_container $DOCKER_IMAGE
   install:
     - docker exec build_container bash -c "project/.ci/conan_dependencies.sh project"
   script:
+    - .ci/set_travis_conan_reference.sh HDILib lkeb/stable
     - docker exec build_container bash -c "cd project && conan create . $CONAN_REFERENCE --profile action_build"
+  after_success:
+    - docker exec build_container bash -c "cd project && conan upload -r lkeb-artifactory -c $CONAN_REFERENCE"
 
 osx_defaults: &osx_defaults
   os: osx
@@ -33,10 +35,14 @@ osx_defaults: &osx_defaults
   before_install:
     - chmod +x .ci/pemsetup.sh
     - chmod +x .ci/conan_dependencies.sh
+    - chmod +x .ci/set_travis_reference.sh
   install:
     - .ci/conan_dependencies.sh
   script:
+    - .ci/set_travis_conan_reference.sh HDILib lkeb/stable
     - conan create . $CONAN_REFERENCE --profile action_build
+  after_success:
+    - conan upload -r lkeb-artifactory -c $CONAN_REFERENCE
 
 jobs:
    include:
@@ -46,9 +52,10 @@ jobs:
         - name: Linux gcc9
           env: DOCKER_IMAGE=conanio/gcc9
           <<: *linux_defaults
-        - name: OSX clang9.1
+        - name: OSX xcode9.4
           osx_image: xcode9.4
           env: CONAN_APPLE_CLANG_VERSIONS=9.1 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.9 HOMEBREW_NO_AUTO_UPDATE=1
           <<: *osx_defaults
-      #   osx_image: xcode10.3
-      #   env: CONAN_APPLE_CLANG_VERSIONS=10.0 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.13 HOMEBREW_NO_AUTO_UPDATE=1
+        - name: OSX xcode10.3
+          osx_image: xcode10.3
+          env: CONAN_APPLE_CLANG_VERSIONS=10.0 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.13 HOMEBREW_NO_AUTO_UPDATE=1
