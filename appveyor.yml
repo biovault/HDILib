@@ -70,7 +70,7 @@ build_script:
   #- conan profile update options.shared="True" action_build
   - set CONAN_BASE_PROFILE=action_build
   - powershell %cd%\.ci\set_appveyor_conan_reference.ps1 HDILib biovault/stable
-  - echo $CONAN_REFERENCE
+  - echo %CONAN_REFERENCE%
   # configure for the multi package
   - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
   - conan install . -s build_type=Debug -s compiler.runtime=MDd --profile action_build
@@ -82,7 +82,7 @@ build_script:
   # - python build.py
 
 on_success:
-  - conan user -p $CONAN_PASSWORD $CONAN_LOGIN_NAME -r lkeb-artifactory
+  - conan user -p %CONAN_PASSWORD% %CONAN_LOGIN_NAME% -r lkeb-artifactory
   - conan upload -r lkeb-artifactory --all --force -c $CONAN_REFERENCE
 
 
