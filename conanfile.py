@@ -39,30 +39,22 @@ class HDILibConan(ConanFile):
     # either self built 1.8.5 for Windows or system supplied 
     # 1.8.4 on Linux and Macos
 
-    # Set version based on branch according to the following:
-    #
-    # master - gets version "latest"
-    # release/x.y.z - gets version "x.y.z"
-    # feature/blahblah - gets version "latest_feat_blahblah
-    # otherwise use the self.version hardcoded is used
+    # Extract the version from the CONAN_REFERENCE variable
+    # Default to "latest" if not found
     def set_version(self):
-        ci_branch = os.getenv("CONAN_HDILIB_CI_BRANCH", "master")
+        reference = os.getenv("CONAN_REFERENCE", "latest")
 
         #print("Building branch: ", ci_branch) 
-        rel_match = re.compile("release/(\d+\.\d+.\d+)(.*)")
-        feat_match = re.compile("feature/(.*)")
+        ver_match = re.compile("HDILib/(.*)/.*")
 
-        if ci_branch == "master":
+        if reference == "latest":
             self.version = "latest"
+
+        ver = ver_match.search(reference)
+        if ver is not None:
+            self.version = ver.group(1)
         else:
-            rel = rel_match.search(ci_branch)
-            if rel is not None:
-                self.version = rel.group(1) + rel.group(2)
-            else:
-                feat = feat_match.search(ci_branch)
-                if feat is not None:
-                    self.version = feat.group(1)
-        #self.scm["revision"] = ci_branch
+            self.version = "latest"
 
     def _get_python_cmake(self):
         if None is not os.environ.get("APPVEYOR", None):
