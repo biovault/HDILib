@@ -24,10 +24,10 @@ linux_defaults: &linux_defaults
   install:
     - docker exec build_container bash -c "project/.ci/conan_dependencies.sh project"
   script:
-    - source .ci/set_travis_conan_reference.sh HDILib lkeb/stable && echo $CONAN_REFERENCE
+    - source .ci/set_travis_conan_reference.sh HDILib biovault/stable && echo $CONAN_REFERENCE
     - docker exec build_container bash -c "cd project && conan create . $CONAN_REFERENCE --profile action_build"
   after_success:
-    - docker exec build_container bash -c "cd project && conan upload -r lkeb-artifactory -c $CONAN_REFERENCE"
+    - docker exec build_container bash -c "cd project && conan user -p $CONAN_PASSWORD $CONAN_LOGIN_NAME && conan upload -r lkeb-artifactory -c $CONAN_REFERENCE"
 
 osx_defaults: &osx_defaults
   os: osx
@@ -35,13 +35,14 @@ osx_defaults: &osx_defaults
   before_install:
     - chmod +x .ci/pemsetup.sh
     - chmod +x .ci/conan_dependencies.sh
-    - chmod +x .ci/set_travis_reference.sh
+    - chmod +x .ci/set_travis_conan_reference.sh
   install:
     - .ci/conan_dependencies.sh
   script:
-    - source .ci/set_travis_conan_reference.sh HDILib lkeb/stable && echo $CONAN_REFERENCE
+    - source .ci/set_travis_conan_reference.sh HDILib biovault/stable && echo $CONAN_REFERENCE
     - conan create . $CONAN_REFERENCE --profile action_build
   after_success:
+    - conan user -p $CONAN_PASSWORD $CONAN_LOGIN_NAME
     - conan upload -r lkeb-artifactory -c $CONAN_REFERENCE
 
 jobs:
