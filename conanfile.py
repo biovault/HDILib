@@ -39,23 +39,6 @@ class HDILibConan(ConanFile):
     # either self built 1.8.5 for Windows or system supplied 
     # 1.8.4 on Linux and Macos
 
-    # Extract the version from the CONAN_REFERENCE variable
-    # Default to "latest" if not found
-    def set_version(self):
-        reference = os.getenv("CONAN_REFERENCE", "latest")
-
-        #print("Building branch: ", ci_branch) 
-        ver_match = re.compile("HDILib/(.*)/.*")
-
-        if reference == "latest":
-            self.version = "latest"
-
-        ver = ver_match.search(reference)
-        if ver is not None:
-            self.version = ver.group(1)
-        else:
-            self.version = "latest"
-
     def _get_python_cmake(self):
         if None is not os.environ.get("APPVEYOR", None):
             pypath = Path(sys.executable)
