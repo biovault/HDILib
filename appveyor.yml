@@ -7,7 +7,7 @@ environment:
       secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
   VS150COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\Tools\\"
   CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
-  CONAN_REMOTE: lkebconan
+  CONAN_REMOTE: lkeb-artifactory
   CONAN_STABLE_BRANCH_PATTERN: "release/*|master"
   CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
   BUILD_SHARED: True
@@ -85,7 +85,7 @@ build_script:
   # - python build.py
 
 on_success:
-  - conan user -p %CONAN_PASSWORD% %CONAN_LOGIN_NAME% -r lkeb-artifactory
-  - conan upload -r lkeb-artifactory --all --force -c $CONAN_REFERENCE
+  - conan user -p %CONAN_PASSWORD% %CONAN_LOGIN_NAME% -r %CONAN_REMOTE%
+  - conan upload -r %CONAN_REMOTE% --all --force -c $CONAN_REFERENCE
 
 
