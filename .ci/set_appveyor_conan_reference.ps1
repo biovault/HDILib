@@ -12,15 +12,15 @@ $branch=[Environment]::GetEnvironmentVariable('APPVEYOR_REPO_BRANCH')
 
 if ( [Environment]::GetEnvironmentVariable('APPVEYOR_REPO_TAG')) {
     $reference=$PackageName+'/'+[Environment]::GetEnvironmentVariable('APPVEYOR_REPO_TAG_NAME')+'@'+$UserChannel
-    [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference)
+    [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference, 'User')
 }
 elseif ($branch -match $REGEX_MASTER) {
     $reference=$PackageName+'/latest@'+$UserChannel
-    [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference)
+    [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference, 'User')
 }
 elseif ($branch -match $REGEX_FEATURE) {
     $reference=$PackageName+'/'+$Matches.1+'@'+$UserChannel
-    [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference)
+    [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference, 'User')
 }
 else {
     echo "Error in set_appveyor_conan_reference"
