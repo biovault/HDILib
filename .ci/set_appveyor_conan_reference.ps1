@@ -10,7 +10,7 @@ $REGEX_FEATURE='^feature/(.*)$'
 $REGEX_MASTER='^master$'
 $branch=[Environment]::GetEnvironmentVariable('APPVEYOR_REPO_BRANCH')
 
-if ( [Environment]::GetEnvironmentVariable('APPVEYOR_REPO_TAG')) {
+if ( [Environment]::GetEnvironmentVariable('APPVEYOR_REPO_TAG' -eq 'true')) {
     $reference=$PackageName+'/'+[Environment]::GetEnvironmentVariable('APPVEYOR_REPO_TAG_NAME')+'@'+$UserChannel
     [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference, 'User')
 }
