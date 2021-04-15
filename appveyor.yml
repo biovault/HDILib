@@ -86,6 +86,6 @@ build_script:
 
 on_success:
   - conan user -p %CONAN_PASSWORD% %CONAN_LOGIN_NAME% -r %CONAN_REMOTE%
-  - conan upload -r %CONAN_REMOTE% --all --force -c $CONAN_REFERENCE
+  - conan upload -r %CONAN_REMOTE% --all --force -c %CONAN_REFERENCE%
 
 
