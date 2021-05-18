@@ -25,3 +25,4 @@ conan user
 echo Extend conan cacert.pem
 conanhome=`conan config home`
 cat cert.pem >> $conanhome/cacert.pem
+conan remote add center-artifactory https://conan.bintray.com
