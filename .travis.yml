@@ -34,6 +34,7 @@ osx_defaults: &osx_defaults
   language: generic
   before_install:
     - chmod +x .ci/pemsetup.sh
+    - chmod +x .ci/make_profile.sh
     - chmod +x .ci/conan_dependencies.sh
     - chmod +x .ci/set_travis_conan_reference.sh
   install:
@@ -48,16 +49,16 @@ osx_defaults: &osx_defaults
 jobs:
    include:
         # - name: Linux gcc8
-        #   env: DOCKER_IMAGE=conanio/gcc8
+        #   env: DOCKER_IMAGE=conanio/gcc8 CONAN_COMPILERVERSION=8
         #   <<: *linux_defaults
         # - name: Linux gcc9
-        #   env: DOCKER_IMAGE=conanio/gcc9
+        #   env: DOCKER_IMAGE=conanio/gcc9 CONAN_COMPILERVERSION=8
         #   <<: *linux_defaults
         # - name: OSX xcode9.4
         #   osx_image: xcode9.4
-        #   env: CONAN_APPLE_CLANG_VERSIONS=9.1 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.9 HOMEBREW_NO_AUTO_UPDATE=1
+        #   env: CONAN_COMPILERVERSION=9.4 CONAN_APPLE_CLANG_VERSIONS=9.1 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.9 HOMEBREW_NO_AUTO_UPDATE=1
         #   <<: *osx_defaults
-        # - name: OSX xcode10.3
-        #   osx_image: xcode10.3
-        #   env: CONAN_APPLE_CLANG_VERSIONS=10.0 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.13 HOMEBREW_NO_AUTO_UPDATE=1
-        #   <<: *osx_defaults
+        - name: OSX xcode10.3
+          osx_image: xcode10.3
+          env: CONAN_COMPILERVERSION=10.3 CONAN_APPLE_CLANG_VERSIONS=10.0 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.13 HOMEBREW_NO_AUTO_UPDATE=1
+          <<: *osx_defaults
