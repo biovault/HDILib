@@ -58,15 +58,10 @@ notifications:
 
 build_script:
   - .\\.ci\\fix_cmake.bat
-  # configure the build action
+  # add upload as a remote
   - conan remote add %CONAN_REMOTE% %CONAN_UPLOAD%
-  - conan profile new action_build
-  - conan profile update settings.os=Windows action_build
-  - conan profile update settings.os_build=Windows action_build
-  - conan profile update settings.arch=%CONAN_ARCHS% action_build
-  - conan profile update settings.arch_build=%CONAN_ARCHS% action_build
-  - conan profile update settings.compiler="Visual Studio" action_build
-  - conan profile update settings.compiler.version=%CONAN_VISUAL_VERSIONS% action_build
+  # configure the build action
+  - .\\.ci\make_profile.bat
   #- conan profile update options.shared="True" action_build
   - set CONAN_BASE_PROFILE=action_build
   - set SAVE_PATH=%PATH%
@@ -81,8 +76,8 @@ build_script:
   - cd test_package
   - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
   - cd ..
+  # Build with conan
   - conan create . %CONAN_REFERENCE% --profile action_build
-  # - python build.py
 
 on_success:
   - conan user -p %CONAN_PASSWORD% %CONAN_LOGIN_NAME% -r %CONAN_REMOTE%
