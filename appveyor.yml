@@ -2,12 +2,12 @@ build: false
 
 environment:
   PYTHON_HOME: "C:\\Python37"
-  CONAN_LOGIN_USERNAME: "admin"
+  CONAN_LOGIN_NAME: "admin"
   CONAN_PASSWORD:
       secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
   VS150COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\Tools\\"
   CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
-  CONAN_REMOTE: lkebconan
+  CONAN_REMOTE: lkeb-artifactory
   CONAN_STABLE_BRANCH_PATTERN: "release/*|master"
   CONAN_UPLOAD_ONLY_WHEN_STABLE: 1
   BUILD_SHARED: True
@@ -58,6 +58,17 @@ build_script:
   - .\\.ci\\make_profile.bat
   # Need a newer CMAKe than the one in Appveyor
   - .\\.ci\\fix_cmake.bat
+  # add upload as a remote
+  - conan remote add %CONAN_REMOTE% %CONAN_UPLOAD%
+  # configure the build action
+  - .\\.ci\make_profile.bat
+  #- conan profile update options.shared="True" action_build
+  - set CONAN_BASE_PROFILE=action_build
+  - set SAVE_PATH=%PATH%
+  - ps: ./.ci\set_appveyor_conan_reference.ps1 HDILib biovault/stable
+  - refreshenv
+  - set PATH=%SAVE_PATH%
+  - echo %CONAN_REFERENCE%
   # configure for the multi package
   - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
   - conan install . -s build_type=Debug -s compiler.runtime=MDd --profile action_build
@@ -65,6 +76,11 @@ build_script:
   - cd test_package
   - conan install . -s build_type=Release -s compiler.runtime=MD --profile action_build
   - cd ..
-  - python build.py
+  # Build with conan
+  - conan create . %CONAN_REFERENCE% --profile action_build
+
+on_success:
+  - conan user -p %CONAN_PASSWORD% %CONAN_LOGIN_NAME% -r %CONAN_REMOTE%
+  - conan upload -r %CONAN_REMOTE% --all --force -c %CONAN_REFERENCE%
 
 
