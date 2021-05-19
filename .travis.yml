@@ -55,7 +55,7 @@ jobs:
         #   <<: *linux_defaults
         - name: OSX xcode9.4
           osx_image: xcode9.4
-          env: CONAN_COMPILERVERSION=9.0 CONAN_APPLE_CLANG_VERSIONS=9.1 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.9 HOMEBREW_NO_AUTO_UPDATE=1
+          env: CONAN_COMPILERVERSION=9.1 CONAN_APPLE_CLANG_VERSIONS=9.1 CONAN_ARCHS=x86_64 CONAN_IS_TRAVIS_OSX=1 MACOSX_DEPLOYMENT_TARGET=10.9 HOMEBREW_NO_AUTO_UPDATE=1
           <<: *osx_defaults
         - name: OSX xcode10.3
           osx_image: xcode10.3
