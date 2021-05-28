@@ -82,8 +82,8 @@ add_dependencies(hdidimensionalityreduction hdidata)
 include(CMakePackageConfigHelpers)
 
 # Generate the version file for use with find_package
-set(hdilib_package_version "${HDILib_VERSION}" @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake")
+set(hdilib_package_version "${HDILib_VERSION}")
+configure_file(${CMAKE_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake" @ONLY)
 #write_basic_package_version_file(
 #  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
 #  VERSION "${HDILib_VERSION}"
