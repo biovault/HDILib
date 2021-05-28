@@ -43,9 +43,9 @@ endif()
 set(CONAN_SETTINGS "")
 
 if(UNIX)
-    if(LIBCXX) 
+    if(LIBCXX)
         set(CONAN_SETTINGS ${CONAN_SETTINGS} "compiler.libcxx=${LIBCXX}")
-    endif()    
+    endif()
 endif()
 
 message(STATUS "Install dependencies with conan")

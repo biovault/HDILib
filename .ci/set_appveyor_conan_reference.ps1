@@ -23,8 +23,8 @@ elseif ($branch -match $REGEX_FEATURE) {
     [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference, 'User')
 }
 else {
-    echo "Error in set_appveyor_conan_reference"
-    echo "Expected either:"
-    echo "1:  a APPVEYOR_REPO_TAG_NAME with a version number"
-    echo "2:  a APPVEYOR_REPO_BRANCH with 'feature/.*' or 'master'"
+    Write-Output "Error in set_appveyor_conan_reference"
+    Write-Output "Expected either:"
+    Write-Output "1:  a APPVEYOR_REPO_TAG_NAME with a version number"
+    Write-Output "2:  a APPVEYOR_REPO_BRANCH with 'feature/.*' or 'master'"
 }
