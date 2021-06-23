@@ -19,5 +19,5 @@ else
     echo Error in set_travis_reference
     echo Expected either:
     echo 1:  a TRAVIS_TAG with a version number
-    echo 2:  a TRAVIS_BRANCH with "feature/.*" or "master"
+    echo 2:  a TRAVIS_BRANCH with "feature/.*" or "master" or "release/.*"
 fi
