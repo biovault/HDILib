@@ -1220,13 +1220,17 @@ namespace hdi {
 	}
 
     template <typename scalar_type, typename sparse_scalar_matrix_type>
-    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluenceTopDown(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi)const {
+    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluenceTopDown(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi, double threshold)const {
       typedef typename sparse_scalar_matrix_type::value_type map_type;
       typedef typename map_type::key_type key_type;
       typedef typename map_type::mapped_type mapped_type;
       typedef hdi::data::MapHelpers<key_type, mapped_type, map_type> map_helpers_type;
       checkAndThrowLogic(scale_id < _hierarchy.size(), "getAreaOfInfluenceTopDown (3)");
 
+      double gamma = 0.3;
+      if ((threshold >= 0) && (threshold <= 1.0)) {
+        gamma = threshold;
+      }
       aoi.clear();
       aoi.resize(scale(0).size(), 0);
       std::unordered_set<unsigned int> set_selected_idxes;
@@ -1245,7 +1249,7 @@ namespace hdi {
           getInfluencedLandmarksInPreviousScale(s, scale_selection, neighbors);
           scale_selection.clear();
           for (auto neigh : neighbors) {
-            if (neigh.second > 0.3) { //TODO
+            if (neigh.second > gamma) {
               scale_selection.push_back(neigh.first);
             }
           }
