@@ -10,12 +10,12 @@ conan remote add lkeb-artifactory $CONAN_UPLOAD
 conan remote list
 echo TRAVIS OS name $TRAVIS_OS_NAME
 
-if [[ $TRAVIS_OS_NAME -eq osx ]] ; then
+if [[ $TRAVIS_OS_NAME = osx ]] ; then
     CONAN_OS=Macos
     CONAN_COMPILER=apple-clang
 fi
 
-if [[ $TRAVIS_OS_NAME -eq linux ]] ; then
+if [[ $TRAVIS_OS_NAME = linux ]] ; then
     export CONAN_OS=Linux
     export CONAN_COMPILER=gcc
 fi
