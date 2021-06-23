@@ -23,7 +23,7 @@ conan profile update settings.arch=x86_64 action_build
 conan profile update settings.arch_build=x86_64 action_build
 conan profile update settings.compiler=$CONAN_COMPILER action_build
 conan profile update settings.compiler.version=$CONAN_COMPILERVERSION action_build
-conan profile update settings.compiler.libcxx=libc++ action_build
+conan profile update settings.compiler.libcxx=$CONAN_LIBC action_build
 conan profile show action_build
 
 conan install . -s build_type=Release --profile action_build
