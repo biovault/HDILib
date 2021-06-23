@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 REGEX_FEATURE='^feature/(.*)$'
+REGEX_RELEASE='^release/(.*)$'
 REGEX_MASTER='^master$'
 if [ "$#" -ne 2 ] && [ "$#" -ne 1 ] ; then
     echo Error in set_travis_reference - not enoght arguments
@@ -11,6 +12,8 @@ elif [ ${#TRAVIS_TAG} -gt 0 ] ; then
 elif [[ $TRAVIS_BRANCH =~ $REGEX_MASTER ]] ; then
     export CONAN_REFERENCE=$1/latest@$2
 elif [[ $TRAVIS_BRANCH =~ $REGEX_FEATURE ]]; then
+    export CONAN_REFERENCE=$1/${BASH_REMATCH[1]}@$2;
+elif [[ $TRAVIS_BRANCH =~ $REGEX_RELEASE ]]; then
     export CONAN_REFERENCE=$1/${BASH_REMATCH[1]}@$2;
 else
     echo Error in set_travis_reference

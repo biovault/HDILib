@@ -7,6 +7,7 @@ Param(
 )
 
 $REGEX_FEATURE='^feature/(.*)$'
+$REGEX_RELEASE='^feature/(.*)$'
 $REGEX_MASTER='^master$'
 $branch=[Environment]::GetEnvironmentVariable('APPVEYOR_REPO_BRANCH')
 
@@ -22,6 +23,9 @@ elseif ($branch -match $REGEX_FEATURE) {
     $reference=$PackageName+'/'+$Matches.1+'@'+$UserChannel
     [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference, 'User')
 }
+elseif ($branch -match $REGEX_RELEASE) {
+    $reference=$PackageName+'/'+$Matches.1+'@'+$UserChannel
+    [System.Environment]::SetEnvironmentVariable('CONAN_REFERENCE',$reference, 'User')}
 else {
     Write-Output "Error in set_appveyor_conan_reference"
     Write-Output "Expected either:"
