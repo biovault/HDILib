@@ -49,10 +49,10 @@ osx_defaults: &osx_defaults
 jobs:
    include:
         - name: Linux gcc8
-          env: DOCKER_IMAGE=conanio/gcc8 CONAN_COMPILERVERSION=8.1 CONAN_LIBC=libstdc++
+          env: DOCKER_IMAGE=conanio/gcc8 CONAN_COMPILERVERSION=8 CONAN_LIBC=libstdc++
           <<: *linux_defaults
         - name: Linux gcc9
-          env: DOCKER_IMAGE=conanio/gcc9 CONAN_COMPILERVERSION=9.1 CONAN_LIBC=libstdc++
+          env: DOCKER_IMAGE=conanio/gcc9 CONAN_COMPILERVERSION=9 CONAN_LIBC=libstdc++
           <<: *linux_defaults
         - name: OSX xcode9.4
           osx_image: xcode9.4
