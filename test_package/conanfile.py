@@ -11,7 +11,7 @@ from conans import ConanFile, CMake, tools
 
 class HDILibTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
-    options = {"shared": [True, False], "fPIC": [True, False]}
+    options = {"shared": [False]}
     # cmake_paths locates the HDILib built with build_type None
     # cmake_find_package creates the lz4Targets.cmake locating - only Release needs to be configured
     generators = "cmake_find_package_multi", "cmake_paths"
