@@ -25,7 +25,7 @@ class HDILibConan(ConanFile):
     # Options may need to change depending on the packaged library
     settings = "os", "compiler", "arch", "build_type"
     options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = {"shared": True, "fPIC": True}
+    default_options = {"shared": False, "fPIC": True}
 
     # scm = {
     #    "type": "git",dir
