@@ -20,7 +20,7 @@ linux_defaults: &linux_defaults
     - chmod +x .ci/conan_dependencies.sh
     - chmod +x .ci/set_travis_conan_reference.sh
     - docker pull $DOCKER_IMAGE
-    - echo OS is $TRAVIS_OS_NAME
+    - echo Starting docker build_container
     - docker run -itd -v "$(pwd):/home/conan/project" -e TRAVIS_OS_NAME=$TRAVIS_OS_NAME -e CONAN_COMPILERVERSION=$CONAN_COMPILERVERSION -e CONAN_LIBC=$CONAN_LIBC -e CONAN_UPLOAD=$CONAN_UPLOAD -e CONAN_LOGIN_NAME=$CONAN_LOGIN_NAME -e CONAN_PASSWORD=$CONAN_PASSWORD --name build_container $DOCKER_IMAGE
   install:
     - docker exec build_container bash -c "project/.ci/conan_dependencies.sh project"
