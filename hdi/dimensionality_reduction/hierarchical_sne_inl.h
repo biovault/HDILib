@@ -461,7 +461,7 @@ namespace hdi {
           //#endif //__USE_GCD__
                     //It could be that the point itself is not the nearest one if two points are identical... I want the point itself to be the first one!
           if (neighborhood_graph[d*nn] != d) {
-            int to_swap = d * nn;
+            unsigned_int_type to_swap = d * nn;
             for (; to_swap < d*nn + (nn-1); ++to_swap) {
               if (neighborhood_graph[to_swap] == d)
                 break;
@@ -523,7 +523,7 @@ namespace hdi {
           //#endif //__USE_GCD__
           scalar_type sum = 0;
           for (int n = 1; n < nn; ++n) {
-            int idx = i * nn + n;
+            unsigned_int_type idx = i * nn + n;
             auto v = distance_based_probabilities[idx];
             sum += v;
             scale._transition_matrix[i][neighborhood_graph[idx]] = v;
