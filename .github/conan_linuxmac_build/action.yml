@@ -1,0 +1,95 @@
+name: "Common cmake steps"
+description: "Encapsulate cmake composite run steps that are common for Linux and Mac"
+# reference https://docs.github.com/en/free-pro-team@latest/actions/creating-actions/creating-a-composite-run-steps-action
+inputs:
+  conan-compiler:
+    description: "gcc9 apple-clang"
+    required: true
+  conan-cc:
+    description: "gcc clang"
+    required: true
+  conan-cxx:
+    description: "g++ clang++"
+    required: true
+  conan-compiler-version:
+    description: "A number [gcc: 5 6 7 8 9 ] [clang: 39 40 50 60 7 8 9] [10.0]"
+    required: true
+  conan-libcxx-version:
+    description: "Linux: libstdc++ or Macos: libc++ "
+    required: true
+  conan-build-type:
+    description: "Debug or Release"
+    required: true
+  conan-build-os:
+    description: "Linux or Macos"
+    required: true
+  conan-user:
+    description: "pass secrets.LKEB_ARTIFACTORY_USER"
+    required: true
+  conan-password:
+    description: "pass secrets.LKEB_ARTIFACTORY_PASSWORD"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install conan & build configuration
+      run: |
+        pip install wheel
+        pip install conan
+        pip install -Iv cmake>=3.17
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then sudo apt-get install -y ninja-build; fi
+
+        export CONAN_CMAKE_PROGRAM=`which cmake`
+        echo CMake version:
+        cmake --version
+        mkdir `pwd`/_conan
+        export CONAN_USER_HOME=`pwd`/_conan
+        export HOMEBREW_NO_AUTO_UPDATE=1
+        conan user
+
+        echo Extend conan cacert.pem
+        conanhome=`conan config home`
+        cat cert.pem >> $conanhome/cacert.pem
+
+      shell: bash
+
+    - name: Build with conan
+      run: |
+        export CONAN_USER_HOME=`pwd`/_conan
+        echo Add LKEB artifactory as remote
+        conan remote add $CONAN_LKEB_ARTIFACTORY $CONAN_UPLOAD
+        echo Add upload user
+        conan user -r $CONAN_LKEB_ARTIFACTORY -p ${{ inputs.conan-password }} ${{ inputs.conan-user }}
+        export CONAN_PACKAGE_NAME=`conan inspect --raw name conanfile.py`
+
+        conan profile new action_build
+        conan profile update settings.os=${{ inputs.conan-build-os }} action_build
+        conan profile update settings.os_build=${{ inputs.conan-build-os }} action_build
+        conan profile update settings.arch=x86_64 action_build
+        conan profile update settings.arch_build=x86_64 action_build
+        conan profile update settings.compiler=${{ inputs.conan-compiler }} action_build
+        conan profile update settings.compiler.version=${{ inputs.conan-compiler-version }} action_build
+        conan profile update settings.compiler.libcxx=${{ inputs.conan-libcxx-version}} action_build
+        conan profile show action_build
+        export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
+        conan create . flann/1.8.5@lkeb/testing --profile action_build -s build_type=Release
+
+      shell: bash
+      env:
+        BUILD_SHARED: True
+        CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
+        CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
+        CC: ${{inputs.conan-cc}}
+        CXX: ${{inputs.conan-cxx}}
+
+    - name: Upload to artifactory with conan
+      run: |
+        export CONAN_USER_HOME=`pwd`/_conan
+        export CONAN_PACKAGE_NAME=`conan inspect --raw name conanfile.py`
+        export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
+        conan upload --all --force --confirm -r $CONAN_LKEB_ARTIFACTORY $CONAN_PACKAGE_NAME/*
+
+      shell: bash
+      env:
+        CONAN_LKEB_ARTIFACTORY: lkeb-artifactory

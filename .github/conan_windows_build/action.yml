@@ -1,0 +1,88 @@
+name: "Common cmake steps"
+description: "Encapsulate cmake composite run steps that are common for Windows, Linux and Mac"
+# reference https://docs.github.com/en/free-pro-team@latest/actions/creating-actions/creating-a-composite-run-steps-action
+inputs:
+  conan-visual-version:
+    description: "MSVC version: 15, 16 represent msvc-2017 or msvc-2019"
+    required: true
+  conan-visual-runtime:
+    description: "MD or MDd"
+    required: true
+  conan-build-type:
+    description: "Debug or Release"
+    required: true
+  conan-user:
+    description: "pass secrets.LKEB_ARTIFACTORY_USER"
+    required: true
+  conan-password:
+    description: "pass secrets.LKEB_ARTIFACTORY_PASSWORD"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install conan & build configuration
+      run: |
+        pip install wheel
+        pip install conan
+        pip install -Iv cmake>=3.17
+
+        REM Fish the package name from the conanfile.py
+        conan inspect -j __props__.json -a name conanfile.py
+        for /f "delims=" %%a in ('powershell -Command "foreach ($Line in (Get-Content -Raw __props__.json | ConvertFrom-Json)) { Write-Host $Line.Name}"') do set PACKAGE_NAME=%%a
+
+        echo CMake version:
+        cmake --version
+        set CONAN_USER_HOME=%cd%\_conan
+        mkdir %CONAN_USER_HOME%
+        conan user
+
+        echo Extend conan cacert.pem
+        for /f "delims=" %%i in ('conan config home') do set CONANPEMHOME=%%i
+        SETLOCAL EnableDelayedExpansion
+        type cert.pem >> %CONANPEMHOME%\cacert.pem
+        ENDLOCAL
+
+        REM Fish the package name from the conanfile.py
+        for /f "delims=" %%i in ('conan inspect --raw name conanfile.py') do set CONAN_PACKAGE_NAME=%%i
+        echo "Completed setup for package: %CONAN_PACKAGE_NAME%"
+      shell: cmd
+
+    - name: Build with conan
+      run: |
+        for /f "delims=" %%i in ('where cmake') do set CONAN_CMAKE_PROGRAM="%%i"
+        set CONAN_USER_HOME=%cd%\_conan
+        set VS160COMNTOOLS="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools"
+
+        echo Add LKEB artifactory as remote at URL: %CONAN_UPLOAD%
+        conan remote add %CONAN_LKEB_ARTIFACTORY% %CONAN_UPLOAD%
+        echo Add upload user
+        conan user -r %CONAN_LKEB_ARTIFACTORY% -p ${{ inputs.conan-password }} ${{ inputs.conan-user }}
+        conan profile new action_build
+        conan profile update settings.os=Windows action_build
+        conan profile update settings.os_build=Windows action_build
+        conan profile update settings.arch=x86_64 action_build
+        conan profile update settings.arch_build=x86_64 action_build
+        conan profile update settings.compiler="Visual Studio" action_build
+        conan profile update settings.compiler.version=${{ inputs.conan-visual-version }} action_build
+        conan profile show action_build
+
+        conan create . flann/1.8.5@lkeb/testing --profile action_build -s build_type=Release
+
+      shell: cmd
+      env:
+        BUILD_SHARED: True
+        CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
+        CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
+
+    - name: Upload to artifactory with conan
+      run: |
+        $env:CONAN_USER_HOME = (Get-Location).tostring() + '\_conan'
+        $package_name = (conan inspect --raw name conanfile.py)
+        $package_ref = $package_name + '/*'
+        echo "Uploading $package_ref  to the Artifactory"
+        conan upload --all --force --confirm -r $Env:CONAN_LKEB_ARTIFACTORY $package_ref
+
+      shell: pwsh
+      env:
+        CONAN_LKEB_ARTIFACTORY: lkeb-artifactory

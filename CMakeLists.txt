@@ -28,9 +28,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 # CONAN is only used for setting up dependencies if the HDILIB_BUILD_WITH_CONAN is ON
 #include(ConanSetup)
 #message(STATUS "*** (HDI_EXTERNAL_FLANN_INCLUDE_DIR) ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
-find_package(flann PATHS ${CMAKE_CURRENT_LIST_DIR} REQUIRED)
+find_package(flann REQUIRED)
+message(STATUS "Flann Found state: ${flann_FOUND} include ${flann_INCLUDE_DIR}")
 #message(STATUS "******* moudle path ${CMAKE_MODULE_PATH} ***************")
 message (STATUS "Flann: ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
+include_directories(${flann_INCLUDE_DIR})
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

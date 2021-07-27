@@ -1,10 +1,19 @@
 build: false
 
+# branches to build
+branches:
+  except:
+    - /.*/
+  # exclude certain versions that do not build on Windows
+  #only:
+  #  - /testing\/(?!1.8.4)/
+  #  - /stable\/(?!1.8.4)/
+
 environment:
   PYTHON_HOME: "C:\\Python37"
   CONAN_LOGIN_NAME: "admin"
   CONAN_PASSWORD:
-      secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
+    secure: g+1lNdgrCLmyKNf3KvbHSln5A1H7BsVhsMsIbwgo+UU=
   VS150COMNTOOLS: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\Tools\\"
   CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
   CONAN_REMOTE: lkeb-artifactory
@@ -13,20 +22,19 @@ environment:
   BUILD_SHARED: True
 
   matrix:
+    # VS 2017
 
-# VS 2017
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
 
-     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      CONAN_VISUAL_VERSIONS: 15
+      CONAN_ARCHS: x86_64
+      REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
 
-       CONAN_VISUAL_VERSIONS: 15
-       CONAN_ARCHS: x86_64
-       REPLACE_CMAKE_PATH: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\Common7\\IDE\\CommonExtensions\\Microsoft\\CMake\\CMake\\"
+    # VS 2019
 
-# VS 2019
-
-     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
-       CONAN_VISUAL_VERSIONS: 16
-       CONAN_ARCHS: x86_64
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      CONAN_VISUAL_VERSIONS: 16
+      CONAN_ARCHS: x86_64
 
 install:
   - set PATH=%PYTHON_HOME%;%PYTHON_HOME%/Scripts/;%PATH%
@@ -39,14 +47,14 @@ install:
   - git submodule update --init --recursive
 
 skip_commits:
-    files:
-        - README.md
-        - travis.yml
+  files:
+    - README.md
+    - travis.yml
 
 notifications:
   - provider: Email
     to:
-        - b.van_lew@lumc.nl
+      - b.van_lew@lumc.nl
     subject: Test HDILib {{status}}
     message: "URL is {{buildUrl}} Commit ID {{commitId}}. Messages {{jobs.0.messages.0.message}}"
     on_build_success: true
@@ -82,5 +90,3 @@ build_script:
 on_success:
   - conan user -p %CONAN_PASSWORD% %CONAN_LOGIN_NAME% -r %CONAN_REMOTE%
   - conan upload -r %CONAN_REMOTE% --all --force -c %CONAN_REFERENCE%
-
-
