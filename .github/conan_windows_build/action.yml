@@ -67,7 +67,7 @@ runs:
         conan profile update settings.compiler.version=${{ inputs.conan-visual-version }} action_build
         conan profile show action_build
 
-        conan create . HDILib/1.2.4@lkeb/testing --profile action_build -s build_type=Release
+        conan create . HDILib/1.2.4@lkeb/testing --profile action_build -s build_type=Release -o shared=False
 
       shell: cmd
       env:
