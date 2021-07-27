@@ -78,7 +78,7 @@ jobs:
         if: startsWith(matrix.build-compiler, 'gcc')
         uses: egor-tensin/setup-gcc@v1
         with:
-          version: matrix.build-cversion
+          version: ${{matrix.build-cversion}}
           platform: x64
 
       - name: Windows build
