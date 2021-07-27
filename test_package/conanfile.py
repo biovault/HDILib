@@ -38,6 +38,7 @@ class HDILibTestConan(ConanFile):
     def system_requirements(self):
         if tools.os_info.is_linux:
             installer = tools.SystemPackageTool()
+            installer.install("libomp")
             installer.install("libomp-dev")
 
     def build(self):
