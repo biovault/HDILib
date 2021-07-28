@@ -3,8 +3,6 @@
 from conans import ConanFile, tools
 from conan.tools.cmake import CMakeDeps, CMake, CMakeToolchain
 import os
-import re
-import subprocess
 import sys
 from packaging import version
 from pathlib import Path
@@ -106,7 +104,9 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         tc.variables["HDI_EXTERNAL_FLANN_INCLUDE_DIR"] = "${CONAN_INCLUDE_DIRS_FLANN}"
         tc.variables["HDI_USE_ROARING"] = "OFF"
         tc.variables["HDILib_VERSION"] = self.version
-        tc.variables["CMAKE_INSTALL_PREFIX"] = str(Path(self.build_folder, "install"))
+        tc.variables["CMAKE_INSTALL_PREFIX"] = str(
+            Path(self.build_folder, "install").as_posix()
+        )
         tc.generate()
 
         deps = CMakeDeps(self)
@@ -137,7 +137,7 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         # The package contains both Debug and Release build types
         del self.info.settings.build_type
         if self.settings.compiler == "Visual Studio":
-            del self.settings.compiler.runtime
+            del self.info.settings.compiler.runtime
 
     def package_info(self):
         self.cpp_info.libs = tools.collect_libs(self)

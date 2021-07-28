@@ -18,8 +18,12 @@ class HDILibTestConan(ConanFile):
 
     def generate(self):
         tc = CMakeToolchain(self)
-        tc.variables["HDILib_ROOT"] = self.deps_cpp_info["HDILib"].rootpath
-        tc.variables["flann_ROOT"] = self.deps_cpp_info["flann"].rootpath
+        tc.variables["HDILib_ROOT"] = Path(
+            self.deps_cpp_info["HDILib"].rootpath
+        ).as_posix()
+        tc.variables["flann_ROOT"] = Path(
+            self.deps_cpp_info["flann"].rootpath
+        ).as_posix()
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()
