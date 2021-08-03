@@ -107,6 +107,9 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         tc.variables["CMAKE_INSTALL_PREFIX"] = str(
             Path(self.build_folder, "install").as_posix()
         )
+        tc.variables["ENABLE_CODE_ANALYSIS"] = "ON"
+        if os.getenv("Analysis", None) is None:
+            tc.variables["ENABLE_CODE_ANALYSIS"] = "OFF"
         tc.generate()
 
         deps = CMakeDeps(self)
@@ -117,7 +120,6 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         cmake = CMake(self)
         print(f"Set version to {self.version}")
         cmake.configure()
-        cmake.verbose = True
         return cmake
 
     def build(self):
@@ -130,8 +132,10 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         cmake_debug = self._configure_cmake()
         cmake_debug.install(build_type="Debug")
 
-        cmake_release = self._configure_cmake()
-        cmake_release.install(build_type="Release")
+        if os.getenv("Analysis", None) is None:
+            # Disable code analysis in Release mode
+            cmake_release = self._configure_cmake()
+            cmake_release.install(build_type="Release")
 
     def package_id(self):
         # The package contains both Debug and Release build types

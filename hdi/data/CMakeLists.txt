@@ -8,6 +8,12 @@ file(GLOB SourceFiles *.cpp)
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
+if(ENABLE_CODE_ANALYSIS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        target_compile_options(${PROJECT} PRIVATE /analyze)
+    endif()
+endif()
+
 ########### INSTALL ##############
 set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 target_link_libraries(${PROJECT} ${OPENGL_LIBRARIES})

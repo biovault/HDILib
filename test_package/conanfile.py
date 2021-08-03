@@ -17,6 +17,8 @@ class HDILibTestConan(ConanFile):
     generators = "CMakeDeps"
 
     def generate(self):
+        if os.getenv("Analysis", None) is not None:
+            return
         tc = CMakeToolchain(self)
         tc.variables["HDILib_ROOT"] = Path(
             self.deps_cpp_info["HDILib"].rootpath
@@ -29,6 +31,8 @@ class HDILibTestConan(ConanFile):
         deps.generate()
 
     def requirements(self):
+        if os.getenv("Analysis", None) is not None:
+            return
         print("In requirements")
         if self.settings.build_type == "None":
             print("Skip test_package requirements for build_type NONE")
@@ -40,22 +44,28 @@ class HDILibTestConan(ConanFile):
             self.requires.add("lz4/1.9.2")
 
     def system_requirements(self):
+        if os.getenv("Analysis", None) is not None:
+            return
         if tools.os_info.is_linux:
             installer = tools.SystemPackageTool()
             installer.install("libomp5")
             installer.install("libomp-dev")
 
     def build(self):
+        if os.getenv("Analysis", None) is not None:
+            return
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
 
-    #def imports(self):
+    # def imports(self):
     #    self.copy("*.dll", dst="bin", src="bin")
     #    self.copy("*.dylib*", dst="bin", src="lib")
     #    self.copy("*.so*", dst="bin", src="lib")
 
     def test(self):
+        if os.getenv("Analysis", None) is not None:
+            return
         if not tools.cross_building(self.settings):
             os.chdir("bin")
             if platform.system() == "Windows":
