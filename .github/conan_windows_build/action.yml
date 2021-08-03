@@ -5,12 +5,9 @@ inputs:
   conan-visual-version:
     description: "MSVC version: 15, 16 represent msvc-2017 or msvc-2019"
     required: true
-  conan-visual-runtime:
-    description: "MD or MDd"
-    required: true
   conan-build-type:
-    description: "Debug or Release"
-    required: true
+    description: "Empty or Analysis"
+    required: false
   conan-user:
     description: "pass secrets.LKEB_ARTIFACTORY_USER"
     required: true
@@ -67,6 +64,7 @@ runs:
         conan profile update settings.compiler.version=${{ inputs.conan-visual-version }} action_build
         conan profile show action_build
 
+        if "${{ inputs.conan-build-type }}"=="Analysis" (set Analysis=TRUE)
         conan create . HDILib/1.2.4@lkeb/testing --profile action_build -s build_type=Release -o shared=False
 
       shell: cmd
