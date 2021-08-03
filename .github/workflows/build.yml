@@ -41,22 +41,32 @@ jobs:
           #   build-runtime: MD
           #   build-config: Release
 
-          - name: Linux_gcc9
+          # GLIBC <= 2.27
+          - name: Linux_gcc8
             os: ubuntu-18.04
+            build-compiler: gcc
+            build-cversion: 8
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++
+
+          # GLIBC >= 2.28
+          - name: Linux_gcc9
+            os: ubuntu-20.04
             build-compiler: gcc
             build-cversion: 9
             build-config: Release
             build-os: Linux
             build-libcxx: libstdc++
 
-          # - name: Macos_xcode10.3
-          #   os: macos-10.14
-          #   build-compiler: apple-clang
-          #   build-cversion: "10.0"
-          #   build-config: Release
-          #   build-os: Macos
-          #   build-xcode-version: 10.3
-          #   build-libcxx: libc++
+          - name: Macos_xcode10.3
+            os: macos-10.14
+            build-compiler: apple-clang
+            build-cversion: "10.0"
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 10.3
+            build-libcxx: libc++
 
     steps:
       - name: Checkout the source
