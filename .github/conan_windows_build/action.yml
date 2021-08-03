@@ -79,7 +79,7 @@ runs:
         $package_name = (conan inspect --raw name conanfile.py)
         $package_ref = $package_name + '/*'
         echo "Uploading $package_ref  to the Artifactory"
-        conan upload --all --force --confirm -r $Env:CONAN_LKEB_ARTIFACTORY $package_ref
+        if NOT "${{ inputs.conan-build-type }}"=="Analysis" (conan upload --all --force --confirm -r $Env:CONAN_LKEB_ARTIFACTORY $package_ref)
 
       shell: pwsh
       env:
