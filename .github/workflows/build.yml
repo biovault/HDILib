@@ -33,7 +33,7 @@ jobs:
             build-cversion: 15
 
           # This build is Debug + /analyze flag
-          - name: Windows-msvc2017 Analysis Build
+          - name: Static Analysis Windows
             os: windows-2016
             compiler: msvc-2017
             build-cversion: 15
