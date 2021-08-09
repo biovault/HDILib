@@ -13,7 +13,7 @@ if (UNIX)
 endif (UNIX)
 
 if(ENABLE_CODE_ANALYSIS)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    if(WIN32)
         target_compile_options(${PROJECT} PRIVATE /analyze)
     endif()
 endif()
