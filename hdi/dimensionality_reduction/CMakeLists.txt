@@ -37,10 +37,8 @@ if(UNIX)
     target_link_libraries(${PROJECT} PRIVATE Threads::Threads)
 endif(UNIX)
 
-if(ENABLE_CODE_ANALYSIS)
-    if(WIN32)
+if(ENABLE_CODE_ANALYSIS AND WIN32)
         target_compile_options(${PROJECT} PRIVATE /analyze)
-    endif()
 endif()
 
 ########### INSTALL ##############

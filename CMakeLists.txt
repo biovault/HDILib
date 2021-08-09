@@ -10,6 +10,10 @@ set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
 
+if (ENABLE_CODE_ANALYSIS AND WIN32)
+  message("*******Code Analysis Run*******")
+endif()
+
 set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
