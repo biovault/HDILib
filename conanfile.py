@@ -23,8 +23,6 @@ class HDILibConan(ConanFile):
 
     # Options may need to change depending on the packaged library
     settings = "os", "compiler", "arch", "build_type"
-    options = {"shared": [False]}
-    default_options = {"shared": False}
 
     # scm = {
     #    "type": "git",dir
@@ -96,7 +94,7 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
             generator = "Ninja Multi-Config"
 
         tc = CMakeToolchain(self, generator=generator)
-        if self.settings.os == "Windows" and self.options.shared:
+        if self.settings.os == "Windows":
             tc.variables["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             tc.variables["CMAKE_CXX_STANDARD"] = 14
@@ -145,7 +143,6 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
 
     def package_info(self):
         self.cpp_info.libs = tools.collect_libs(self)
-        self.cpp_info.set_property("cmake_file_name", "ConanHDILib")
         self.cpp_info.set_property("skip_deps_file", True)
         self.cpp_info.set_property("cmake_config_file", True)
 

@@ -14,6 +14,9 @@ inputs:
   conan-password:
     description: "pass secrets.LKEB_ARTIFACTORY_PASSWORD"
     required: true
+  hdilib-cdash-token:
+    description: "upload authentication token for HDILib on my.cdash"
+    required: true
 
 runs:
   using: "composite"
@@ -64,8 +67,12 @@ runs:
         conan profile update settings.compiler.version=${{ inputs.conan-visual-version }} action_build
         conan profile show action_build
 
-        if "${{ inputs.conan-build-type }}"=="Analysis" (set Analysis=TRUE)
-        conan create . HDILib/1.2.4@lkeb/testing --profile action_build -s build_type=Release -o shared=False
+        if "${{ inputs.conan-build-type }}"=="Analysis" (
+          cd cmake
+          ctest -VV -S CAnalysisBuild.cmake -D $${{ inputs.hdilib-cdash-token }}
+        ) else (
+          conan create . HDILib/1.2.4@lkeb/testing --profile action_build -s build_type=Release
+        )
 
       shell: cmd
       env:

@@ -104,6 +104,7 @@ jobs:
           conan-build-type: ${{matrix.build-config}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+          hdilib-cdash-token: ${{secrets.HDILIB_TOKEN}}
 
       - name: Linux Mac build
         if: "!startsWith(runner.os, 'Windows')"
