@@ -69,6 +69,7 @@ runs:
 
         if "${{ inputs.conan-build-type }}"=="Analysis" (
           cd cmake
+          set Analysis=TRUE
           ctest -VV -S CAnalysisBuild.cmake -D HDILIB_TOKEN:STRING=${{ inputs.hdilib-cdash-token }}
         ) else (
           conan create . HDILib/1.2.4@lkeb/testing --profile action_build -s build_type=Release
