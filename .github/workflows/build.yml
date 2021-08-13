@@ -39,12 +39,12 @@ jobs:
             build-cversion: 15
             build-config: Analysis
 
-          # - name: Windows-msvc2019
-          #   os: windows-2019
-          #   compiler: msvc-2019
-          #   build-cversion: 16
-          #   build-runtime: MD
-          #   build-config: Release
+          - name: Windows-msvc2019
+            os: windows-2019
+            compiler: msvc-2019
+            build-cversion: 16
+            build-runtime: MD
+            build-config: Release
 
           # GLIBC <= 2.27
           - name: Linux_gcc8
