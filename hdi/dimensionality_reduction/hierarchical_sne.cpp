@@ -41,8 +41,6 @@
 namespace hdi{
   namespace dr{
 
-	  
-
     template class HierarchicalSNE<float,std::vector<std::map<uint32_t,float>>>;
    // template class HierarchicalSNE<double,std::vector<std::map<uint32_t,double>>>;
 

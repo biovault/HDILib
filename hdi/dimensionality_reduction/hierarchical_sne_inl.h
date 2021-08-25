@@ -71,7 +71,10 @@
 #ifndef WIN32
 #define isnan std::isnan
 #endif
+#pragma warning( push )
+#pragma warning( disable : 4477 )
 #include "annoylib.h"
+#pragma warning( pop )
 #include "kissrandom.h"
 #ifndef WIN32
 #undef isnan
@@ -240,6 +243,7 @@ namespace hdi {
       _params = params;
       _high_dimensional_data = high_dimensional_data;
       _num_dps = num_dps;
+      _landmarks_to_datapoints.clear();
 
       utils::secureLogValue(_logger, "Number of data points", _num_dps);
       initializeFirstScale();
@@ -256,6 +260,7 @@ namespace hdi {
       _params = params;
       _high_dimensional_data = nullptr;
       _num_dps = similarities.size();
+      _landmarks_to_datapoints.clear();
 
       utils::secureLogValue(_logger, "Number of data points", _num_dps);
       initializeFirstScale(similarities);
@@ -982,13 +987,21 @@ namespace hdi {
       set_idxes.insert(idxes.begin(), idxes.end());
       auto not_found = set_idxes.end();
 
+      // For each data point (landmark L_{i}) in the previous (s-1) scale...
       for (int d = 0; d < _hierarchy[scale_id]._area_of_influence.size(); ++d) {
         double probability = 0;
+        // ... check if any landmark index at this scale (s) affects it
         for (auto& v : _hierarchy[scale_id]._area_of_influence[d]) {
+          // ... if so sum the probability
+          // Performs: https://doi.org/10.1111/cgf.12878 4.2 eqn 8 to calculate total influence F_i 
+          // on landmark L_{i}^{s-1} for selection group O (idxes) (follow link to visualize equation)
+          // https://latex.codecogs.com/png.image?F_i=\sum_{\mathcal{L}_{j}^{s}\in\mathcal{O}}I^S(i,j)
           if (set_idxes.find(v.first) != not_found) {
             probability += v.second;
           }
         }
+        // Record that s-1 landmark index is a neigbor of this idxes set
+        // and the total probability F_i for landmark L_{i}^{s-1}
         if (probability > 0) {
           neighbors[d] = probability;
         }
@@ -1124,6 +1137,141 @@ namespace hdi {
       }
     }
 
+    /**
+     * @brief Given a data point index return the landmark influence vector for all scales.
+     *  Optionally threshold and optionally normalize the influences.
+     * @details
+	   *  The influence vector (parameter influence) contains a map for each scale containing the influence
+	   *  value for each landmark (data point) at that scale to the given data point (dp).
+     *
+     *  At scale 0 the influence vector has a single entry with index being data point index and value 1
+     *  At scale 1 (the first landmark scale) the map contains an entry for all landmarks with influence values
+	   *  At scales above scale 1 - i.e. s:
+	   *		For every landmark in the s-1 influence map if the influence exceeds the threshold
+	   *		multiple that infuence by the aoi values at scale s and include it
+     *
+	   * Note _area_of_influence at hierarchy scale s has size(s-1) entries containing a 
+     * list of tuples of landmark index and its influence the corresponding s-1 point.
+     *
+     * @tparam scalar_type used for influence value
+     * @tparam sparse_scalar_matrix_type used for landmark(s-1) -> landmark(s) + influence
+     * @param dp Data point index
+     * @param max_landmark_per_scale Landmark influence vector for all scales (returned)
+     * @param scale_has_landmark If a landmark was fond exceeding the threshold the scale entry is true
+     * @param thresh Optional threshold - default is 0.
+     * @param normalized Optional normalization - default is false
+     */
+    template <typename scalar_type, typename sparse_scalar_matrix_type>
+    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getTopLandmarksInfluencingDataPoint(
+        unsigned_int_type dp,
+        std::vector<unsigned_int_type>& top_landmark_per_scale,
+        std::vector<bool>& scale_has_landmark,
+        scalar_type thresh,
+        bool normalized) const {
+      // a valid data point index is in the size of data points
+      assert(dp < _hierarchy[0].size());
+
+      top_landmark_per_scale.resize(_hierarchy.size());
+      scale_has_landmark.resize(_hierarchy.size());
+
+      std::vector<std::unordered_map<unsigned_int_type, scalar_type>> influence(_hierarchy.size());
+      influence[0][dp] = 1; //Only this point influences itself at the data level.
+      if (influence.size() == 1) {
+        return;
+      }
+
+      scalar_type maxInfluence = 0;
+      for (auto& v : _hierarchy[1]._area_of_influence[dp]) {
+        influence[1][v.first] = v.second;
+        if (maxInfluence < v.second) {
+          maxInfluence = v.second;
+          scale_has_landmark[1] = true;
+          top_landmark_per_scale[1] = v.first;
+        }
+      }
+
+      if (normalized) {
+        double sum = 0;
+        for (auto& v : influence[1]) { sum += v.second; }
+        for (auto& v : influence[1]) { v.second /= sum; }
+      }
+
+      for (int s = 2; s < _hierarchy.size(); ++s) {
+        for (auto l : influence[s - 1]) {
+          maxInfluence = 0;
+          if (l.second >= thresh) {
+            for (auto new_l : _hierarchy[s]._area_of_influence[l.first]) {
+              influence[s][new_l.first] += l.second * new_l.second;
+              if (maxInfluence < influence[s][new_l.first]) {
+                maxInfluence = influence[s][new_l.first];
+                scale_has_landmark[s] = true;
+                top_landmark_per_scale[s] = new_l.first;
+              }
+            }
+          }
+        }
+        if (normalized) {
+          double sum = 0;
+          for (auto& v : influence[s]) { sum += v.second; }
+          for (auto& v : influence[s]) { v.second /= sum; }
+        }
+      }
+    }
+
+    template <typename scalar_type, typename sparse_scalar_matrix_type>
+    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::initializeScaleLandmarkToDataPointHierarchy()
+    {
+      // Create an empty data structure with a empty 
+      // data point vector space for all
+      // landmarks in all scales
+      auto num_scales = _hierarchy.size();
+      auto num_datapoints = _hierarchy[0].size();
+      _landmarks_to_datapoints.resize(num_scales);
+
+      #pragma omp parallel for
+      for (int scale = 1; scale < num_scales; scale++) {
+        auto num_landmarks = _hierarchy[scale].size();
+        _landmarks_to_datapoints[scale].resize(num_landmarks);
+
+        for (auto landmark = 0; landmark < num_landmarks; landmark++) {
+          _landmarks_to_datapoints[scale][landmark].clear();
+          // The reserve assumes that landmark will never have more
+          // than twice the average number of data points per landmark.
+          // Where is this guaranteed?
+          _landmarks_to_datapoints[scale][landmark].reserve(2 * num_datapoints/num_landmarks);
+        }
+      }
+
+      #pragma omp parallel for
+      for(int dp=0; dp < num_datapoints; dp++) {
+        float inf_thresh = 0.01;
+        std::vector<unsigned_int_type> top_landmark_per_scale;
+        std::vector<bool> scale_has_landmark;
+        getTopLandmarksInfluencingDataPoint(dp, top_landmark_per_scale, scale_has_landmark, inf_thresh, false);
+
+        int redo = 1;
+        int tries = 0;
+        while (redo) {
+          redo = 0;
+          if (tries++ < 3) {
+            for (int scale = 1; scale < num_scales; scale++) {
+              if (!scale_has_landmark[scale]) {
+                redo = scale;
+              }
+            }
+          }
+          if (redo > 0) {
+            //if(thresh < 0.0005) std::cout << "Couldn't find landmark for point " << i << " at scale " << redo << " num possible landmarks " << influence[redo].size() << "\nSetting new threshold to " << thresh * 0.1 << std::endl;
+            inf_thresh *= 0.1;
+            getTopLandmarksInfluencingDataPoint(dp, top_landmark_per_scale, scale_has_landmark, inf_thresh, false);
+          }
+        }
+        for (int scale = 1; scale < num_scales; scale++) {
+          _landmarks_to_datapoints[scale][top_landmark_per_scale[scale]].push_back(dp);
+        }
+      }
+    }
+
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getStochasticLocationAtHigherScale(unsigned_int_type orig_scale, unsigned_int_type dest_scale, const std::vector<unsigned_int_type>& subset_orig_scale, sparse_scalar_matrix_type& closeness)const {
       checkAndThrowLogic(dest_scale > orig_scale, "getStochasticLocationAtHigherScale (0)");
@@ -1158,9 +1306,9 @@ namespace hdi {
       //#endif
     }
 
-    
 
-    //! This function computes the cumulative area of influence (aoi) of a "selection"of  landmark points at scale "scale_id" for each point at the data level. This process is described in Section 3.3 of https://doi.org/10.1111/cgf.12878
+    //! This function computes the cumulative area of influence (aoi) of a "selection"of  landmark points at scale "scale_id" for each point at the data level. 
+    //! This process is described in Section 3.3 of https://doi.org/10.1111/cgf.12878
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluence(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi)const {
       typedef typename sparse_scalar_matrix_type::value_type map_type;
@@ -1219,6 +1367,9 @@ namespace hdi {
 	  }
 	}
 
+    //! This function computes the cumulative area of influence (aoi) of a "selection" 
+    //! of landmark points at scale "scale_id" for each point at the data level. 
+    //! This process is described in Section 4.2 of https://doi.org/10.1111/cgf.12878
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluenceTopDown(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& selection, std::vector<scalar_type>& aoi, double threshold)const {
       typedef typename sparse_scalar_matrix_type::value_type map_type;
@@ -1257,6 +1408,35 @@ namespace hdi {
         for (int i = 0; i < scale_selection.size(); ++i) {
           aoi[scale_selection[i]] = 1;
         }
+      }
+    }
+
+    //! This function computes the cumulative area of influence (aoi) of a "selection"
+    //! of landmark points at scale "scale_id" for each point at the data level.
+    //! The mapping of scale landmarks to datapoints is stored in _landmarks_to_datapoints
+    //! which is set in the initializeScaleLandmarkToDataPointHierarchy function
+    //! _landmarks_to_datdapoints is created by walking the scale hierarchy
+    //! bottom up and choosing the landmark that best represents the points at the scale below.
+    //! This function will check if the data structure has been initialized and if no
+    //! will call initializeScaleLandmarkToDataPointHierarchy
+    template <typename scalar_type, typename sparse_scalar_matrix_type>
+    void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluenceBottomUp(
+      unsigned_int_type scale_id,
+      const std::vector<unsigned_int_type>& set_selected_idxes,
+      std::vector<scalar_type>& aoi) {
+      auto num_scales = _hierarchy.size();
+      if (_landmarks_to_datapoints.size() == 0) {
+        initializeScaleLandmarkToDataPointHierarchy();
+      }
+      checkAndThrowLogic(_landmarks_to_datapoints.size(), "Landmark -> datapoint mapping not initialized!");
+      aoi.clear();
+      auto scale_landmark_to_dp = _landmarks_to_datapoints[scale_id];
+      for (const auto landmark: set_selected_idxes) {
+          aoi.insert(
+            aoi.end(),
+            scale_landmark_to_dp[landmark].cbegin(),
+            scale_landmark_to_dp[landmark].cend()
+        );
       }
     }
 
