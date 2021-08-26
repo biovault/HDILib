@@ -1417,13 +1417,13 @@ namespace hdi {
     //! which is set in the initializeScaleLandmarkToDataPointHierarchy function
     //! _landmarks_to_datdapoints is created by walking the scale hierarchy
     //! bottom up and choosing the landmark that best represents the points at the scale below.
-    //! This function will check if the data structure has been initialized and if no
+    //! This function will check if the data structure has been initialized and if not
     //! will call initializeScaleLandmarkToDataPointHierarchy
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluenceBottomUp(
       unsigned_int_type scale_id,
       const std::vector<unsigned_int_type>& set_selected_idxes,
-      std::vector<scalar_type>& aoi) {
+      std::vector<unsigned_int_type>& aoi) {
       auto num_scales = _hierarchy.size();
       if (_landmarks_to_datapoints.size() == 0) {
         initializeScaleLandmarkToDataPointHierarchy();
