@@ -12,6 +12,12 @@ add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 target_link_libraries(${PROJECT} ${OPENGL_LIBRARIES})
 
+if(ENABLE_CODE_ANALYSIS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        target_compile_options(${PROJECT} PRIVATE /analyze)
+    endif()
+endif()
+
 install(TARGETS ${PROJECT}
     EXPORT ${PROJECT}Targets
     LIBRARY DESTINATION lib/$<CONFIGURATION>>

@@ -23,8 +23,9 @@ class HDILibConan(ConanFile):
 
     # Options may need to change depending on the packaged library
     settings = "os", "compiler", "arch", "build_type"
-    options = {"shared": [False]}
-    default_options = {"shared": False}
+    # Note : This should only be built with: shared=False, fPIC=True
+    options = {"shared": [True, False], "fPIC": [True, False]}
+    default_options = {"shared": False, "fPIC": True}
 
     # scm = {
     #    "type": "git",dir
@@ -60,8 +61,12 @@ class HDILibConan(ConanFile):
             self.requires("flann/1.8.5@lkeb/testing")
         else:
             # Macos and linux use 1.8.4
-            self.requires("flann/1.8.5@lkeb/testing")
+            self.requires("flann/1.8.4@lkeb/testing")
         # self.requires.add("lz4/1.9.2")
+
+    def configure(self):
+        if self.settings.os == "Windows":
+            del self.options.fPIC
 
     def fix_config_packages(self):
         """Iterate the dependencies and add the package root where
@@ -107,6 +112,8 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         tc.variables["CMAKE_INSTALL_PREFIX"] = str(
             Path(self.build_folder, "install").as_posix()
         )
+        tc.variables["ENABLE_CODE_ANALYSIS"] = "ON"
+        tc.variables["CMAKE_VERBOSE_MAKEFILE"] = "ON"
         tc.generate()
 
         deps = CMakeDeps(self)
