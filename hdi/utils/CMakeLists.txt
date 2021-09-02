@@ -18,6 +18,10 @@ if (UNIX)
     target_link_libraries (hdiutils ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
 endif (UNIX)
 
+if(ENABLE_CODE_ANALYSIS AND WIN32)
+        target_compile_options(${PROJECT} PRIVATE /analyze)
+endif()
+
 ########### INSTALL ##############
 #set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 

@@ -8,6 +8,10 @@ file(GLOB SourceFiles *.cpp)
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
+if(ENABLE_CODE_ANALYSIS AND WIN32)
+        target_compile_options(${PROJECT} PRIVATE /analyze)
+endif()
+
 ########### INSTALL ##############
 set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 target_link_libraries(${PROJECT} ${OPENGL_LIBRARIES})

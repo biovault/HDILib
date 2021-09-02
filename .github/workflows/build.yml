@@ -31,15 +31,20 @@ jobs:
             os: windows-2016
             compiler: msvc-2017
             build-cversion: 15
+
+          # This build is Debug + /analyze flag
+          - name: Static Analysis Windows
+            os: windows-2016
+            compiler: msvc-2017
+            build-cversion: 15
+            build-config: Analysis
+
+          - name: Windows-msvc2019
+            os: windows-2019
+            compiler: msvc-2019
+            build-cversion: 16
             build-runtime: MD
             build-config: Release
-
-          # - name: Windows-msvc2019
-          #   os: windows-2019
-          #   compiler: msvc-2019
-          #   build-cversion: 16
-          #   build-runtime: MD
-          #   build-config: Release
 
           # GLIBC <= 2.27
           - name: Linux_gcc8
@@ -96,10 +101,10 @@ jobs:
         uses: ./.github/conan_windows_build
         with:
           conan-visual-version: ${{matrix.build-cversion}}
-          conan-visual-runtime: ${{matrix.build-runtime}}
           conan-build-type: ${{matrix.build-config}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+          hdilib-cdash-token: ${{secrets.HDILIB_TOKEN}}
 
       - name: Linux Mac build
         if: "!startsWith(runner.os, 'Windows')"

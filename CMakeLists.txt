@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.15)
 
 # Set C++11 language standard
+# flann util/random.h versions 1.8.4, 1.8.5, & 1.9.1 uses std::random_shuffle that is removed in C++17
+# So staying at C++11
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -9,6 +11,10 @@ set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
+
+if (ENABLE_CODE_ANALYSIS AND WIN32)
+  message("*******Code Analysis Run*******")
+endif()
 
 set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
 # Disallow in-source builds. 

@@ -5,17 +5,17 @@ inputs:
   conan-visual-version:
     description: "MSVC version: 15, 16 represent msvc-2017 or msvc-2019"
     required: true
-  conan-visual-runtime:
-    description: "MD or MDd"
-    required: true
   conan-build-type:
-    description: "Debug or Release"
-    required: true
+    description: "Empty or Analysis"
+    required: false
   conan-user:
     description: "pass secrets.LKEB_ARTIFACTORY_USER"
     required: true
   conan-password:
     description: "pass secrets.LKEB_ARTIFACTORY_PASSWORD"
+    required: true
+  hdilib-cdash-token:
+    description: "upload authentication token for HDILib on my.cdash"
     required: true
 
 runs:
@@ -67,7 +67,13 @@ runs:
         conan profile update settings.compiler.version=${{ inputs.conan-visual-version }} action_build
         conan profile show action_build
 
-        conan create . HDILib/1.2.4@lkeb/testing --profile action_build -s build_type=Release -o shared=False
+        if "${{ inputs.conan-build-type }}"=="Analysis" (
+          cd cmake
+          set Analysis=TRUE
+          ctest -VV -S CAnalysisBuild.cmake -D HDILIB_TOKEN:STRING=${{ inputs.hdilib-cdash-token }} -D IN_GITHUB_ACTIONS:BOOL=ON
+        ) else (
+          conan create . HDILib/1.2.4@lkeb/testing --profile action_build -s build_type=Release
+        )
 
       shell: cmd
       env:
@@ -81,7 +87,7 @@ runs:
         $package_name = (conan inspect --raw name conanfile.py)
         $package_ref = $package_name + '/*'
         echo "Uploading $package_ref  to the Artifactory"
-        conan upload --all --force --confirm -r $Env:CONAN_LKEB_ARTIFACTORY $package_ref
+        if (-not("${{ inputs.conan-build-type }}" -eq "Analysis")) {conan upload --all --force --confirm -r $Env:CONAN_LKEB_ARTIFACTORY $package_ref}
 
       shell: pwsh
       env:
