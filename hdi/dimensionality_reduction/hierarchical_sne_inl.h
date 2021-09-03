@@ -1267,7 +1267,10 @@ namespace hdi {
           }
         }
         for (int scale = 1; scale < num_scales; scale++) {
-          _landmarks_to_datapoints[scale][top_landmark_per_scale[scale]].push_back(dp);
+          #pragma omp critical
+          {
+            _landmarks_to_datapoints[scale][top_landmark_per_scale[scale]].push_back(dp);
+          }
         }
       }
     }
