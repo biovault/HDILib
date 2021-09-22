@@ -26,6 +26,7 @@ runs:
         pip install wheel
         pip install conan
         pip install -Iv cmake>=3.17
+        pip install packaging
 
         REM Fish the package name from the conanfile.py
         conan inspect -j __props__.json -a name conanfile.py

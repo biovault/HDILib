@@ -39,6 +39,7 @@ runs:
         pip install conan
         pip install -Iv cmake>=3.17
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then sudo apt-get install -y ninja-build; fi
+        pip install packaging
 
         export CONAN_CMAKE_PROGRAM=`which cmake`
         echo CMake version:
