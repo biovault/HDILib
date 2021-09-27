@@ -103,6 +103,7 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT
 set(INCLUDE_INSTALL_DIR include)
 set(LIB_INSTALL_DIR lib)
 set(CURRENT_BUILD_DIR "${CMAKE_BINARY_DIR}")
+option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
 
 # create config file
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibConfig.cmake.in

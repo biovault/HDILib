@@ -26,6 +26,12 @@ file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
+if(ENABLE_CODE_ANALYSIS)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+        target_compile_options(${PROJECT} PRIVATE /analyze)
+    endif()
+endif()
+
 # Need to wait until add_library call before depenency of Flann can be set in case Flann is to be build from scratch.
 if(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 	add_dependencies(${PROJECT} flann)
