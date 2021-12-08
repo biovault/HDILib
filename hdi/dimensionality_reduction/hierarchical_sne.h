@@ -290,7 +290,7 @@ namespace hdi {
        //! TODO provide alternative signature returning std::vector<unsigned_int_type> aoi.
       void getAreaOfInfluenceTopDown(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi, double threshold=0.3)const;
       //! Return the influence exercised on the data points by a subset of landmarks in a given scale using the bottom-up approach
-      void getAreaOfInfluenceBottomUp(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<unsigned_int_type>& aoi);
+      void getAreaOfInfluenceBottomUp(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi);
 
       //! TODO
       void getStochasticLocationAtHigherScale(unsigned_int_type orig_scale, unsigned_int_type dest_scale, const std::vector<unsigned_int_type>& subset_orig_scale, sparse_scalar_matrix_type& location)const;

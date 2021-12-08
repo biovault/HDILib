@@ -7,6 +7,8 @@ import sys
 from packaging import version
 from pathlib import Path
 
+required_conan_version = ">=1.38.0"
+
 
 class HDILibConan(ConanFile):
     name = "HDILib"
@@ -76,13 +78,19 @@ class HDILibConan(ConanFile):
         """
         package_names = {r.ref.name for r in self.dependencies.host.values()}
         for package_name in package_names:
-            cpp_info = self.dependencies[f"{package_name}"].new_cpp_info
+            cpp_info = None
+            package_props = self.dependencies[f"{package_name}"]
+            # add fallback to old cpp_info name
+            if hasattr(package_props, "cpp_info"):
+                cpp_info = package_props.cpp_info
+            else:
+                cpp_info = package_props.new_cpp_info
             if cpp_info.get_property("skip_deps_file", CMakeDeps):
                 print(f"No deps generated for {package_name} - skip_deps_file found")
             if cpp_info.get_property(
                 "skip_deps_file", CMakeDeps
             ) and cpp_info.get_property("cmake_config_file", CMakeDeps):
-                package_root = Path(self.dependencies[f"{package_name}"].package_folder)
+                package_root = Path(package_props.package_folder)
                 with open("conan_toolchain.cmake", "a") as toolchain:
                     toolchain.write(
                         fr"""

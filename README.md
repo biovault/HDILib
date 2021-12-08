@@ -1,15 +1,16 @@
-Linux & Macos (Travis) | Windows (Appveyor)
---- | ---
-[![Build Status](https://travis-ci.com/biovault/HDILib.svg?branch=master)](https://travis-ci.com/biovault/HDILib) | [![Build status](https://ci.appveyor.com/api/projects/status/xtd9ee63fukd462p?svg=true)](https://ci.appveyor.com/project/bldrvnlw/hdilib)
+###GitHub Actions status
+![Branch release/1.2.4](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg?branch=release%2F1.2.4)
 
 Currently the following build matrix is performed
 
 OS | Architecture | Compiler
 --- | --- | ---
 Windows | x64 | MSVC 2017
+Windows | x64 | MSVC 2019
+Linux | x86_64 | gcc 8
 Linux | x86_64 | gcc 9
 Macos | x86_64 | clang 10
-
+Macos | x86_64 | clang 12
 
 [![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)
 
@@ -97,8 +98,8 @@ cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DHDILIB_BU
 ```
     (*Note: this assumes that the build dir is one level down from the project root.
     The default of HDILIB_BUILD_WITH_CONAN is OFF*)
- - If all goes well Conan will have installed the dependencies in its cache and 
- created the required defines for the Cmake configuration.
+ - If all goes well Conan will have installed the dependencies in its cache and created the required defines for the Cmake configuration.
+ 
  Open the .sln in VisualStudio and build ALL_BUILD for Release or Debug matching the CMAKE_BUILD_TYPE.
      On Windows the result of the build are three *.lib files
 
@@ -123,13 +124,21 @@ conan remote add conan-biovault https://lkeb-artifactory.lumc.nl/artifactory/api
     For example: *./_build_release* or *./_build_debug*
     (<u>when using conan the source directories are shared but
     separate build directories should be used for release and debug.</u>)
- - In the python environment (with conan and cmake accessible)
- cd to the build directory and issue the following (for VisualStudio 2017):
+ - In the python environment (with conan and cmake accessible) cd to the build directory and issue the following (for VisualStudio 2017):
 
 #### CI/CD note on https
-Openssl in the python libraries does not have a recent list of CA-authorities,
-that includes the authority for lkeb-artifactory GEANT issued certificate.
-Therefore it is essential to append the lkb-artifactory cert.pem to the
-cert.pem file in the conan home directory for a successful https connection.
-See the CI scripts for details.
+OpenSSL in the python libraries does not have a recent list of CA-authorities, that includes the authority for lkeb-artifactory GEANT issued certificate. Therefore it is essential to append the lkeb-artifactory cert.pem to the cert.pem file in the conan home directory for a successful https connection. See the CI scripts for details.
+
+#### Notes on Conan
+
+##### CMake compatibility
+The conan file uses (starting with conan 1.38) the conan CMakeDeps + CMakeToolchain logic to create a CMake compatible toolchain file. This is a .cmake file
+containing all the necessary CMake variables for the build. 
+
+These variables provided by the toolchain file allow the CMake file to locate the required packages that conan has downloaded.
+
+##### Build bundle
+The conan build creates three versions of the package, Release, Debug and 
+
+
 

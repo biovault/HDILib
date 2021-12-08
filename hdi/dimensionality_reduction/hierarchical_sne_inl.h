@@ -1416,30 +1416,31 @@ namespace hdi {
 
     //! This function computes the cumulative area of influence (aoi) of a "selection"
     //! of landmark points at scale "scale_id" for each point at the data level.
+    //!
     //! The mapping of scale landmarks to datapoints is stored in _landmarks_to_datapoints
     //! which is set in the initializeScaleLandmarkToDataPointHierarchy function
     //! _landmarks_to_datdapoints is created by walking the scale hierarchy
     //! bottom up and choosing the landmark that best represents the points at the scale below.
-    //! This function will check if the data structure has been initialized and if not
+    //!
+    //! This function will check if _landmarks_to_datapoints has been initialized and if not
     //! will call initializeScaleLandmarkToDataPointHierarchy
     template <typename scalar_type, typename sparse_scalar_matrix_type>
     void HierarchicalSNE<scalar_type, sparse_scalar_matrix_type>::getAreaOfInfluenceBottomUp(
       unsigned_int_type scale_id,
-      const std::vector<unsigned_int_type>& set_selected_idxes,
-      std::vector<unsigned_int_type>& aoi) {
+      const std::vector<unsigned_int_type>& selection,
+      std::vector<scalar_type>& aoi) {
       auto num_scales = _hierarchy.size();
       if (_landmarks_to_datapoints.size() == 0) {
         initializeScaleLandmarkToDataPointHierarchy();
       }
       checkAndThrowLogic(_landmarks_to_datapoints.size(), "Landmark -> datapoint mapping not initialized!");
       aoi.clear();
+      aoi.resize(scale(0).size(), 0);
       auto scale_landmark_to_dp = _landmarks_to_datapoints[scale_id];
-      for (const auto landmark: set_selected_idxes) {
-          aoi.insert(
-            aoi.end(),
-            scale_landmark_to_dp[landmark].cbegin(),
-            scale_landmark_to_dp[landmark].cend()
-        );
+      for (const auto landmark: selection) {
+        for (int i = 0; i < scale_landmark_to_dp[landmark].size(); ++i) {
+          aoi[scale_landmark_to_dp[landmark][i]] = 1;
+        }
       }
     }
 
