@@ -1,0 +1,13 @@
+[settings]
+os=@profile_os@
+os_build=@profile_os@
+arch=@profile_arch@
+arch_build=@profile_arch@
+compiler=@profile_compiler@
+compiler.version=@profile_compiler_version@
+build_type=@profile_build_type@
+compiler.runtime=@profile_compiler_runtime@
+[options]
+[conf]
+[build_requires]
+[env]

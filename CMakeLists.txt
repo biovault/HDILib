@@ -26,18 +26,24 @@ if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
 endif()
 
 # This flag is used to allow conan to install the dependencies
-#option(HDILIB_BUILD_WITH_CONAN "Should Conan package manager be used?" OFF)
+option(INSTALL_PREBUILT_DEPENDENCIES "Use Conan to install prebuilt dependencies?" OFF)
 #The cmake make sub directory contains the ConanSetup.cmake 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${PROJECT_SOURCE_DIR}/cmake")
 
-# CONAN is only used for setting up dependencies if the HDILIB_BUILD_WITH_CONAN is ON
-#include(ConanSetup)
-#message(STATUS "*** (HDI_EXTERNAL_FLANN_INCLUDE_DIR) ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
-find_package(flann REQUIRED)
-message(STATUS "Flann Found state: ${flann_FOUND} include ${flann_INCLUDE_DIR}")
-#message(STATUS "******* moudle path ${CMAKE_MODULE_PATH} ***************")
-message (STATUS "Flann: ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
+# CONAN is only used for setting up dependencies if the INSTALL_PREBUILT_DEPENDENCIES is ON
+if (INSTALL_PREBUILT_DEPENDENCIES)
+  include(ConanInstall)
+  include(${CMAKE_BINARY_DIR}/installed_packages.cmake)
+  find_package(flann REQUIRED)
+elseif(DEFINED ENV{CI})
+  find_package(flann REQUIRED)
+else()
+  message(WARNING "Provide the flann_INCLUDE_DIR pointing to your flann install include")
+endif()
+
+
+message(STATUS "Flann include: ${flann_INCLUDE_DIR}")
 include_directories(${flann_INCLUDE_DIR})
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder

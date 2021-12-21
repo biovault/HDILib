@@ -98,6 +98,13 @@ set(CMAKE_MODULE_PATH "{package_root.as_posix()}" ${{CMAKE_MODULE_PATH}})
 set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
                     """
                     )
+                with open("installed_packages.cmake", "a") as installed_packages:
+                    installed_packages.write(
+                        fr"""
+set(CMAKE_MODULE_PATH "{package_root.as_posix()}" ${{CMAKE_MODULE_PATH}})
+set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
+                    """
+                    )
 
     def generate(self):
         print("In generate")
@@ -115,17 +122,19 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
             tc.variables["CMAKE_CXX_STANDARD"] = 14
             tc.variables["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
         tc.variables["HDI_EXTERNAL_FLANN_INCLUDE_DIR"] = "${CONAN_INCLUDE_DIRS_FLANN}"
-        tc.variables["HDI_USE_ROARING"] = "OFF"
         tc.variables["HDILib_VERSION"] = self.version
-        tc.variables["CMAKE_INSTALL_PREFIX"] = str(
-            Path(self.build_folder, "install").as_posix()
-        )
+        if self.build_folder is not None:
+            tc.variables["CMAKE_INSTALL_PREFIX"] = str(
+                Path(self.build_folder, "install").as_posix()
+            )
+        else:
+            tc.variables["CMAKE_INSTALL_PREFIX"] = "${CMAKE_BINARY_DIR}"
         tc.variables["ENABLE_CODE_ANALYSIS"] = "ON"
         tc.variables["CMAKE_VERBOSE_MAKEFILE"] = "ON"
         if os.getenv("Analysis", None) is None:
             tc.variables["ENABLE_CODE_ANALYSIS"] = "OFF"
+        print("Call toolchain generate")
         tc.generate()
-
         deps = CMakeDeps(self)
         deps.generate()
         self.fix_config_packages()
