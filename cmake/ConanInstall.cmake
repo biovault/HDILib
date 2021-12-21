@@ -34,6 +34,7 @@ endforeach()
 
 if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
     set(profile_os "Macos")
+    set(profile_arch "x86_64")
 else()
     set(profile_os "${CMAKE_HOST_SYSTEM_NAME}")
     if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
