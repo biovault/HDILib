@@ -119,7 +119,7 @@ cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_P
 
 
 *Linux*
-This will produce a Makefile.
+This will produce a Makefile. Use the make command e.g. *make -j 8* to build
 
 ```bash
 cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON

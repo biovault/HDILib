@@ -2,11 +2,6 @@ include_directories ("${CMAKE_SOURCE_DIR}")
 
 set(PROJECT "hdidimensionalityreduction")
 
-#FLANN
-SET(flann_INCLUDE_DIR  "flann_INCLUDE_DIR-NOTFOUND" CACHE PATH "External Flann Include Dir (Required)")
-include_directories(${flann_INCLUDE_DIR})
-message (STATUS "Flann: " ${flann_INCLUDE_DIR})
-
 get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
 include_directories(${HNSWLIB_INCLUDE_DIR})
 message (STATUS "HNSWLIB: " ${HNSWLIB_INCLUDE_DIR})
@@ -17,14 +12,14 @@ include_directories(${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__USE_ANNOY__")
 
-
-
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
 message(STATUS "################# ${HeaderFiles} ##############")
 file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
+message (STATUS "Flann include: " ${flann_INCLUDE_DIR})
+target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR})
 
 if(ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")

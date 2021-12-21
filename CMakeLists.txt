@@ -44,7 +44,6 @@ endif()
 
 
 message(STATUS "Flann include: ${flann_INCLUDE_DIR}")
-include_directories(${flann_INCLUDE_DIR})
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
