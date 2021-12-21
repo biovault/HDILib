@@ -121,7 +121,7 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             tc.variables["CMAKE_CXX_STANDARD"] = 14
             tc.variables["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
-        tc.variables["HDI_EXTERNAL_FLANN_INCLUDE_DIR"] = "${CONAN_INCLUDE_DIRS_FLANN}"
+        tc.variables["flann_INCLUDE_DIR"] = "${CONAN_INCLUDE_DIRS_FLANN}"
         tc.variables["HDILib_VERSION"] = self.version
         if self.build_folder is not None:
             tc.variables["CMAKE_INSTALL_PREFIX"] = str(
