@@ -113,11 +113,13 @@ cd build
 This will produce a HDILib.sln file for VisualStudio
  Open the .sln in VisualStudio and build ALL_BUILD for Release or Debug matching the CMAKE_BUILD_TYPE.
      On Windows the result of the build are three *.lib files
+
+Run cmake for VS 2017: 
 ```cmd
 cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
 ```
 
-of for newer VS 2019
+or for newer VS 2019 (architecture is specified separately)
 
 ```cmd
  cmake .. -G "Visual Studio 16 2019" -A "x64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
