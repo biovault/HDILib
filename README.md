@@ -83,7 +83,7 @@ Assumes a python 3.6,3.7,3.8 or 3.9 environment
 1. Install conan
 
  ```bash
- pip install conan
+ pip install conan==1.40.4
  ```
 
 2. Add the lkeb artifactory
@@ -109,7 +109,7 @@ cd build
 
 4. Generate the build files
 
-*Windows*
+* 4a. **Windows**
 This will produce a HDILib.sln file for VisualStudio
  Open the .sln in VisualStudio and build ALL_BUILD for Release or Debug matching the CMAKE_BUILD_TYPE.
      On Windows the result of the build are three *.lib files
@@ -117,15 +117,28 @@ This will produce a HDILib.sln file for VisualStudio
 cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
 ```
 
+of for newer VS 2019
 
-*Linux*
+```cmd
+ cmake .. -G "Visual Studio 16 2019" -A "x64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
+```
+
+It is also possible to install cmake itself with pip
+
+```
+pip install cmake
+```
+
+* 4b. *Linux*
 This will produce a Makefile. Use the make command e.g. *make -j 8* to build
+gcc8 or gcc9 should be used for prebuilt flann
 
 ```bash
 cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
 ```
 
-*Macos*
+* 4c. *Macos*
+Use Xcode 10.3 apple-clang 10 is supported
 ```bash
 cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
 ```
