@@ -116,14 +116,17 @@ This will produce a HDILib.sln file for VisualStudio
 
 Run cmake for VS 2017: 
 ```cmd
-cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
+cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
 ```
 
 or for newer VS 2019 (architecture is specified separately)
 
 ```cmd
- cmake .. -G "Visual Studio 16 2019" -A "x64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
+ cmake .. -G "Visual Studio 16 2019" -A "x64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
 ```
+
+In VisualStudio run *Build Solution* for Debug and Release this will produce an *install* directory under the *build* directory containing 
+the final libraries and a CMake install file
 
 It is also possible to install cmake itself with pip
 
@@ -136,14 +139,29 @@ This will produce a Makefile. Use the make command e.g. *make -j 8* to build
 gcc8 or gcc9 should be used for prebuilt flann
 
 ```bash
-cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
 ```
 
 * 4c. *Macos*
 Use Xcode 10.3 apple-clang 10 is supported
 ```bash
-cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
 ```
+
+## Using the HDILib
+
+The subdirectory test_package builds an exammple that links agains the HDILib binaries. Check the CMakeLists.txt this shows how to consume the HDILib Cmake package.
+
+Find the package
+```cmake
+find_package(HDILib COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS ${HDILib_ROOT} CONFIG REQUIRED)
+```
+
+Consume the package and dependencies (Windows example)
+```cmake
+target_link_libraries(example PRIVATE HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata flann lz4::lz4 OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS})
+```
+
 
 ## Applications
 
