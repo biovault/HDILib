@@ -60,10 +60,10 @@ class HDILibConan(ConanFile):
             print("Skip root package requirements for build_type NONE")
             return
         if self.settings.os == "Windows":
-            self.requires("flann/1.8.5@lkeb/testing")
+            self.requires("flann/1.8.5@lkeb/stable")
         else:
             # Macos and linux use 1.8.4
-            self.requires("flann/1.8.4@lkeb/testing")
+            self.requires("flann/1.8.4@lkeb/stable")
         # self.requires.add("lz4/1.9.2")
 
     def configure(self):

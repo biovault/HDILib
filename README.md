@@ -1,5 +1,5 @@
 ###GitHub Actions status
-![Branch alpha/1.2.5](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg?branch=alpha%2F1.2.5)
+![Branch release/1.2.5](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg?branch=release%2F1.2.5)
 
 Currently the following build matrix is performed
 
