@@ -151,11 +151,13 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         install_dir.mkdir(exist_ok=True)
 
         cmake_debug = self._configure_cmake()
+        cmake_debug.build(build_type="Debug")
         cmake_debug.install(build_type="Debug")
 
         if os.getenv("Analysis", None) is None:
             # Disable code analysis in Release mode
             cmake_release = self._configure_cmake()
+            cmake_release.build(build_type="Release")
             cmake_release.install(build_type="Release")
 
     def package_id(self):
