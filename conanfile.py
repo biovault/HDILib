@@ -85,11 +85,11 @@ class HDILibConan(ConanFile):
                 cpp_info = package_props.cpp_info
             else:
                 cpp_info = package_props.new_cpp_info
-            if cpp_info.get_property("skip_deps_file", CMakeDeps):
+            if cpp_info.get_property("skip_deps_file"):
                 print(f"No deps generated for {package_name} - skip_deps_file found")
             if cpp_info.get_property(
-                "skip_deps_file", CMakeDeps
-            ) and cpp_info.get_property("cmake_config_file", CMakeDeps):
+                "skip_deps_file")
+            ) and cpp_info.get_property("cmake_config_file"):
                 package_root = Path(package_props.package_folder)
                 with open("conan_toolchain.cmake", "a") as toolchain:
                     toolchain.write(
