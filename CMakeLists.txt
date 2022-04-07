@@ -32,11 +32,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${PROJECT_SOURCE_DIR}/cmake")
 
 # CONAN is only used for setting up dependencies if the INSTALL_PREBUILT_DEPENDENCIES is ON
-if (INSTALL_PREBUILT_DEPENDENCIES)
-  include(ConanInstall)
-  include(${CMAKE_BINARY_DIR}/installed_packages.cmake)
-  find_package(flann REQUIRED)
-elseif(DEFINED ENV{CI})
+if (INSTALL_PREBUILT_DEPENDENCIES OR DEFINED ENV{CI})
   find_package(flann REQUIRED)
 else()
   message(WARNING "Provide the flann_INCLUDE_DIR pointing to your flann install include")

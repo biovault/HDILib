@@ -27,7 +27,7 @@ if(ENABLE_CODE_ANALYSIS)
     endif()
 endif()
 
-# Need to wait until add_library call before depenency of Flann can be set in case Flann is to be build from scratch.
+# Need to wait until add_library call before dependency of Flann can be set in case Flann is to be build from scratch.
 if(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 	add_dependencies(${PROJECT} flann)
 endif(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))

@@ -2,12 +2,13 @@
 
 from conans import ConanFile, tools
 from conan.tools.cmake import CMakeDeps, CMake, CMakeToolchain
+from conans.model.dependencies import ConanFileDependencies
 import os
 import sys
 from packaging import version
 from pathlib import Path
 
-required_conan_version = ">=1.38.0"
+required_conan_version = ">=1.43.0"
 
 
 class HDILibConan(ConanFile):
@@ -70,39 +71,20 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
-    def fix_config_packages(self):
-        """Iterate the dependencies and add the package root where
-        it is marked as a "cmake_config_file" and when "skip_deps_file" is
-        enabled. Permits using a package local cmake config-file.
-        (the flann package is build with skip-deps)
+    def add_package_cmake_paths(self, package_name, cmake_path):
+        """For the given package add the cmake_path to the paths used by
+        CMake in find_package. These are CMAKE_MODULE_PATH and CMAKE_PREFIX_PATH
         """
-        package_names = {r.ref.name for r in self.dependencies.host.values()}
-        for package_name in package_names:
-            cpp_info = None
-            package_props = self.dependencies[f"{package_name}"]
-            # add fallback to old cpp_info name
-            if hasattr(package_props, "cpp_info"):
-                cpp_info = package_props.cpp_info
-            else:
-                cpp_info = package_props.new_cpp_info
-            if cpp_info.get_property("skip_deps_file"):
-                print(f"No deps generated for {package_name} - skip_deps_file found")
-            if cpp_info.get_property("skip_deps_file") and cpp_info.get_property("cmake_config_file"):
-                package_root = Path(package_props.package_folder)
-                with open("conan_toolchain.cmake", "a") as toolchain:
-                    toolchain.write(
-                        fr"""
-set(CMAKE_MODULE_PATH "{package_root.as_posix()}" ${{CMAKE_MODULE_PATH}})
-set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
-                    """
-                    )
-                with open("installed_packages.cmake", "a") as installed_packages:
-                    installed_packages.write(
-                        fr"""
-set(CMAKE_MODULE_PATH "{package_root.as_posix()}" ${{CMAKE_MODULE_PATH}})
-set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
-                    """
-                    )
+        print(f"Adding {package_name} cmake package path")
+        package_props = self.dependencies[package_name]
+        package_cmake_path = Path(package_props.package_folder, cmake_path)
+        with open("conan_toolchain.cmake", "a") as toolchain:
+            toolchain.write(
+                fr"""
+set(CMAKE_MODULE_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_MODULE_PATH}})
+set(CMAKE_PREFIX_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_PREFIX_PATH}})
+            """
+            )
 
     def generate(self):
         print("In generate")
@@ -113,13 +95,32 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         if self.settings.os == "Linux":
             generator = "Ninja Multi-Config"
 
+        # CMakeDeps makes <packagename>-config.cmake files for all
+        # requirements to assist cmake package find.
+        #
+        deps = CMakeDeps(self)
+        deps.generate()
+        self.add_package_cmake_paths("flann", "lib/cmake")
+
+        # ! TODO fix flann package
+        # For flann we use the cmake files in the package.
+        # The correct way to prevent CMakeDeps from generating its own cmake files
+        # is to add cmake_find_mode="none" to the flann cpp_info
+        # during its packaging. This has not yet been done and there is no mechanism
+        # (at leastin conan 1.47) to impose that afterwards. This simply
+        # delets the generated flann cmake files.
+        for flann_cmake_file in Path(self.build_folder).glob("flann*.cmake"):
+            flann_cmake_file.unlink()
+
+        # A toolchain file can be used to modify CMake variables
         tc = CMakeToolchain(self, generator=generator)
         if self.settings.os == "Windows":
             tc.variables["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
         if self.settings.os == "Linux" or self.settings.os == "Macos":
             tc.variables["CMAKE_CXX_STANDARD"] = 14
             tc.variables["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
-        tc.variables["flann_INCLUDE_DIR"] = "${CONAN_INCLUDE_DIRS_FLANN}"
+        tc.variables["INSTALL_PREBUILT_DEPENDENCIES"] = "ON"
+        # tc.variables["flann_INCLUDE_DIR"] = "${flann_PACKAGE_FOLDER_RELEASE}/include"
         tc.variables["HDILib_VERSION"] = self.version
         if self.build_folder is not None:
             tc.variables["CMAKE_INSTALL_PREFIX"] = str(
@@ -133,9 +134,6 @@ set(CMAKE_PREFIX_PATH "{package_root.as_posix()}" ${{CMAKE_PREFIX_PATH}})
             tc.variables["ENABLE_CODE_ANALYSIS"] = "OFF"
         print("Call toolchain generate")
         tc.generate()
-        deps = CMakeDeps(self)
-        deps.generate()
-        self.fix_config_packages()
 
     def _configure_cmake(self):
         cmake = CMake(self)
