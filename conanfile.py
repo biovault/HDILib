@@ -13,7 +13,7 @@ required_conan_version = ">=1.43.0"
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "1.2.5"
+    version = "1.2.6"
     description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
@@ -45,12 +45,12 @@ class HDILibConan(ConanFile):
             return cmakePath
         return "cmake"
 
-    def system_requirements(self):
-        if tools.os_info.is_macos:
-            target = os.environ.get("MACOSX_DEPLOYMENT_TARGET", "10.13")
-            if version.parse(target) > version.parse("10.12"):
-                installer = tools.SystemPackageTool()
-                installer.install("libomp")
+    # def system_requirements(self):
+    #    if tools.os_info.is_macos:
+    #        target = os.environ.get("MACOSX_DEPLOYMENT_TARGET", "10.13")
+    #        if version.parse(target) > version.parse("10.12"):
+    #            installer = tools.SystemPackageTool()
+    #            installer.install("libomp")
 
     # Flann builds are bit complex and certain versions fail with
     # certain platform, and compiler combinations. Hence use
@@ -65,6 +65,8 @@ class HDILibConan(ConanFile):
         else:
             # Macos and linux use 1.8.4
             self.requires("flann/1.8.4@lkeb/stable")
+        if tools.os_info.is_macos:
+            self.requires("llvm-openmp/12.0.1@")
         # self.requires.add("lz4/1.9.2")
 
     def configure(self):

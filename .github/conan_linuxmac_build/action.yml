@@ -75,7 +75,7 @@ runs:
         conan profile update settings.compiler.libcxx=${{ inputs.conan-libcxx-version}} action_build
         conan profile show action_build
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
-        conan create . HDILib/1.2.5@biovault/stable -pr:h action_build -pr:b default -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+        conan create . HDILib/1.2.6@biovault/stable -pr:h action_build -pr:b default -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
 
       shell: bash
       env:
