@@ -132,6 +132,9 @@ set(CMAKE_PREFIX_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         tc.variables["CMAKE_VERBOSE_MAKEFILE"] = "ON"
         if os.getenv("Analysis", None) is None:
             tc.variables["ENABLE_CODE_ANALYSIS"] = "OFF"
+        tc.variables[
+            "CMAKE_MSVC_RUNTIME_LIBRARY"
+        ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
         print("Call toolchain generate")
         tc.generate()
 
