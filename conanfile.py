@@ -2,7 +2,7 @@
 
 from conans import ConanFile, tools
 from conan.tools.cmake import CMakeDeps, CMake, CMakeToolchain
-from conans.model.dependencies import ConanFileDependencies
+from conans.tools import os_info, SystemPackageTool
 import os
 import sys
 from packaging import version
@@ -61,13 +61,16 @@ class HDILibConan(ConanFile):
             print("Skip root package requirements for build_type NONE")
             return
         if self.settings.os == "Windows":
-            self.requires("flann/1.8.5@lkeb/stable")
+            self.requires("flann/1.9.1@lkeb/stable")
         else:
             # Macos and linux use 1.8.4
-            self.requires("flann/1.8.4@lkeb/stable")
-        if tools.os_info.is_macos:
-            self.requires("llvm-openmp/12.0.1@")
+            self.requires("flann/1.9.1@lkeb/stable")
         # self.requires.add("lz4/1.9.2")
+
+    def system_requirements(self):
+        if os_info.is_macos:
+            installer = SystemPackageTool()
+            installer.install('libomp')
 
     def configure(self):
         if self.settings.os == "Windows":
