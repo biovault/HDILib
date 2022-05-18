@@ -1,0 +1,129 @@
+name: HDILib conan builder
+
+on:
+  push:
+    branches:
+      - master
+      - main
+      - stable/*
+      - release/*
+      - alpha/*
+
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+# for matrix check https://docs.github.com/en/actions/reference/specifications-for-github-hosted-runners
+jobs:
+  cross-platform-build:
+    name: Cross platform build
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    # See: https://docs.github.com/en/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          #- name: Windows-msvc2017
+          #  os: windows-2016
+          #  compiler: msvc-2017
+          #  build-cversion: 15
+
+          # This build is Debug + /analyze flag
+          #- name: Static Analysis Windows
+          #  os: windows-2019
+          #  compiler: msvc-2019
+          #  build-cversion: 16
+          #  build-config: Analysis
+
+          - name: Windows-msvc2019
+            os: windows-2019
+            compiler: msvc-2019
+            build-cversion: 16
+            build-runtime: MD
+            build-config: Release
+
+          # GLIBC <= 2.27
+          - name: Linux_gcc8
+            os: ubuntu-18.04
+            build-compiler: gcc
+            build-cversion: 8
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++
+
+          # GLIBC >= 2.28
+          - name: Linux_gcc9
+            os: ubuntu-20.04
+            build-compiler: gcc
+            build-cversion: 9
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++
+
+          #- name: Macos_xcode10.3
+          #  os: macos-10.15
+          #  build-compiler: apple-clang
+          #  build-cversion: "10.0"
+          #  build-config: Release
+          #  build-os: Macos
+          #  build-xcode-version: 10.3
+          #  build-libcxx: libc++
+
+          - name: Macos_xcode12.4
+            os: macos-11
+            build-compiler: apple-clang
+            build-cversion: "12.0"
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 12.4
+            build-libcxx: libc++
+
+    steps:
+      - name: Checkout the source
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Select Xcode for Mac only
+        if: startsWith(runner.os, 'macOS')
+        run: |
+          sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
+
+      - name: Setup python version
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.7"
+
+      - name: Setup gcc version
+        if: startsWith(matrix.build-compiler, 'gcc')
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: ${{matrix.build-cversion}}
+          platform: x64
+
+      - name: Windows build
+        if: startsWith(runner.os, 'Windows')
+        uses: ./.github/conan_windows_build
+        with:
+          conan-visual-version: ${{matrix.build-cversion}}
+          conan-build-type: ${{matrix.build-config}}
+          conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
+          conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+          hdilib-cdash-token: ${{secrets.HDILIB_TOKEN}}
+
+      - name: Linux Mac build
+        if: "!startsWith(runner.os, 'Windows')"
+        uses: ./.github/conan_linuxmac_build
+        with:
+          conan-compiler: ${{matrix.build-compiler}}
+          conan-compiler-version: ${{matrix.build-cversion}}
+          conan-libcxx-version: ${{matrix.build-libcxx}}
+          conan-build-type: ${{matrix.build-config}}
+          conan-build-os: ${{matrix.build-os}}
+          conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
+          conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}

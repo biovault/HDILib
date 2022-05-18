@@ -1,6 +1,8 @@
 cmake_minimum_required (VERSION 3.15)
 
 # Set C++11 language standard
+# flann util/random.h versions 1.8.4, 1.8.5, & 1.9.1 uses std::random_shuffle that is removed in C++17
+# So staying at C++11
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -9,6 +11,10 @@ set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
+
+if (ENABLE_CODE_ANALYSIS AND WIN32)
+  message("*******Code Analysis Run*******")
+endif()
 
 set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
 # Disallow in-source builds. 
@@ -20,17 +26,20 @@ if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
 endif()
 
 # This flag is used to allow conan to install the dependencies
-#option(HDILIB_BUILD_WITH_CONAN "Should Conan package manager be used?" OFF)
+option(INSTALL_PREBUILT_DEPENDENCIES "Use Conan to install prebuilt dependencies?" OFF)
 #The cmake make sub directory contains the ConanSetup.cmake 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${PROJECT_SOURCE_DIR}/cmake")
 
-# CONAN is only used for setting up dependencies if the HDILIB_BUILD_WITH_CONAN is ON
-#include(ConanSetup)
-#message(STATUS "*** (HDI_EXTERNAL_FLANN_INCLUDE_DIR) ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
-find_package(flann PATHS ${CMAKE_CURRENT_LIST_DIR} REQUIRED)
-#message(STATUS "******* moudle path ${CMAKE_MODULE_PATH} ***************")
-message (STATUS "Flann: ${HDI_EXTERNAL_FLANN_INCLUDE_DIR}")
+# CONAN is only used for setting up dependencies if the INSTALL_PREBUILT_DEPENDENCIES is ON
+if (INSTALL_PREBUILT_DEPENDENCIES OR DEFINED ENV{CI})
+  find_package(flann REQUIRED)
+else()
+  message(WARNING "Provide the flann_INCLUDE_DIR pointing to your flann install include")
+endif()
+
+
+message(STATUS "Flann include: ${flann_INCLUDE_DIR}")
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -95,6 +104,7 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT
 set(INCLUDE_INSTALL_DIR include)
 set(LIB_INSTALL_DIR lib)
 set(CURRENT_BUILD_DIR "${CMAKE_BINARY_DIR}")
+option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
 
 # create config file
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibConfig.cmake.in

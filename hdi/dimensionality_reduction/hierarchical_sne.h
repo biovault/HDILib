@@ -85,6 +85,8 @@ namespace hdi {
       };
       typedef Scale scale_type;
       typedef std::vector<scale_type> hierarchy_type;
+      typedef std::vector<std::vector<unsigned_int_type>> datapoints_per_landmark_t;
+      typedef std::vector<datapoints_per_landmark_t> scale_influence_datapoints_type;
 
     public:
       //! Parameters used for the initialization of the algorithm
@@ -285,7 +287,10 @@ namespace hdi {
       //! Return the influence exercised on the data point by a subset of landmarks in a given scale
       void getAreaOfInfluence(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi)const;
        //! Return the influence exercised on the data point by a subset of landmarks in a given scale using a top-down approach
+       //! TODO provide alternative signature returning std::vector<unsigned_int_type> aoi.
       void getAreaOfInfluenceTopDown(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi, double threshold=0.3)const;
+      //! Return the influence exercised on the data points by a subset of landmarks in a given scale using the bottom-up approach
+      void getAreaOfInfluenceBottomUp(unsigned_int_type scale_id, const std::vector<unsigned_int_type>& set_selected_idxes, std::vector<scalar_type>& aoi);
 
       //! TODO
       void getStochasticLocationAtHigherScale(unsigned_int_type orig_scale, unsigned_int_type dest_scale, const std::vector<unsigned_int_type>& subset_orig_scale, sparse_scalar_matrix_type& location)const;
@@ -310,7 +315,18 @@ namespace hdi {
 
       void selectLandmarks(const Scale& previous_scale, Scale& scale, unsigned_int_type& selected_landmarks);
       void selectLandmarksWithStationaryDistribution(const Scale& previous_scale, Scale& scale, unsigned_int_type& selected_landmarks);
-
+      //! Return the landmark exercising most influence on the data point by the landmarks in each scale
+      void getTopLandmarksInfluencingDataPoint(
+        unsigned_int_type dp, 
+        std::vector<unsigned_int_type>& max_landmark_per_scale, 
+        std::vector<bool>& scale_has_landmark, 
+        scalar_type thresh, 
+        bool normalized) const;
+      //! Create a 1->n landmark hierarchy. 
+      //! The default HSNE landmark hierarchy is m->n (from top scale down to data points) 
+      //! this hierarchy selects the landmark with the greatest influence on a group of underlying points
+      //! It provides a less noist drill down than the getAreaOfInfluenceTopDown method
+      void initializeScaleLandmarkToDataPointHierarchy();
 
       //! Return the seed for the random number generation
       unsigned_int_type seed()const;
@@ -323,6 +339,8 @@ namespace hdi {
 
     private:
       hierarchy_type _hierarchy;
+      // scale idx->landmark idx->vector of datapoint ids
+      scale_influence_datapoints_type _landmarks_to_datapoints;
 
     private:
       unsigned_int_type _dimensionality;

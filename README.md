@@ -1,15 +1,16 @@
-Linux & Macos (Travis) | Windows (Appveyor)
---- | ---
-[![Build Status](https://travis-ci.com/biovault/HDILib.svg?branch=master)](https://travis-ci.com/biovault/HDILib) | [![Build status](https://ci.appveyor.com/api/projects/status/xtd9ee63fukd462p?svg=true)](https://ci.appveyor.com/project/bldrvnlw/hdilib)
+###GitHub Actions status
+![Branch release/1.2.6](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg?branch=release%2F1.2.6)
 
 Currently the following build matrix is performed
 
-OS | Architecture | Compiler
---- | --- | ---
-Windows | x64 | MSVC 2017
-Linux | x86_64 | gcc 9
-Macos | x86_64 | clang 10
-
+| OS      | Architecture | Compiler  |
+| ------- | ------------ | --------- |
+| Windows | x64          | MSVC 2017 |
+| Windows | x64          | MSVC 2019 |
+| Linux   | x86_64       | gcc 8     |
+| Linux   | x86_64       | gcc 9     |
+| Macos   | x86_64       | clang 10  |
+| Macos   | x86_64       | clang 12  |
 
 [![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)
 
@@ -73,34 +74,93 @@ HDILib has all external dependencies as submodules except for flann.
 2. Ubuntu/Mac builds require: flann 1.8.4
 
 Flann can be built from the source (https://github.com/mariusmuja/flann) or conan can be used to
-install a prebuild version (see CI/CD section below)
+installed using conan.
 
-### Ubuntu
+### Installing flann with conan
 
-On **Ubuntu 16.04** you can build and install HDI by running the following commands
+Assumes a python 3.6,3.7,3.8 or 3.9 environment
 
-```bash
-./scripts/install-dependencies.sh
+1. Install conan
+
+ ```bash
+ pip install conan==1.40.4
+ ```
+
+2. Add the lkeb artifactory
+
+*Windows*
+
+```cmd
+.\tools\add_remote.bat
+```
+
+or
+
+*Linux/Macos*
+```cmd
+./tools/add_remote.sh
+```
+3. Prepare the build directory
+
+``` bash
 mkdir build
 cd build
-cmake  -DCMAKE_BUILD_TYPE=Release ..
-make -j 8
-sudo make install
 ```
 
-### Windows
+4. Generate the build files
 
-On **Windows** use CMake
-
-```
-cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DHDILIB_BUILD_WITH_CONAN=ON
-```
-    (*Note: this assumes that the build dir is one level down from the project root.
-    The default of HDILIB_BUILD_WITH_CONAN is OFF*)
- - If all goes well Conan will have installed the dependencies in its cache and 
- created the required defines for the Cmake configuration.
+* 4a. **Windows**
+This will produce a HDILib.sln file for VisualStudio
  Open the .sln in VisualStudio and build ALL_BUILD for Release or Debug matching the CMAKE_BUILD_TYPE.
      On Windows the result of the build are three *.lib files
+
+Run cmake for VS 2017: 
+```cmd
+cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
+```
+
+or for newer VS 2019 (architecture is specified separately)
+
+```cmd
+ cmake .. -G "Visual Studio 16 2019" -A "x64" -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
+```
+
+In VisualStudio run *Build Solution* for Debug and Release this will produce an *install* directory under the *build* directory containing 
+the final libraries and a CMake install file
+
+It is also possible to install cmake itself with pip
+
+```
+pip install cmake
+```
+
+* 4b. *Linux*
+This will produce a Makefile. Use the make command e.g. *make -j 8* to build
+gcc8 or gcc9 should be used for prebuilt flann
+
+```bash
+cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
+```
+
+* 4c. *Macos*
+Use Xcode 10.3 apple-clang 10 is supported
+```bash
+cmake .. -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
+```
+
+## Using the HDILib
+
+The subdirectory test_package builds an exammple that links agains the HDILib binaries. Check the CMakeLists.txt this shows how to consume the HDILib Cmake package.
+
+Find the package
+```cmake
+find_package(HDILib COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS ${HDILib_ROOT} CONFIG REQUIRED)
+```
+
+Consume the package and dependencies (Windows example)
+```cmake
+target_link_libraries(example PRIVATE HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata flann lz4::lz4 OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS})
+```
 
 
 ## Applications
@@ -111,25 +171,20 @@ A suite of command line and visualization applications is available in the [orig
 
 Conan is used in the CI/CD process to retrieve a prebuilt flann from the lkeb-artifactory and to upload the completed HDILib to the artifactory. The conanfile uses the cmake tool as builder.
 
- - In a python (3.6 or 3.7) environment:
-```
-pip install conan
-```
- - Add the biovault conan remote (for prebuilt packages/upload):
-```
-conan remote add conan-biovault https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
-```
- - Make a build directory below the HDILib project root.
-    For example: *./_build_release* or *./_build_debug*
-    (<u>when using conan the source directories are shared but
-    separate build directories should be used for release and debug.</u>)
- - In the python environment (with conan and cmake accessible)
- cd to the build directory and issue the following (for VisualStudio 2017):
 
 #### CI/CD note on https
-Openssl in the python libraries does not have a recent list of CA-authorities,
-that includes the authority for lkeb-artifactory GEANT issued certificate.
-Therefore it is essential to append the lkb-artifactory cert.pem to the
-cert.pem file in the conan home directory for a successful https connection.
-See the CI scripts for details.
+OpenSSL in the python libraries does not have a recent list of CA-authorities, that includes the authority for lkeb-artifactory GEANT issued certificate. Therefore it is essential to append the lkeb-artifactory cert.pem to the cert.pem file in the conan home directory for a successful https connection. See the CI scripts for details.
+
+#### Notes on Conan
+
+##### CMake compatibility
+The conan file uses (starting with conan 1.38) the conan CMakeDeps + CMakeToolchain logic to create a CMake compatible toolchain file. This is a .cmake file
+containing all the necessary CMake variables for the build. 
+
+These variables provided by the toolchain file allow the CMake file to locate the required packages that conan has downloaded.
+
+##### Build bundle
+The conan build creates three versions of the package, Release, Debug and 
+
+
 
