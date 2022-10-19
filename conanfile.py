@@ -70,7 +70,7 @@ class HDILibConan(ConanFile):
     def system_requirements(self):
         if os_info.is_macos:
             installer = SystemPackageTool()
-            installer.install('libomp')
+            installer.install("libomp")
 
     def configure(self):
         if self.settings.os == "Windows":
@@ -79,10 +79,14 @@ class HDILibConan(ConanFile):
     def add_package_cmake_paths(self, package_name, cmake_path):
         """For the given package add the cmake_path to the paths used by
         CMake in find_package. These are CMAKE_MODULE_PATH and CMAKE_PREFIX_PATH
+        Call after the the toolchain file has been created because it appends to
+        the toolchain file
         """
-        print(f"Adding {package_name} cmake package path")
         package_props = self.dependencies[package_name]
         package_cmake_path = Path(package_props.package_folder, cmake_path)
+        print(
+            fr"Adding {package_name} cmake package path {package_cmake_path.as_posix()}"
+        )
         with open("conan_toolchain.cmake", "a") as toolchain:
             toolchain.write(
                 fr"""
@@ -105,7 +109,8 @@ set(CMAKE_PREFIX_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         #
         deps = CMakeDeps(self)
         deps.generate()
-        self.add_package_cmake_paths("flann", "lib/cmake")
+        # A toolchain file can be used to modify CMake variables
+        tc = CMakeToolchain(self, generator=generator)
 
         # ! TODO fix flann package
         # For flann we use the cmake files in the package.
@@ -117,8 +122,6 @@ set(CMAKE_PREFIX_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         for flann_cmake_file in Path(self.build_folder).glob("flann*.cmake"):
             flann_cmake_file.unlink()
 
-        # A toolchain file can be used to modify CMake variables
-        tc = CMakeToolchain(self, generator=generator)
         if self.settings.os == "Windows":
             tc.variables["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
         if self.settings.os == "Linux" or self.settings.os == "Macos":
@@ -142,6 +145,7 @@ set(CMAKE_PREFIX_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
         print("Call toolchain generate")
         tc.generate()
+        self.add_package_cmake_paths("flann", "lib/cmake")
 
     def _configure_cmake(self):
         cmake = CMake(self)
