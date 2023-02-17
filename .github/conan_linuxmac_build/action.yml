@@ -36,7 +36,7 @@ runs:
     - name: Install conan & build configuration
       run: |
         pip install wheel
-        pip install conan~=1.51.0
+        pip install conan>=1.53.0
         pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then sudo apt-get install -y ninja-build; fi
