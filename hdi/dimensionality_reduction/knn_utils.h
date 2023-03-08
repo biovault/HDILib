@@ -37,6 +37,7 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 namespace hdi{
   namespace dr{
