@@ -16,6 +16,10 @@ if (ENABLE_CODE_ANALYSIS AND WIN32)
   message("*******Code Analysis Run*******")
 endif()
 
+if (ENABLE_PID)
+  message(STATUS "Position independent code code compilation ON")
+endif()
+
 set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
@@ -34,10 +38,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 # CONAN is only used for setting up dependencies if the INSTALL_PREBUILT_DEPENDENCIES is ON
 if (INSTALL_PREBUILT_DEPENDENCIES OR DEFINED ENV{CI})
   find_package(flann REQUIRED)
+elseif(flann_INCLUDE_DIR)
+  message(STATUS "Provided the flann_INCLUDE_DIR manually")
 else()
-  message(WARNING "Provide the flann_INCLUDE_DIR pointing to your flann install include")
+  message(FATAL_ERROR "Provide the flann_INCLUDE_DIR pointing to your flann install include")
 endif()
-
 
 message(STATUS "Flann include: ${flann_INCLUDE_DIR}")
 

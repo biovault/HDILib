@@ -1,5 +1,3 @@
-include_directories ("${CMAKE_SOURCE_DIR}")
-
 set(PROJECT "hdidata")
 
 # Gather list of all .h files in "/"
@@ -8,8 +6,14 @@ file(GLOB SourceFiles *.cpp)
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
+target_include_directories(${PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}")
+
 if(ENABLE_CODE_ANALYSIS AND WIN32)
         target_compile_options(${PROJECT} PRIVATE /analyze)
+endif()
+
+if(ENABLE_PID)
+    set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 ########### INSTALL ##############
