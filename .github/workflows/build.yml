@@ -92,6 +92,15 @@ jobs:
             build-xcode-version: 12.4
             build-libcxx: libc++
 
+          - name: Macos_xcode13.2.1
+            os: macOS-11
+            build-compiler: apple-clang
+            build-cversion: "13.0"
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 13.2.1
+            build-libcxx: libc++
+
     steps:
       - name: Checkout the source
         uses: actions/checkout@v2
