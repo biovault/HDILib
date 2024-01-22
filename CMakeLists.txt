@@ -37,6 +37,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 
 # CONAN is only used for setting up dependencies if the INSTALL_PREBUILT_DEPENDENCIES is ON
 if (INSTALL_PREBUILT_DEPENDENCIES OR DEFINED ENV{CI})
+  find_package(lz4 REQUIRED)
   find_package(flann REQUIRED)
 elseif(flann_INCLUDE_DIR)
   message(STATUS "Provided the flann_INCLUDE_DIR manually")

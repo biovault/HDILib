@@ -19,8 +19,9 @@ target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__USE_ANNOY__")
 
-message (STATUS "Flann include: " ${flann_INCLUDE_DIR})
-target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR})
+message (STATUS "Flann: " ${flann_INCLUDE_DIR})
+target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR} ${lz4_INCLUDE_DIR})
+target_link_libraries(${PROJECT} PRIVATE flann::flann_cpp_s LZ4::lz4_static)
 
 if(ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
