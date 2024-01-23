@@ -51,35 +51,11 @@
 #include "hdi/data/io.h"
 #include "hdi/utils/log_progress.h"
 
-#ifdef HNSWLIB_FOUND
-#ifdef _MSC_VER
-#if(_MSC_VER >= 1900)
 #include "hnswlib/hnswlib.h"
 #include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //(_MSC_VER >= 1900)
-#else // _MSC_VER
-#if (__cplusplus >=201103)
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //(__cplusplus >=201103)
-#endif // _MSC_VER
-#endif //HNSWLIB_FOUND
 
-#ifdef __USE_ANNOY__
-#ifndef WIN32
-#define isnan std::isnan
-#endif
-#pragma warning( push )
-#pragma warning( disable : 4477 )
 #include "annoylib.h"
-#pragma warning( pop )
 #include "kissrandom.h"
-#ifndef WIN32
-#undef isnan
-#endif
-#endif // __USE_ANNOY__
 
 #pragma warning( push )
 #pragma warning( disable : 4267)
@@ -292,22 +268,6 @@ namespace hdi {
       neighborhood_graph.resize(_num_dps*nn);
       distance_based_probabilities.resize(_num_dps*nn);
         
-      // Fallback to FLANN if others are not supported
-      #ifndef HNSWLIB_SUPPORTED
-        if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
-        {
-            hdi::utils::secureLog(_logger, "HNSW not available, falling back to FLANN");
-            _params._aknn_algorithm = hdi::dr::KNN_FLANN;
-        }
-      #endif // HNSWLIB_SUPPORTED
-                
-      #ifndef __USE_ANNOY__
-        if (_params._aknn_algorithm == hdi::dr::KNN_ANNOY)
-        {
-            _params._aknn_algorithm = hdi::dr::KNN_FLANN;
-        }
-      #endif // __USE_ANNOY__
-
       if(_params._aknn_algorithm == hdi::dr::KNN_FLANN)
       {
         utils::secureLog(_logger, "Computing the neighborhood graph...");
@@ -327,7 +287,6 @@ namespace hdi {
       }
       else if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
-#ifdef HNSWLIB_SUPPORTED
         utils::secureLog(_logger, "Computing the neighborhood graph with HNSW Lib...");
 
         hnswlib::SpaceInterface<float> *space = NULL;
@@ -370,11 +329,9 @@ namespace hdi {
             ++j;
           }
         }
-#endif // HNSWLIB_SUPPORTED
       }
       else if (_params._aknn_algorithm == hdi::dr::KNN_ANNOY)
       {
-#ifdef __USE_ANNOY__
         using namespace Annoy;
         hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy...");
 
@@ -451,7 +408,6 @@ namespace hdi {
           }
         }
         delete tree;
-#endif // __USE_ANNOY__
       }
 
       {

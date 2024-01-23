@@ -48,31 +48,11 @@
 #include "omp.h"
 #endif
 
-#ifdef HNSWLIB_FOUND
-#ifdef _MSC_VER
-#if (_MSC_VER >= 1910)
 #include "hnswlib/hnswlib.h"
 #include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //__cplusplus >=201103
-#else // _MSC_VER
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif
-#endif // HNSWLIB_FOUND
 
-#ifdef __USE_ANNOY__
-#ifndef WIN32
-#define isnan std::isnan
-#endif
 #include "annoylib.h"
 #include "kissrandom.h"
-#ifndef WIN32
-#undef isnan
-#endif
-#endif // __USE_ANNOY__
-
 
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>
@@ -193,22 +173,6 @@ namespace hdi {
 
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeHighDimensionalDistances(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params) {
 
-      // Fallback to FLANN if others are not supported
-#ifndef HNSWLIB_SUPPORTED
-      if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
-      {
-        hdi::utils::secureLog(_logger, "HNSW not available, falling back to FLANN");
-        params._aknn_algorithm = hdi::dr::KNN_FLANN;
-      }
-#endif // HNSWLIB_SUPPORTED
-
-#ifndef __USE_ANNOY__
-      if (params._aknn_algorithm == hdi::dr::KNN_ANNOY)
-      {
-        params._aknn_algorithm = hdi::dr::KNN_FLANN;
-      }
-#endif // __USE_ANNOY__
-
       if (params._aknn_algorithm == hdi::dr::KNN_FLANN)
       {
         hdi::utils::secureLog(_logger, "Computing approximated knn with Flann...");
@@ -234,7 +198,6 @@ namespace hdi {
       }
       else if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
-#ifdef HNSWLIB_SUPPORTED
         hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
 
         hnswlib::SpaceInterface<float> *space = NULL;
@@ -283,11 +246,9 @@ namespace hdi {
             }
           }
         }
-#endif // HNSWLIB_SUPPORTED
       }
       else if (params._aknn_algorithm == hdi::dr::KNN_ANNOY)
       {
-#ifdef __USE_ANNOY__
         using namespace Annoy;
         int k = (int)params._perplexity * params._perplexity_multiplier + 1;
         int search_k = k * params._num_trees;
@@ -368,7 +329,6 @@ namespace hdi {
           }
         }
         delete tree;
-#endif // __USE_ANNOY__
       }
     }
 

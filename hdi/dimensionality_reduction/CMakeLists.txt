@@ -12,12 +12,10 @@ target_include_directories(${PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}")
 get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
 target_include_directories(${PROJECT} PRIVATE ${HNSWLIB_INCLUDE_DIR})
 message (STATUS "HNSWLIB: " ${HNSWLIB_INCLUDE_DIR})
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHNSWLIB_FOUND")
 
 get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/annoy/src" REALPATH)
 target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__USE_ANNOY__")
 
 message (STATUS "Flann: " ${flann_INCLUDE_DIR})
 target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR} ${lz4_INCLUDE_DIR})
