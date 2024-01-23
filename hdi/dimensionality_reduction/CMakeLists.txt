@@ -23,16 +23,15 @@ message (STATUS "Flann: " ${flann_INCLUDE_DIR})
 target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR} ${lz4_INCLUDE_DIR})
 target_link_libraries(${PROJECT} PRIVATE flann::flann_cpp_s LZ4::lz4_static)
 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
 if(ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         target_compile_options(${PROJECT} PRIVATE /analyze)
     endif()
 endif()
-
-# Need to wait until add_library call before dependency of Flann can be set in case Flann is to be build from scratch.
-if(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
-	add_dependencies(${PROJECT} flann)
-endif(DEFINED(${HDI_FLANN_BUILD_INCLUDE_DIR}))
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -41,7 +40,7 @@ if(UNIX)
 endif(UNIX)
 
 if(ENABLE_CODE_ANALYSIS AND WIN32)
-        target_compile_options(${PROJECT} PRIVATE /analyze)
+    target_compile_options(${PROJECT} PRIVATE /analyze)
 endif()
 
 if(ENABLE_PID)

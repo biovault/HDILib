@@ -8,8 +8,12 @@ add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
 target_include_directories(${PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
 if(ENABLE_CODE_ANALYSIS AND WIN32)
-        target_compile_options(${PROJECT} PRIVATE /analyze)
+    target_compile_options(${PROJECT} PRIVATE /analyze)
 endif()
 
 if(ENABLE_PID)

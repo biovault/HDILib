@@ -8,6 +8,10 @@ add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 target_include_directories(${PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
 if(ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         target_compile_options(${PROJECT} PRIVATE /analyze)
