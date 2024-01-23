@@ -71,6 +71,9 @@ install(CODE "foreach(HEADER ${HeaderFiles})
     COMPONENT PUBLIC_HEADERS
 )
 
+install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/")
+install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/")
+
 install(EXPORT ${PROJECT}Targets
         FILE ${PROJECT}Targets.cmake
         NAMESPACE HDI::
