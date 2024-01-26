@@ -57,20 +57,31 @@ install(TARGETS ${PROJECT}
 
 # Preserve the header hierarchy by explicit install
 # the CMake PUBLIC_HEADER target property flattens it if used.
-install(CODE "foreach(HEADER ${HeaderFiles})
+install(CODE "foreach(DR_HEADER ${HeaderFiles})
         message(STATUS \"Installing: \${HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
         execute_process(
             COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                \"${CMAKE_CURRENT_SOURCE_DIR}/\${HEADER}\" 
-                \"${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction/\${HEADER}\"
+                \"${CMAKE_CURRENT_SOURCE_DIR}/\${DR_HEADER}\" 
+                \"${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction/\${DR_HEADER}\"
         )
 
     endforeach()"
     COMPONENT PUBLIC_HEADERS
 )
 
-install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
-install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include")
+# Install dependency headers
+install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
+install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
+install(CODE "foreach(ANNOY_HEADER annoylib.h kissrandom.h mman.h)
+        execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                \"${ANNOY_INCLUDE_DIR}/\${ANNOY_HEADER}\" 
+                \"${CMAKE_INSTALL_PREFIX}/include/\${ANNOY_HEADER}\"
+        )
+    endforeach()"
+    COMPONENT ANNOY_HEADERS
+)
 
 install(EXPORT ${PROJECT}Targets
         FILE ${PROJECT}Targets.cmake
