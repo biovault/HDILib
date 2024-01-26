@@ -23,6 +23,12 @@ if (ENABLE_PID)
   message(STATUS "Position independent code code compilation ON")
 endif()
 
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
+endif(MSVC)
+
 set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
@@ -36,8 +42,7 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${PROJECT_SOURCE_DIR}/cmake")
 
-find_package(lz4 REQUIRED)
-find_package(flann REQUIRED)
+find_package(flann CONFIG REQUIRED)
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

@@ -55,17 +55,24 @@ HDILib depends on [flann]((https://github.com/mariusmuja/flann)):
 1. Windows build requires: flann >1.8.5
 2. Ubuntu/Mac builds require: flann 1.8.4
 
-Flann can be built from the source  but we recommend using conan to install it, especially on Windows.
+Flann can be built from the source but we recommend vcpkg to install it, especially on Windows.
 
-### Installing flann with conan
+### Installing flann 
 
-Assumes a python 3.11 environment:
-
+On Windows with vcpkg
 ```bash
-pip install conan
-conan profile detect
-mkdir build
-conan install .\conanfile.txt --output-folder .\build
+.\vcpkg install flann:x64-windows-static
+```
+When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and VCPKG_TARGET_TRIPLET `x64-windows-static`
+
+On Linux with e.g.
+```bash
+sudo apt-get -y install libflann-dev
+```
+
+On Mac OS with
+```
+brew install flann
 ```
 
 ### Generate the build files
