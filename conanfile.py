@@ -8,7 +8,7 @@ import sys
 from packaging import version
 from pathlib import Path
 
-required_conan_version = ">=1.43.0"
+required_conan_version = "==1.62.0"
 
 
 class HDILibConan(ConanFile):
