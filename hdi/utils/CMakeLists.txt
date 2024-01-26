@@ -8,6 +8,8 @@ add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 target_include_directories(${PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+#set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
 endif()
@@ -19,7 +21,7 @@ if(ENABLE_CODE_ANALYSIS)
 endif()
 
 if (UNIX)
-    target_link_libraries (hdiutils ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
+    target_link_libraries (hdiutils PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
 endif (UNIX)
 
 if(ENABLE_CODE_ANALYSIS AND WIN32)
@@ -31,8 +33,6 @@ if(ENABLE_PID)
 endif()
 
 ########### INSTALL ##############
-#set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
-
 install(TARGETS ${PROJECT}
     EXPORT ${PROJECT}Targets
     LIBRARY DESTINATION lib/$<CONFIGURATION>

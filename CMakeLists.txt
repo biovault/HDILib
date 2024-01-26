@@ -4,8 +4,6 @@ option(USE_AVX "Enable AVX support" OFF)
 option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
 
 # Set C++14 language standard
-# flann util/random.h versions 1.8.4, 1.8.5, & 1.9.1 uses std::random_shuffle that is removed in C++17
-# So staying at C++11
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -42,7 +40,6 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${PROJECT_SOURCE_DIR}/cmake")
 
-find_package(flann CONFIG REQUIRED)
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -59,6 +56,7 @@ endif()
 
 message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 
+find_package(flann REQUIRED)
 find_package(OpenMP)
 
 if(OpenMP_CXX_FOUND)

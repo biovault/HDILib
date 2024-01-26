@@ -22,8 +22,6 @@ class HDILibConan(ConanFile):
     default_user = "lkeb"
     default_channel = "stable"
 
-    generators = "CMakeDeps"
-
     # Options may need to change depending on the packaged library
     settings = "os", "compiler", "arch", "build_type"
     # Note : This should only be built with: shared=False, fPIC=True
@@ -52,20 +50,12 @@ class HDILibConan(ConanFile):
     #            installer = tools.SystemPackageTool()
     #            installer.install("libomp")
 
-    # Flann builds are bit complex and certain versions fail with
-    # certain platform, and compiler combinations. Hence use
-    # either self built 1.8.5 for Windows or system supplied
-    # 1.8.4 on Linux and Macos
     def requirements(self):
         if self.settings.build_type == "None":
             print("Skip root package requirements for build_type NONE")
             return
-        if self.settings.os == "Windows":
-            self.requires("flann/1.9.1@lkeb/stable")
-        else:
-            # Macos and linux use 1.8.4
-            self.requires("flann/1.9.1@lkeb/stable")
-        # self.requires.add("lz4/1.9.2")
+        self.requires("flann/1.9.2")
+        #self.requires("flann/1.9.1@lkeb/stable")
 
     def system_requirements(self):
         if os_info.is_macos:
@@ -76,21 +66,6 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Windows":
             del self.options.fPIC
 
-    def add_package_cmake_paths(self, package_name, cmake_path):
-        """For the given package add the cmake_path to the paths used by
-        CMake in find_package. These are CMAKE_MODULE_PATH and CMAKE_PREFIX_PATH
-        """
-        print(f"Adding {package_name} cmake package path")
-        package_props = self.dependencies[package_name]
-        package_cmake_path = Path(package_props.package_folder, cmake_path)
-        with open("conan_toolchain.cmake", "a") as toolchain:
-            toolchain.write(
-                fr"""
-set(CMAKE_MODULE_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_MODULE_PATH}})
-set(CMAKE_PREFIX_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_PREFIX_PATH}})
-            """
-            )
-
     def generate(self):
         print("In generate")
         generator = None
@@ -100,32 +75,13 @@ set(CMAKE_PREFIX_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         if self.settings.os == "Linux":
             generator = "Ninja Multi-Config"
 
-        # CMakeDeps makes <packagename>-config.cmake files for all
-        # requirements to assist cmake package find.
-        #
-        deps = CMakeDeps(self)
-        deps.generate()
-        self.add_package_cmake_paths("flann", "lib/cmake")
-
-        # ! TODO fix flann package
-        # For flann we use the cmake files in the package.
-        # The correct way to prevent CMakeDeps from generating its own cmake files
-        # is to add cmake_find_mode="none" to the flann cpp_info
-        # during its packaging. This has not yet been done and there is no mechanism
-        # (at leastin conan 1.47) to impose that afterwards. This simply
-        # delets the generated flann cmake files.
-        for flann_cmake_file in Path(self.build_folder).glob("flann*.cmake"):
-            flann_cmake_file.unlink()
+        cmake = CMakeDeps(self)
+        cmake.generate()
 
         # A toolchain file can be used to modify CMake variables
-        tc = CMakeToolchain(self, generator=generator)
+        tc = CMakeToolchain(self)
         if self.settings.os == "Windows":
             tc.variables["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
-        if self.settings.os == "Linux" or self.settings.os == "Macos":
-            tc.variables["CMAKE_CXX_STANDARD"] = 14
-            tc.variables["CMAKE_CXX_STANDARD_REQUIRED"] = "ON"
-        tc.variables["INSTALL_PREBUILT_DEPENDENCIES"] = "ON"
-        # tc.variables["flann_INCLUDE_DIR"] = "${flann_PACKAGE_FOLDER_RELEASE}/include"
         tc.variables["HDILib_VERSION"] = self.version
         if self.build_folder is not None:
             tc.variables["CMAKE_INSTALL_PREFIX"] = str(

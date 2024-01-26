@@ -8,6 +8,10 @@ add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
 target_include_directories(${PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}")
 
+target_link_libraries(${PROJECT} PRIVATE ${OPENGL_LIBRARIES})
+
+set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
 endif()
@@ -20,16 +24,13 @@ if(ENABLE_PID)
     set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
-########### INSTALL ##############
-set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
-target_link_libraries(${PROJECT} ${OPENGL_LIBRARIES})
-
 if(ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         target_compile_options(${PROJECT} PRIVATE /analyze)
     endif()
 endif()
 
+########### INSTALL ##############
 install(TARGETS ${PROJECT}
     EXPORT ${PROJECT}Targets
     LIBRARY DESTINATION lib/$<CONFIGURATION>>

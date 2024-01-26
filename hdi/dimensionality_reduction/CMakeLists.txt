@@ -17,11 +17,11 @@ get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../exte
 target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
-if($ENV{CI})
+if(DEFINED ENV{CI})
     message (STATUS "Flann include: " ${flann_INCLUDE_DIR})
     target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR})
 else()
-    message (STATUS "Flann: " ${flann_DIR})
+    message (STATUS "Flann path: " ${flann_DIR})
     if(WIN32)
         target_link_libraries(${PROJECT} PRIVATE flann::flann_cpp_s)
     else()
