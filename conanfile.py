@@ -10,7 +10,6 @@ from pathlib import Path
 
 required_conan_version = "==1.62.0"
 
-
 class HDILibConan(ConanFile):
     name = "HDILib"
     version = "1.2.6"
