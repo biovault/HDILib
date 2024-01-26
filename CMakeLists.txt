@@ -56,6 +56,7 @@ endif()
 
 message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 
+find_package(lz4 REQUIRED)
 find_package(flann REQUIRED)
 find_package(OpenMP)
 
