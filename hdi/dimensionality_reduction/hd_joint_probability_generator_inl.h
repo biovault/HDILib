@@ -44,9 +44,6 @@
 #include <unordered_set>
 #include <numeric>
 #include <thread>
-#if defined(_OPENMP)
-#include "omp.h"
-#endif
 
 #include "hnswlib/hnswlib.h"
 #include "hnswlib/space_l2.h"
@@ -54,26 +51,15 @@
 #include "annoylib.h"
 #include "kissrandom.h"
 
+#include "flann/flann.h"
+
+#ifdef _OPENMP
+#include "omp.h"
+#endif
+
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>
-#endif // __USE_GCD__
-
-#pragma warning( push )
-#pragma warning( disable : 4267)
-#pragma warning( push )
-#pragma warning( disable : 4291)
-#pragma warning( push )
-#pragma warning( disable : 4996)
-#pragma warning( push )
-#pragma warning( disable : 4018)
-#pragma warning( push )
-#pragma warning( disable : 4244)
-#include "flann/flann.h"
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
+#endif
 
 namespace hdi {
   namespace dr {
