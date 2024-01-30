@@ -82,18 +82,20 @@ install(CODE "foreach(DR_HEADER ${HeaderFiles})
 if(NOT DEFINED ENV{CI})
     install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
     install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
-    install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
-    install(CODE "foreach(ANNOY_HEADER annoylib.h kissrandom.h mman.h)
-            execute_process(
-                COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                    \"${ANNOY_INCLUDE_DIR}/\${ANNOY_HEADER}\" 
-                    \"${CMAKE_INSTALL_PREFIX}/include/\${ANNOY_HEADER}\"
-            )
-        endforeach()"
-        COMPONENT ANNOY_HEADERS
-    )
 endif()
 
+install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
+install(CODE "foreach(ANNOY_HEADER annoylib.h kissrandom.h mman.h)
+        execute_process(
+            COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                \"${ANNOY_INCLUDE_DIR}/\${ANNOY_HEADER}\" 
+                \"${CMAKE_INSTALL_PREFIX}/include/\${ANNOY_HEADER}\"
+        )
+    endforeach()"
+    COMPONENT ANNOY_HEADERS
+)
+
+# Install cmake targets file
 install(EXPORT ${PROJECT}Targets
         FILE ${PROJECT}Targets.cmake
         NAMESPACE HDI::
