@@ -288,7 +288,7 @@ namespace hdi {
         }
         hnswlib::HierarchicalNSW<scalar_type> appr_alg(space, _num_dps, _params._aknn_algorithmP1, _params._aknn_algorithmP2, 0);
 
-        utils::secureLog(_logger, "\tBuilding the trees...");
+        utils::secureLog(_logger, "\tBuilding the search structure...");
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
         appr_alg.addPoint((void*)_high_dimensional_data, (std::size_t) 0);
         unsigned num_threads = std::thread::hardware_concurrency();
@@ -353,6 +353,7 @@ namespace hdi {
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
 
+          utils::secureLog(_logger, "\tBuilding the search structure...");
           for (int i = 0; i < _num_dps; ++i) {
             double* vec = new double[_dimensionality];
             for (int z = 0; z < _dimensionality; ++z) {
@@ -374,7 +375,7 @@ namespace hdi {
             }
           }
 
-          hdi::utils::secureLog(_logger, "Done building tree. Beginning nearest neighbor search... ");
+          hdi::utils::secureLog(_logger, "Done building trees. Beginning nearest neighbor search... ");
 
 
 #pragma omp parallel for
