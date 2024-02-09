@@ -44,56 +44,22 @@
 #include <unordered_set>
 #include <numeric>
 #include <thread>
-#if defined(_OPENMP)
+
+#include "hnswlib/hnswlib.h"
+#include "hnswlib/space_l2.h"
+
+#include "annoylib.h"
+#include "kissrandom.h"
+
+#include "flann/flann.h"
+
+#ifdef _OPENMP
 #include "omp.h"
 #endif
 
-#ifdef HNSWLIB_FOUND
-#ifdef _MSC_VER
-#if (_MSC_VER >= 1910)
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //__cplusplus >=201103
-#else // _MSC_VER
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif
-#endif // HNSWLIB_FOUND
-
-#ifdef __USE_ANNOY__
-#ifndef WIN32
-#define isnan std::isnan
-#endif
-#include "annoylib.h"
-#include "kissrandom.h"
-#ifndef WIN32
-#undef isnan
-#endif
-#endif // __USE_ANNOY__
-
-
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>
-#endif // __USE_GCD__
-
-#pragma warning( push )
-#pragma warning( disable : 4267)
-#pragma warning( push )
-#pragma warning( disable : 4291)
-#pragma warning( push )
-#pragma warning( disable : 4996)
-#pragma warning( push )
-#pragma warning( disable : 4018)
-#pragma warning( push )
-#pragma warning( disable : 4244)
-#include "flann/flann.h"
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
+#endif
 
 namespace hdi {
   namespace dr {
@@ -193,22 +159,6 @@ namespace hdi {
 
     void HDJointProbabilityGenerator<scalar, sparse_scalar_matrix>::computeHighDimensionalDistances(scalar_type* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, std::vector<scalar_type>& distances_squared, std::vector<int>& indices, Parameters& params) {
 
-      // Fallback to FLANN if others are not supported
-#ifndef HNSWLIB_SUPPORTED
-      if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
-      {
-        hdi::utils::secureLog(_logger, "HNSW not available, falling back to FLANN");
-        params._aknn_algorithm = hdi::dr::KNN_FLANN;
-      }
-#endif // HNSWLIB_SUPPORTED
-
-#ifndef __USE_ANNOY__
-      if (params._aknn_algorithm == hdi::dr::KNN_ANNOY)
-      {
-        params._aknn_algorithm = hdi::dr::KNN_FLANN;
-      }
-#endif // __USE_ANNOY__
-
       if (params._aknn_algorithm == hdi::dr::KNN_FLANN)
       {
         hdi::utils::secureLog(_logger, "Computing approximated knn with Flann...");
@@ -234,7 +184,6 @@ namespace hdi {
       }
       else if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
-#ifdef HNSWLIB_SUPPORTED
         hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
 
         hnswlib::SpaceInterface<float> *space = NULL;
@@ -283,42 +232,41 @@ namespace hdi {
             }
           }
         }
-#endif // HNSWLIB_SUPPORTED
       }
       else if (params._aknn_algorithm == hdi::dr::KNN_ANNOY)
       {
-#ifdef __USE_ANNOY__
+        using namespace Annoy;
         int k = (int)params._perplexity * params._perplexity_multiplier + 1;
         int search_k = k * params._num_trees;
 
         distances_squared.resize(num_dps * k);
         indices.resize(num_dps * k);
 
-        AnnoyIndexInterface<int, double>* tree = NULL;
+        AnnoyIndexInterface<int32_t, double>* tree = nullptr;
         switch (params._aknn_metric) {
         case hdi::dr::KNN_METRIC_EUCLIDEAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random,AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         case hdi::dr::KNN_METRIC_COSINE:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new AnnoyIndex<int, double, Angular, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, double, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         case hdi::dr::KNN_METRIC_MANHATTAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new AnnoyIndex<int, double, Manhattan, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, double, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
           //case hdi::dr::KNN_METRIC_HAMMING:
           //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //  tree = new AnnoyIndex<int, double, Hamming, Kiss32Random>(num_dim);
+          //  tree = new AnnoyIndex<int32_t, double, Hamming, Kiss64Random>(num_dim);
           //  break;
         case hdi::dr::KNN_METRIC_DOT:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new AnnoyIndex<int, double, DotProduct, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, double, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         default:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         }
 
@@ -367,7 +315,6 @@ namespace hdi {
           }
         }
         delete tree;
-#endif // __USE_ANNOY__
       }
     }
 

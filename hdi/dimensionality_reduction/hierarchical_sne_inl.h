@@ -51,53 +51,14 @@
 #include "hdi/data/io.h"
 #include "hdi/utils/log_progress.h"
 
-#ifdef HNSWLIB_FOUND
-#ifdef _MSC_VER
-#if(_MSC_VER >= 1900)
 #include "hnswlib/hnswlib.h"
 #include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //(_MSC_VER >= 1900)
-#else // _MSC_VER
-#if (__cplusplus >=201103)
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
-#define HNSWLIB_SUPPORTED
-#endif //(__cplusplus >=201103)
-#endif // _MSC_VER
-#endif //HNSWLIB_FOUND
 
-#ifdef __USE_ANNOY__
-#ifndef WIN32
-#define isnan std::isnan
-#endif
-#pragma warning( push )
-#pragma warning( disable : 4477 )
 #include "annoylib.h"
-#pragma warning( pop )
 #include "kissrandom.h"
-#ifndef WIN32
-#undef isnan
-#endif
-#endif // __USE_ANNOY__
 
-#pragma warning( push )
-#pragma warning( disable : 4267)
-#pragma warning( push )
-#pragma warning( disable : 4291)
-#pragma warning( push )
-#pragma warning( disable : 4996)
-#pragma warning( push )
-#pragma warning( disable : 4018)
-#pragma warning( push )
-#pragma warning( disable : 4244)
 //#define FLANN_USE_CUDA
 #include "flann/flann.h"
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
 
 namespace hdi {
   namespace dr {
@@ -292,22 +253,6 @@ namespace hdi {
       neighborhood_graph.resize(_num_dps*nn);
       distance_based_probabilities.resize(_num_dps*nn);
         
-      // Fallback to FLANN if others are not supported
-      #ifndef HNSWLIB_SUPPORTED
-        if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
-        {
-            hdi::utils::secureLog(_logger, "HNSW not available, falling back to FLANN");
-            _params._aknn_algorithm = hdi::dr::KNN_FLANN;
-        }
-      #endif // HNSWLIB_SUPPORTED
-                
-      #ifndef __USE_ANNOY__
-        if (_params._aknn_algorithm == hdi::dr::KNN_ANNOY)
-        {
-            _params._aknn_algorithm = hdi::dr::KNN_FLANN;
-        }
-      #endif // __USE_ANNOY__
-
       if(_params._aknn_algorithm == hdi::dr::KNN_FLANN)
       {
         utils::secureLog(_logger, "Computing the neighborhood graph...");
@@ -327,7 +272,6 @@ namespace hdi {
       }
       else if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
-#ifdef HNSWLIB_SUPPORTED
         utils::secureLog(_logger, "Computing the neighborhood graph with HNSW Lib...");
 
         hnswlib::SpaceInterface<float> *space = NULL;
@@ -344,7 +288,7 @@ namespace hdi {
         }
         hnswlib::HierarchicalNSW<scalar_type> appr_alg(space, _num_dps, _params._aknn_algorithmP1, _params._aknn_algorithmP2, 0);
 
-        utils::secureLog(_logger, "\tBuilding the trees...");
+        utils::secureLog(_logger, "\tBuilding the search structure...");
         utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
         appr_alg.addPoint((void*)_high_dimensional_data, (std::size_t) 0);
         unsigned num_threads = std::thread::hardware_concurrency();
@@ -370,46 +314,46 @@ namespace hdi {
             ++j;
           }
         }
-#endif // HNSWLIB_SUPPORTED
       }
       else if (_params._aknn_algorithm == hdi::dr::KNN_ANNOY)
       {
-#ifdef __USE_ANNOY__
+        using namespace Annoy;
         hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy...");
 
         int search_k = nn * _params._aknn_num_trees;
 
-        AnnoyIndexInterface<int, double>* tree = NULL;
+        AnnoyIndexInterface<int32_t, double>* tree = nullptr;
         switch (_params._aknn_metric) {
         case hdi::dr::KNN_METRIC_EUCLIDEAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
         case hdi::dr::KNN_METRIC_COSINE:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new AnnoyIndex<int, double, Angular, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int32_t, double, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
         case hdi::dr::KNN_METRIC_MANHATTAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new AnnoyIndex<int, double, Manhattan, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int32_t, double, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
           //case hdi::dr::KNN_METRIC_HAMMING:
           //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //  tree = new AnnoyIndex<int, double, Hamming, Kiss32Random>(num_dim);
+          //  tree = new AnnoyIndex<int32_t, double, Hamming, Kiss64Random>(num_dim);
           //  break;
         case hdi::dr::KNN_METRIC_DOT:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new AnnoyIndex<int, double, DotProduct, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int32_t, double, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
         default:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int, double, Euclidean, Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
         }
 
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
 
+          utils::secureLog(_logger, "\tBuilding the search structure...");
           for (int i = 0; i < _num_dps; ++i) {
             double* vec = new double[_dimensionality];
             for (int z = 0; z < _dimensionality; ++z) {
@@ -431,7 +375,7 @@ namespace hdi {
             }
           }
 
-          hdi::utils::secureLog(_logger, "Done building tree. Beginning nearest neighbor search... ");
+          hdi::utils::secureLog(_logger, "Done building trees. Beginning nearest neighbor search... ");
 
 
 #pragma omp parallel for
@@ -450,7 +394,6 @@ namespace hdi {
           }
         }
         delete tree;
-#endif // __USE_ANNOY__
       }
 
       {
