@@ -30,6 +30,7 @@ if(ENABLE_CODE_ANALYSIS)
     endif()
 endif()
 
+check_and_set_AVX(${PROJECT} ${ENABLE_AVX})
 ########### INSTALL ##############
 install(TARGETS ${PROJECT}
     EXPORT ${PROJECT}Targets

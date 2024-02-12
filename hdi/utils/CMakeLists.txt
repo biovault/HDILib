@@ -20,6 +20,7 @@ if(ENABLE_CODE_ANALYSIS)
     endif()
 endif()
 
+check_and_set_AVX(${PROJECT} ${ENABLE_AVX})
 if (UNIX)
     target_link_libraries (hdiutils PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
 endif (UNIX)

@@ -1,6 +1,5 @@
 cmake_minimum_required (VERSION 3.15)
 
-option(USE_AVX "Enable AVX support" OFF)
 option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
 
 # Set C++14 language standard
@@ -13,6 +12,7 @@ set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
 
+option(ENABLE_AVX "Enable AVX support" OFF)
 if (ENABLE_CODE_ANALYSIS AND WIN32)
   message("*******Code Analysis Run*******")
 endif()
@@ -40,6 +40,8 @@ endif()
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${PROJECT_SOURCE_DIR}/cmake")
 
+# Test hardware avx capabilities
+include(CMakeSetOptimizationAndAVX)
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

@@ -40,6 +40,7 @@ if(ENABLE_CODE_ANALYSIS)
     endif()
 endif()
 
+check_and_set_AVX(${PROJECT} ${ENABLE_AVX})
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
