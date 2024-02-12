@@ -67,7 +67,7 @@ install(TARGETS ${PROJECT}
 # Preserve the header hierarchy by explicit install
 # the CMake PUBLIC_HEADER target property flattens it if used.
 install(CODE "foreach(DR_HEADER ${HeaderFiles})
-        message(STATUS \"Installing: \${HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
+        message(STATUS \"Installing: \${DR_HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
         execute_process(
             COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
                 \"${CMAKE_CURRENT_SOURCE_DIR}/\${DR_HEADER}\" 
