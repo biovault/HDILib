@@ -37,13 +37,14 @@ endmacro()
 macro(set_optimization_level target level)
     message(STATUS "Set optimization level in release for ${target} to ${level}")
 
-    # Check compiler being used
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-        # Set optimization flags for GCC and Clang
         set(OPTIMIZATION_LEVEL_FLAG "-O${level}")
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        # Set optimization flags for MSVC
-        set(OPTIMIZATION_LEVEL_FLAG "/O${level}")
+        if(${level} EQUAL 0)
+            set(OPTIMIZATION_LEVEL_FLAG "/Od")
+        else()
+            set(OPTIMIZATION_LEVEL_FLAG "/O${level}")
+        endif()
     endif()
 
     target_compile_options(${target} PRIVATE "$<$<CONFIG:Release>:${OPTIMIZATION_LEVEL_FLAG}>")
