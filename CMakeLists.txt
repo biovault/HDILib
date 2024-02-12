@@ -72,7 +72,7 @@ message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
-find_package(lz4 REQUIRED)
+find_package(lz4)
 find_package(flann REQUIRED)
 find_package(OpenMP)
 

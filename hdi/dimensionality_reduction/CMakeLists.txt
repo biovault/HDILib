@@ -79,10 +79,15 @@ install(CODE "foreach(DR_HEADER ${HeaderFiles})
 
 # Install dependency headers
 if(NOT DEFINED ENV{CI})
-    if(DEFINED flann_INCLUDE_DIR AND DEFINED lz4_INCLUDE_DIR)
+    if(DEFINED flann_INCLUDE_DIR)
         install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+    endif()
+
+    if(DEFINED lz4_INCLUDE_DIR)
         install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
-    elseif(DEFINED VCPKG_INSTALLED_DIR)
+    endif()
+    
+    if(DEFINED VCPKG_INSTALLED_DIR)
         install(DIRECTORY "${VCPKG_INSTALLED_DIR}/x64-windows-static/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
         install(CODE "foreach(LZ4_HEADER lz4.h lz4file.h lz4frame.h lz4frame_static.h lz4hc.h)
                 execute_process(
