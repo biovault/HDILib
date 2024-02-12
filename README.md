@@ -67,12 +67,12 @@ When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH
 
 On Linux with e.g.
 ```bash
-sudo apt-get -y install libflann-dev
+sudo apt-get -y install libflann-dev liblz4-dev
 ```
 
 On Mac OS with
 ```
-brew install flann
+brew install flann lz4
 ```
 
 ### Generate the build files
@@ -89,13 +89,13 @@ This will produce a Makefile, other generators like ninja are also possible. Use
 gcc8 or gcc9 should be used for prebuilt flann
 
 ```bash
-cmake  -S . -B -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -G "Unix Makefiles"
+cmake  -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DENABLE_PID=ON -G "Unix Makefiles"
 ```
 
 **Macos**
 Tested with Xcode 10.3 & apple-clang 10:
 ```bash
-cmake  -S . -B -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
+cmake  -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 ```
 
 ## Using the HDILib
