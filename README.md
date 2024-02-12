@@ -85,17 +85,17 @@ cmake -S . -B build -G "Visual Studio 16 2019" -A "x64" -DCMAKE_TOOLCHAIN_FILE=.
 ```
 
 **Linux**
-This will produce a Makefile. Use the make command e.g. *make -j 8* to build. 
+This will produce a Makefile, other generators like ninja are also possible. Use the make command e.g. *make -j 8* to build. 
 gcc8 or gcc9 should be used for prebuilt flann
 
 ```bash
-cmake  -S . -B -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install -G "Unix Makefiles"
+cmake  -S . -B -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -G "Unix Makefiles"
 ```
 
 **Macos**
-Use Xcode 10.3 apple-clang 10 is supported
+Tested with Xcode 10.3 & apple-clang 10:
 ```bash
-cmake  -S . -B -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
+cmake  -S . -B -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 ```
 
 ## Using the HDILib
