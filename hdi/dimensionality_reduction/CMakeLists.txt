@@ -80,8 +80,21 @@ install(CODE "foreach(DR_HEADER ${HeaderFiles})
 
 # Install dependency headers
 if(NOT DEFINED ENV{CI})
-    install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
-    install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
+    if(DEFINED flann_INCLUDE_DIR AND DEFINED lz4_INCLUDE_DIR)
+        install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+        install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
+    elseif(DEFINED VCPKG_INSTALLED_DIR)
+        install(DIRECTORY "${VCPKG_INSTALLED_DIR}/x64-windows-static/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
+        install(CODE "foreach(LZ4_HEADER lz4.h lz4file.h lz4frame.h lz4frame_static.h lz4hc.h)
+                execute_process(
+                    COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                        \"${VCPKG_INSTALLED_DIR}/x64-windows-static/include/\${LZ4_HEADER}\" 
+                        \"${CMAKE_INSTALL_PREFIX}/include/\${LZ4_HEADER}\"
+                )
+            endforeach()"
+            COMPONENT ANNOY_HEADERS
+        )
+    endif()
 endif()
 
 install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
