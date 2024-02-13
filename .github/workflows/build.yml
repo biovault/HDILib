@@ -28,11 +28,6 @@ jobs:
     strategy:
       matrix:
         include:
-          #- name: Windows-msvc2017
-          #  os: windows-2016
-          #  compiler: msvc-2017
-          #  build-cversion: 15
-
           # This build is Debug + /analyze flag
           #- name: Static Analysis Windows
           #  os: windows-2019
@@ -55,22 +50,13 @@ jobs:
             build-os: Linux
             build-libcxx: libstdc++
 
-          #- name: Macos_xcode10.3
-          #  os: macos-10.15
-          #  build-compiler: apple-clang
-          #  build-cversion: "10.0"
-          #  build-config: Release
-          #  build-os: Macos
-          #  build-xcode-version: 10.3
-          #  build-libcxx: libc++
-
-          - name: Macos_xcode12.4
-            os: macos-11
+          - name: Macos_xcode14.1
+            os: macos-13
             build-compiler: apple-clang
-            build-cversion: "12.0"
+            build-cversion: "13.0"
             build-config: Release
             build-os: Macos
-            build-xcode-version: 12.4
+            build-xcode-version: 14.1
             build-libcxx: libc++
 
     steps:
@@ -87,7 +73,7 @@ jobs:
       - name: Setup python version
         uses: actions/setup-python@v1
         with:
-          python-version: "3.7"
+          python-version: "3.10"
 
       - name: Setup gcc version
         if: startsWith(matrix.build-compiler, 'gcc')
