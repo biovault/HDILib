@@ -42,10 +42,10 @@ jobs:
             build-runtime: MD
             build-config: Release
 
-          - name: Linux_gcc9
-            os: ubuntu-20.04
+          - name: Linux_gcc11
+            os: ubuntu-22.04
             build-compiler: gcc
-            build-cversion: 9
+            build-cversion: 11
             build-config: Release
             build-os: Linux
             build-libcxx: libstdc++
@@ -53,7 +53,7 @@ jobs:
           - name: Macos_xcode13.4.1
             os: macos-12
             build-compiler: apple-clang
-            build-cversion: "13.0"
+            build-cversion: 13
             build-config: Release
             build-os: Macos
             build-xcode-version: 13.4.1
