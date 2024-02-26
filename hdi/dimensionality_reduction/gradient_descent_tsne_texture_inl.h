@@ -131,8 +131,9 @@ namespace hdi {
       utils::secureLogValue(_logger, "Number of data points", _P.size());
 
       computeHighDimensionalDistribution(probabilities);
+      
       if (!params._presetEmbedding) {
-        initializeEmbeddingPosition(params._seed);
+        initializeEmbeddingPosition(_params._seed, _params._rngRange);
       }
 
 #ifndef __APPLE__
@@ -167,7 +168,10 @@ namespace hdi {
       utils::secureLogValue(_logger, "Number of data points", _P.size());
 
       _P = distribution;
-      initializeEmbeddingPosition(params._seed, params._rngRange);
+      
+      if (!params._presetEmbedding) {
+        initializeEmbeddingPosition(_params._seed, _params._rngRange);
+      }
 
 #ifndef __APPLE__
       if (_gpgpu_type == AUTO_DETECT)
