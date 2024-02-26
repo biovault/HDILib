@@ -67,12 +67,12 @@ When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH
 
 On Linux with e.g.
 ```bash
-sudo apt-get -y install libflann-dev
+sudo apt-get -y install libflann-dev liblz4-dev
 ```
 
 On Mac OS with
 ```
-brew install flann
+brew install flann lz4
 ```
 
 ### Generate the build files
@@ -81,21 +81,23 @@ brew install flann
 This will produce a HDILib.sln file for VisualStudio. 
 Open the .sln in VisualStudio and build ALL_BUILD for Release or Debug matching the CMAKE_BUILD_TYPE.
 ```cmd
-cmake -S . -B build -G "Visual Studio 16 2019" -A "x64" -DCMAKE_TOOLCHAIN_FILE=.\build\conan_toolchain.cmake -DCMAKE_INSTALL_PREFIX=install
+cmake -S . -B build -G "Visual Studio 16 2019" -A "x64" -DCMAKE_TOOLCHAIN_FILE=.\build\conan_toolchain.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_INSTALL_PREFIX=install
 ```
 
 **Linux**
-This will produce a Makefile. Use the make command e.g. *make -j 8* to build. 
-gcc8 or gcc9 should be used for prebuilt flann
+This will produce a Makefile, other generators like ninja are also possible. Use the make commands e.g. `make -j 8 && make install` to build and install. 
 
 ```bash
-cmake  -S . -B -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install -G "Unix Makefiles"
+cmake  -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DENABLE_PID=ON -G "Unix Makefiles"
+
+// build and install the libary, independent of generator
+cmake --build build --config Release --target install
 ```
 
 **Macos**
-Use Xcode 10.3 apple-clang 10 is supported
+Tested with Xcode 10.3 & apple-clang 10:
 ```bash
-cmake  -S . -B -DCMAKE_BUILD_TYPE=Release -DINSTALL_PREBUILT_DEPENDENCIES=ON -DCMAKE_INSTALL_PREFIX=install
+cmake  -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 ```
 
 ## Using the HDILib

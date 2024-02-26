@@ -1,25 +1,37 @@
 cmake_minimum_required (VERSION 3.15)
 
-option(USE_AVX "Enable AVX support" OFF)
-option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
+set(PROJECT "HDILib")
+PROJECT(${PROJECT})
 
-# Set C++14 language standard
+# -----------------------------------------------------------------------------
+# User Options
+# -----------------------------------------------------------------------------
+option(ENABLE_AVX "Enable AVX support" OFF)
+option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC" OFF)
+option(ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
+set(OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
+set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
+
+if (ENABLE_AVX)
+    message("ENABLE_AVX is ON")
+endif()
+
+if (ENABLE_CODE_ANALYSIS AND WIN32)
+    message("Code Analysis ENABLED")
+endif()
+
+if (ENABLE_PID)
+    message(STATUS "Position independent code compilation ON")
+endif()
+
+# -----------------------------------------------------------------------------
+# CMake Options
+# -----------------------------------------------------------------------------
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable the INSTALL project for building by default in VS
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
-
-set(PROJECT "HDILib")
-PROJECT(${PROJECT})
-
-if (ENABLE_CODE_ANALYSIS AND WIN32)
-  message("*******Code Analysis Run*******")
-endif()
-
-if (ENABLE_PID)
-  message(STATUS "Position independent code code compilation ON")
-endif()
 
 if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus")
@@ -27,7 +39,6 @@ if(MSVC)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")
 endif(MSVC)
 
-set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
@@ -36,10 +47,12 @@ if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
     "from the source directory!")
 endif()
 
-#The cmake make sub directory contains the ConanSetup.cmake 
+#The cmake make sub directory contains the i.a. ConanSetup.cmake 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
   "${PROJECT_SOURCE_DIR}/cmake")
 
+# Test hardware avx capabilities
+include(CMakeSetOptimizationAndAVX)
 
 # If the CMAKE_INSTALL_PREFIX has not been set by the user, set it to the build folder
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -56,24 +69,32 @@ endif()
 
 message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 
-find_package(lz4 REQUIRED)
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+find_package(lz4)
 find_package(flann REQUIRED)
 find_package(OpenMP)
 
 if(OpenMP_CXX_FOUND)
-	message (STATUS "OpenMP found")
+    message (STATUS "OpenMP found")
 elseif(CMAKE_GENERATOR STREQUAL Xcode)
-	add_definitions( -D__USE_GCD__)
+    add_definitions( -D__USE_GCD__)
 else()
     message(WARNING, "OpenMP not found!")
 endif()
 
+# -----------------------------------------------------------------------------
+# Projects
+# -----------------------------------------------------------------------------
 add_subdirectory (hdi/utils)
 add_subdirectory (hdi/data)
 add_subdirectory (hdi/dimensionality_reduction)
 
+# -----------------------------------------------------------------------------
+# Create HDILib find_package
+# -----------------------------------------------------------------------------
 # NOTE CMake installs are defined in the sub-projects.
-# ***Create a HdpsCore package to support the find_package command**
 
 # Helper macro for packaging
 include(CMakePackageConfigHelpers)
@@ -84,8 +105,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE
 #write_basic_package_version_file(
 #  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
 #  VERSION "${HDILib_VERSION}"
-#  # When the hdps core is stable compatibility can 
-#  # change to AnyNewerVersion or SameMajorVersion
 #  COMPATIBILITY ExactVersion
 #)
 

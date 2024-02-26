@@ -34,25 +34,24 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+if(ENABLE_PID)
+    set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 if(ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         target_compile_options(${PROJECT} PRIVATE /analyze)
     endif()
 endif()
 
+set_optimization_level(${PROJECT} ${OPTIMIZATION_LEVEL})
+check_and_set_AVX(${PROJECT} ${ENABLE_AVX})
+
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
     target_link_libraries(${PROJECT} PRIVATE Threads::Threads)
 endif(UNIX)
-
-if(ENABLE_CODE_ANALYSIS AND WIN32)
-    target_compile_options(${PROJECT} PRIVATE /analyze)
-endif()
-
-if(ENABLE_PID)
-    set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
 
 ########### INSTALL ##############
 #set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
@@ -67,7 +66,7 @@ install(TARGETS ${PROJECT}
 # Preserve the header hierarchy by explicit install
 # the CMake PUBLIC_HEADER target property flattens it if used.
 install(CODE "foreach(DR_HEADER ${HeaderFiles})
-        message(STATUS \"Installing: \${HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
+        message(STATUS \"Installing: \${DR_HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
         execute_process(
             COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
                 \"${CMAKE_CURRENT_SOURCE_DIR}/\${DR_HEADER}\" 
@@ -80,8 +79,26 @@ install(CODE "foreach(DR_HEADER ${HeaderFiles})
 
 # Install dependency headers
 if(NOT DEFINED ENV{CI})
-    install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
-    install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
+    if(DEFINED flann_INCLUDE_DIR)
+        install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+    endif()
+
+    if(DEFINED lz4_INCLUDE_DIR)
+        install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
+    endif()
+    
+    if(DEFINED VCPKG_INSTALLED_DIR)
+        install(DIRECTORY "${VCPKG_INSTALLED_DIR}/x64-windows-static/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
+        install(CODE "foreach(LZ4_HEADER lz4.h lz4file.h lz4frame.h lz4frame_static.h lz4hc.h)
+                execute_process(
+                    COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                        \"${VCPKG_INSTALLED_DIR}/x64-windows-static/include/\${LZ4_HEADER}\" 
+                        \"${CMAKE_INSTALL_PREFIX}/include/\${LZ4_HEADER}\"
+                )
+            endforeach()"
+            COMPONENT ANNOY_HEADERS
+        )
+    endif()
 endif()
 
 install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
