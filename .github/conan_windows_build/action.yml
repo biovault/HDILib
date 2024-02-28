@@ -3,7 +3,7 @@ description: "Encapsulate cmake composite run steps that are common for Windows,
 # reference https://docs.github.com/en/free-pro-team@latest/actions/creating-actions/creating-a-composite-run-steps-action
 inputs:
   conan-visual-version:
-    description: "MSVC version: 15, 16 represent msvc-2017 or msvc-2019"
+    description: "MSVC version: 16, 17 represent msvc-2019 or msvc-2022"
     required: true
   conan-build-type:
     description: "Empty or Analysis"
@@ -89,7 +89,7 @@ runs:
         $package_name = (conan inspect --raw name conanfile.py)
         $package_ref = $package_name + '/*'
         echo "Uploading $package_ref  to the Artifactory"
-        if (-not("${{ inputs.conan-build-type }}" -eq "Analysis")) {conan upload --all --force --confirm -r $Env:CONAN_LKEB_ARTIFACTORY $package_ref}
+        if ((git merge-base --is-ancestor origin/master master) && -not("${{ inputs.conan-build-type }}" -eq "Analysis")) {echo "Only upload on master build"}
 
       shell: pwsh
       env:

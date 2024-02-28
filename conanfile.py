@@ -53,8 +53,7 @@ class HDILibConan(ConanFile):
         if self.settings.build_type == "None":
             print("Skip root package requirements for build_type NONE")
             return
-        #self.requires("flann/1.9.2")
-        self.requires("flann/1.9.2@lkeb/stable")
+        self.requires("flann/1.9.2")
 
     def system_requirements(self):
         if os_info.is_macos:

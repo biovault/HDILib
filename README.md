@@ -145,8 +145,10 @@ Currently the following build matrix is performed:
 | OS                   | Architecture | Compiler  |
 | -------------------- | ------------ | --------- |
 | Windows              | x64          | MSVC 2019 |
+| Windows              | x64          | MSVC 2022 |
 | Linux (ubuntu-22.04) | x86_64       | gcc 11    |
-| Macos (12)           | x86_64         | clang 13  |
+| Macos (12)           | x86_64       | clang 13  |
+| Macos (13)           | arm64        | clang 13  |
 
 [![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)
 
