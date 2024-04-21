@@ -41,6 +41,7 @@
 #include <unordered_map>
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
+#include "tsne_parameters.h"
 
 namespace hdi{
   namespace dr{
@@ -58,36 +59,18 @@ namespace hdi{
       typedef uint32_t data_handle_type;
 
     public:
-      //! Parameters used for the initialization of the algorithm
-      class Parameters{
-      public:
-        Parameters();
-        int _seed;
-        int _embedding_dimensionality;
-
-        double _minimum_gain;
-        double _eta;                //! constant multiplicator of the gradient
-        double _momentum;
-        double _final_momentum;
-        double _mom_switching_iter;         //! momentum switching iteration
-        double _exaggeration_factor;        //! exaggeration factor for the attractive forces. Note: it shouldn't be too high when few points are used
-        unsigned int _remove_exaggeration_iter;   //! iterations with complete exaggeration of the attractive forces
-        unsigned int _exponential_decay_iter;     //! iterations required to remove the exaggeration using an exponential decay
-      };
-
-
-    public:
       WeightedTSNE();
       //! Initialize the class with a list of distributions. A joint-probability distribution will be computed as in the tSNE algorithm
-      void initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, Parameters params = Parameters());
+      void initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = Parameters());
       //! Initialize the class with a joint-probability distribution. Note that it must be provided non initialized and with the weight of each row equal to 2.
-      void initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, Parameters params = Parameters());
+      void initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
       //! Reset the internal state of the class but it keeps the inserted data-points
       void reset();
       //! Reset the class and remove all the data points
       void clear();
 
-
+      bool isInitialized() { return _initialized == true; }
+      
       //! Get the position in the embedding for a data point
       void getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle)const;
 
@@ -141,8 +124,6 @@ namespace hdi{
       //! Compute the exaggeration factor based on the current iteration
       scalar_type exaggerationFactor();
 
-
-
     private:
       data::Embedding<scalar_type>* _embedding; //! embedding
       typename data::Embedding<scalar_type>::scalar_vector_type* _embedding_container;
@@ -159,7 +140,7 @@ namespace hdi{
       scalar_vector_type _gain; //! Gain
       scalar_type _theta; //! value of theta used in the Barnes-Hut approximation. If a value of 1 is provided the exact tSNE computation is used.
 
-      Parameters _params;
+      TsneParameters _params;
       unsigned int _iteration;
 
       utils::AbstractLog* _logger;
