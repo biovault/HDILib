@@ -69,7 +69,9 @@ namespace hdi{
       void reset();
       //! Reset the class and remove all the data points
       void clear();
-      
+
+      //! Wheter initialization flag is true
+      bool isInitialized() { return _initialized == true; }
 
       //! Get the position in the embedding for a data point
       void getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle)const;
