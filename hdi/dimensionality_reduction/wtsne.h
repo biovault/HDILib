@@ -61,7 +61,7 @@ namespace hdi{
     public:
       WeightedTSNE();
       //! Initialize the class with a list of distributions. A joint-probability distribution will be computed as in the tSNE algorithm
-      void initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = Parameters());
+      void initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
       //! Initialize the class with a joint-probability distribution. Note that it must be provided non initialized and with the weight of each row equal to 2.
       void initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
       //! Reset the internal state of the class but it keeps the inserted data-points
