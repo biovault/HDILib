@@ -45,42 +45,8 @@
 #include <dispatch/dispatch.h>
 #endif
 
-#pragma warning( push )
-#pragma warning( disable : 4267)
-#pragma warning( push )
-#pragma warning( disable : 4291)
-#pragma warning( push )
-#pragma warning( disable : 4996)
-#pragma warning( push )
-#pragma warning( disable : 4018)
-#pragma warning( push )
-#pragma warning( disable : 4244)
-//#define FLANN_USE_CUDA
-#include "flann/flann.h"
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-
 namespace hdi{
   namespace dr{
-  /////////////////////////////////////////////////////////////////////////
-
-    template <typename scalar, typename sparse_scalar_matrix>
-    WeightedTSNE<scalar, sparse_scalar_matrix>::Parameters::Parameters():
-      _seed(-1),
-      _embedding_dimensionality(2),
-      _minimum_gain(0.1),
-      _eta(200),
-      _momentum(0.2),
-      _final_momentum(0.5),
-      _mom_switching_iter(250),
-      _exaggeration_factor(4),
-      _remove_exaggeration_iter(250),
-      _exponential_decay_iter(150)
-    {}
-
   /////////////////////////////////////////////////////////////////////////
 
     template <typename scalar, typename sparse_scalar_matrix>
@@ -119,7 +85,7 @@ namespace hdi{
 
 
     template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, Parameters params){
+    void WeightedTSNE<scalar, sparse_scalar_matrix>::initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params){
       utils::secureLog(_logger,"Initializing W-tSNE...");
       {//Aux data
         _params = params;
@@ -139,7 +105,11 @@ namespace hdi{
       utils::secureLogValue(_logger,"Number of data points",_P.size());
 
       computeHighDimensionalDistribution(probabilities);
-      initializeEmbeddingPosition(params._seed);
+
+      if (!params._presetEmbedding) {
+        initializeEmbeddingPosition(_params._seed, _params._rngRange);
+      }
+
       computeWeights();
 
       _iteration = 0;
@@ -149,7 +119,7 @@ namespace hdi{
     }
 
     template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, Parameters params){
+    void WeightedTSNE<scalar, sparse_scalar_matrix>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params){
       utils::secureLog(_logger,"Initializing W-tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
@@ -166,11 +136,14 @@ namespace hdi{
         _gain.resize(size*params._embedding_dimensionality,1);
       }
 
-
       utils::secureLogValue(_logger,"Number of data points",_P.size());
 
       _P = distribution;
-      initializeEmbeddingPosition(params._seed);
+
+      if (!params._presetEmbedding) {
+        initializeEmbeddingPosition(_params._seed, _params._rngRange);
+      }
+
       computeWeights();
 
       _iteration = 0;

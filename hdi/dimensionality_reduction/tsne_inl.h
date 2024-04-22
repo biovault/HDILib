@@ -61,7 +61,8 @@ namespace hdi{
       _final_momentum(0.8),
       _mom_switching_iter(250),
       _exaggeration_factor(4),
-      _remove_exaggeration_iter(250)
+      _remove_exaggeration_iter(250),
+      _presetEmbedding(false)
     {}
 
   /////////////////////////////////////////////////////////////////////////
@@ -143,13 +144,14 @@ namespace hdi{
       //compute distances between data-points
       computeHighDimensionalDistances();
       //Compute gaussian distributions
-      computeGaussianDistributions(params._perplexity);
+      computeGaussianDistributions(_init_params._perplexity);
       //Compute High-dimensional distribution
       computeHighDimensionalDistribution();
 
-
       //Initialize Embedding position
-      initializeEmbeddingPosition(params._seed);
+      if (!_init_params._presetEmbedding) {
+        initializeEmbeddingPosition(_init_params._seed);
+      }
 
       _iteration = 0;
 

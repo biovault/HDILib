@@ -72,6 +72,7 @@ namespace hdi{
         double _mom_switching_iter;
         double _exaggeration_factor;
         int _remove_exaggeration_iter;
+        bool _presetEmbedding;
       };
 
 
@@ -94,6 +95,9 @@ namespace hdi{
       void clear();
       //! Return the number of data points
       int size(){  return static_cast<int>(_high_dimensional_data.size());  }
+
+      //! Wheter initialization flag is true
+      bool isInitialized() { return _initialized == true; }
 
       //! Get the dimensionality of the data
       int dimensionality(){return _dimensionality;}
