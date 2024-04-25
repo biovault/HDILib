@@ -39,6 +39,7 @@
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
 #include "weighted_sptree.h"
+
 #include <random>
 
 #ifdef __USE_GCD__
@@ -49,8 +50,8 @@ namespace hdi{
   namespace dr{
   /////////////////////////////////////////////////////////////////////////
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    WeightedTSNE<scalar, sparse_scalar_matrix>::WeightedTSNE():
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::WeightedTSNE():
       _initialized(false),
       _logger(nullptr),
       _theta(0)
@@ -58,24 +59,24 @@ namespace hdi{
   
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::reset(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::reset(){
       _initialized = false;
     }
   
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::clear(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::clear(){
       _embedding->clear();
       _initialized = false;
     }
   
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle)const{
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::getEmbeddingPosition(scalar_vector_type& embedding_position, map_key_type handle)const{
       if(!_initialized){
         throw std::logic_error("Algorithm must be initialized before ");
       }
       embedding_position.resize(_params._embedding_dimensionality);
-      for(int i = 0; i < _params._embedding_dimensionality; ++i){
+      for(std::uint64_t i = 0; i < _params._embedding_dimensionality; ++i){
         (*_embedding_container)[i] = (*_embedding_container)[handle*_params._embedding_dimensionality + i];
       }
     }
@@ -84,13 +85,13 @@ namespace hdi{
   /////////////////////////////////////////////////////////////////////////
 
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params){
       utils::secureLog(_logger,"Initializing W-tSNE...");
       {//Aux data
         _params = params;
-        unsigned int size = probabilities.size();
-        unsigned int size_sq = probabilities.size()*probabilities.size();
+        const size_t size = probabilities.size();
+        const size_t size_sq = probabilities.size()*probabilities.size();
         
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -118,13 +119,13 @@ namespace hdi{
       utils::secureLog(_logger,"Initialization complete!");
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params){
       utils::secureLog(_logger,"Initializing W-tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
-        unsigned int size = distribution.size();
-        unsigned int size_sq = distribution.size()*distribution.size();
+        const size_t size = distribution.size();
+        const size_t size_sq = distribution.size()*distribution.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -152,13 +153,14 @@ namespace hdi{
       utils::secureLog(_logger,"Initialization complete!");
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::computeHighDimensionalDistribution(const sparse_scalar_matrix& probabilities){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeHighDimensionalDistribution(const sparse_scalar_matrix& probabilities){
       utils::secureLog(_logger,"Computing high-dimensional joint probability distribution...");
 
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
+
       //Can be improved by using the simmetry of the matrix (half the memory) //TODO
-      for(int j = 0; j < n; ++j){
+      for(size_t j = 0; j < n; ++j){
         for(auto& elem: probabilities[j]){
           scalar_type v0 = elem.second;
           auto iter = probabilities[elem.first].find(j);
@@ -172,12 +174,12 @@ namespace hdi{
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::computeWeights(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeWeights(){
       _weights.clear();
       _weights.resize(_P.size(),0);
-      for(int i = 0; i < _weights.size(); ++i){
-        for(auto v: _P[i]){
+      for(size_t i = 0; i < _weights.size(); ++i){
+        for(const auto& v: _P[i]){
           _weights[i] += v.second;
         }
       }
@@ -185,16 +187,16 @@ namespace hdi{
     }
 
     //! Set weights (overwrites the default weights)
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::setWeights(const scalar_vector_type& weights){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::setWeights(const scalar_vector_type& weights){
       checkAndThrowLogic(weights.size() == _P.size(), "setWeights: wrong size");
       _weights = weights;
       utils::secureLogVectorStats(_logger,"Weights",_weights);
     }
 
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::initializeEmbeddingPosition(int seed, double multiplier){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initializeEmbeddingPosition(int seed, double multiplier){
       utils::secureLog(_logger,"Initializing the embedding...");
       if(seed < 0){
         std::srand(static_cast<unsigned int>(time(NULL)));
@@ -220,8 +222,8 @@ namespace hdi{
       }
     }
     
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::doAnIteration(double mult){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::doAnIteration(double mult){
       if(!_initialized){
         throw std::logic_error("Cannot compute a gradient descent iteration on unitialized data");
       }
@@ -240,8 +242,8 @@ namespace hdi{
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    scalar WeightedTSNE<scalar, sparse_scalar_matrix>::exaggerationFactor(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    scalar WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::exaggerationFactor(){
       scalar_type exaggeration = 1;
 
       if(_iteration <= _params._remove_exaggeration_iter){
@@ -255,8 +257,8 @@ namespace hdi{
       return exaggeration;
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::doAnIterationExact(double mult){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::doAnIterationExact(double mult){
       //Compute Low-dimensional distribution
       computeLowDimensionalDistribution();
       //Compute gradient of the KL function
@@ -264,20 +266,19 @@ namespace hdi{
       //Update the embedding based on the gradient
       updateTheEmbedding(mult);
     }
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::doAnIterationBarnesHut(double mult){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::doAnIterationBarnesHut(double mult){
       //Compute gradient of the KL function using the Barnes Hut approximation
       computeBarnesHutGradient(exaggerationFactor());
       //Update the embedding based on the gradient
       updateTheEmbedding();
     }
     
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::computeLowDimensionalDistribution(){
-      const int n = getNumberOfDataPoints();
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeLowDimensionalDistribution(){
+      const size_t n = getNumberOfDataPoints();
 
       double sum_Q = 0;
-      
       
       // Loop over all edges in the graph
 #ifdef __USE_GCD__
@@ -285,10 +286,10 @@ namespace hdi{
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
       #pragma omp parallel for
-      for(int j = 0; j < n; ++j){
+      for(std::int64_t j = 0; j < n; ++j){
 #endif //__USE_GCD__
         //_Q[j*n + j] = 0;
-        for(int i = j+1; i < n; ++i){
+        for(size_t i = j+1; i < n; ++i){
           const double euclidean_dist_sq(
               utils::euclideanDistanceSquared<scalar_type>(
                 (*_embedding_container).begin()+j*_params._embedding_dimensionality,
@@ -305,37 +306,37 @@ namespace hdi{
 #ifdef __USE_GCD__
       );
 #endif
-      for(int j = 0; j < n; ++j){
-        for(int i = 0; i < n; ++i){
+      for(size_t j = 0; j < n; ++j){
+        for(size_t i = 0; i < n; ++i){
           sum_Q += _Q[j*n + i]*_weights[j]*_weights[i];
         }
       }
       _normalization_Q = static_cast<scalar_type>(sum_Q);
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::computeExactGradient(double exaggeration){
-      const int n = getNumberOfDataPoints();
-      const int dim = _params._embedding_dimensionality;
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeExactGradient(double exaggeration){
+      const size_t n = getNumberOfDataPoints();
+      const std::uint64_t dim = _params._embedding_dimensionality;
 
-      for(int i = 0; i < n; ++i){
-        for(int d = 0; d < dim; ++d){
+      for(size_t i = 0; i < n; ++i){
+        for(std::uint64_t d = 0; d < dim; ++d){
           _gradient[i * dim + d] = 0;
         }
       }
 
-      for(int i = 0; i < n; ++i){
-        for(int j = 0; j < n; ++j){
-          for(int d = 0; d < dim; ++d){
-            const int idx = i*n + j;
+      for(size_t i = 0; i < n; ++i){
+        for(size_t j = 0; j < n; ++j){
+          for(std::uint64_t d = 0; d < dim; ++d){
+            const size_t idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
             const double negative(_weights[i] * _weights[j] * _Q[idx] * _Q[idx] * distance / _normalization_Q);
             _gradient[i * dim + d] += static_cast<scalar_type>(-4*negative);
           }
         }
-        for(auto& elem: _P[i]){
-          for(int d = 0; d < dim; ++d){
-            const int j = elem.first;
+        for(const auto& elem: _P[i]){
+          for(std::uint64_t d = 0; d < dim; ++d){
+            const auto j = elem.first;
             const int idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
             double p_ij = elem.second/n;
@@ -346,8 +347,8 @@ namespace hdi{
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::computeBarnesHutGradient(double exaggeration){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeBarnesHutGradient(double exaggeration){
       typedef double hp_scalar_type;
 
       WeightedSPTree<scalar_type> sptree(_params._embedding_dimensionality,_embedding->getContainer().data(),_weights.data(),getNumberOfDataPoints());
@@ -372,7 +373,7 @@ namespace hdi{
       dispatch_apply(getNumberOfDataPoints(), dispatch_get_global_queue(0, 0), ^(size_t n) {
 #else
       #pragma omp parallel for
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(std::int64_t n = 0; n < getNumberOfDataPoints(); n++){
 #endif //__USE_GCD__
         sptree.computeNonEdgeForces(n, _theta, negative_forces.data() + n * _params._embedding_dimensionality, sum_Q_subvalues[n]);
       }
@@ -381,11 +382,11 @@ namespace hdi{
 #endif
 
       sum_Q = 0;
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(size_t n = 0; n < getNumberOfDataPoints(); n++){
         sum_Q += sum_Q_subvalues[n];
       }
 
-      for(int i = 0; i < _gradient.size(); i++){
+      for(size_t i = 0; i < _gradient.size(); i++){
         _gradient[i] = positive_forces[i] - (negative_forces[i] / sum_Q);
       }
 
@@ -395,9 +396,9 @@ namespace hdi{
     template <typename T>
     T sign(T x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void WeightedTSNE<scalar, sparse_scalar_matrix>::updateTheEmbedding(double mult){
-      for(int i = 0; i < _gradient.size(); ++i){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::updateTheEmbedding(double mult){
+      for(size_t i = 0; i < _gradient.size(); ++i){
         _gain[i] = static_cast<scalar_type>((sign(_gradient[i]) != sign(_previous_gradient[i])) ? (_gain[i] + .2) : (_gain[i] * .8));
         if(_gain[i] < _params._minimum_gain){
           _gain[i] = static_cast<scalar_type>(_params._minimum_gain);
@@ -410,8 +411,8 @@ namespace hdi{
       ++_iteration;
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    double WeightedTSNE<scalar, sparse_scalar_matrix>::computeKullbackLeiblerDivergence(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    double WeightedTSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeKullbackLeiblerDivergence(){
       assert(false);
       return 0;
     }

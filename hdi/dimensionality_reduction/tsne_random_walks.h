@@ -163,8 +163,6 @@ namespace hdi{
       //! Update the embedding
       void updateTheEmbedding(double mult = 1.);
 
-    
-
     private:
       unsigned int _dimensionality;
       unsigned int _num_dps;
@@ -176,7 +174,6 @@ namespace hdi{
       //LANDMARKS
       std::vector<int> _idx_landmarks_to_dps;
       std::vector<int> _idx_dps_to_landmarks;
-
 
       scalar_vector_type _rw_probabilities;
       std::vector<int> _knns;

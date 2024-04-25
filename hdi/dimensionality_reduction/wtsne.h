@@ -50,13 +50,17 @@ namespace hdi{
       Implementation of the w-tSNE algorithm with sparse and user-defined probabilities
       \author Nicola Pezzotti
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<uint32_t,float>>>
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<std::uint32_t, float> >, typename unsigned_integer = std::uint64_t, typename integer = std::int64_t>
     class WeightedTSNE{
     public:
       typedef scalar scalar_type;
+      typedef unsigned_integer unsigned_int_type;
+      typedef integer int_type;
       typedef sparse_scalar_matrix sparse_scalar_matrix_type;
-      typedef std::vector<scalar_type> scalar_vector_type;
-      typedef uint32_t data_handle_type;
+      typedef std::vector<scalar_type> scalar_vector_type;              // Vector of scalar_type
+      typedef typename sparse_scalar_matrix_type::value_type map_type;  // default hdi::data::MapMemEff
+      typedef typename map_type::key_type map_key_type;                 // default std::uint32_t
+      typedef typename map_type::mapped_type map_value_type;            // default float
 
     public:
       WeightedTSNE();
@@ -72,10 +76,10 @@ namespace hdi{
       bool isInitialized() { return _initialized == true; }
       
       //! Get the position in the embedding for a data point
-      void getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle)const;
+      void getEmbeddingPosition(scalar_vector_type& embedding_position, map_key_type handle)const;
 
       //! Get the number of data points
-      unsigned int getNumberOfDataPoints(){  return _P.size();  }
+      size_t getNumberOfDataPoints(){  return _P.size();  }
       //! Get P
       const sparse_scalar_matrix& getDistributionP()const{ return _P; }
       //! Get Q

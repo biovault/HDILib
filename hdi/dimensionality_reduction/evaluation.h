@@ -60,7 +60,7 @@ namespace hdi {
       inline scalar_type kdtree_distance(const scalar_type *p1, const size_t idx_p2,size_t /*size*/) const
       {
         scalar_type dist(0);
-        for(int d = 0; d < _embedding.numDimensions(); ++d){
+        for(std::uint64_t d = 0; d < _embedding.numDimensions(); ++d){
           const scalar_type v = p1[d]-_embedding.dataAt(idx_p2,d);
           dist += v*v;
         }
@@ -106,8 +106,7 @@ namespace hdi {
       VpTree<DataPoint, euclidean_distance<float> >tree;
       std::vector<DataPoint> obj_X(panel_data.numDataPoints(), DataPoint(panel_data.numDimensions(), -1, panel_data.getData().data()));
       {
-        int n = 0;
-        for(n = 0; n < panel_data.numDataPoints(); n++)
+        for(std::uint64_t n = 0; n < panel_data.numDataPoints(); n++)
           obj_X[n] = DataPoint(panel_data.numDimensions(), n, panel_data.getData().data() + n * panel_data.numDimensions());
         tree.create(obj_X);
       }
@@ -118,7 +117,7 @@ namespace hdi {
       dispatch_apply(pnts_to_evaluate.size(), dispatch_get_global_queue(0, 0), ^(size_t i) {
 #else
       #pragma omp parallel for
-      for(int i = 0; i < pnts_to_evaluate.size(); ++i){
+      for(std::int64_t i = 0; i < pnts_to_evaluate.size(); ++i){
 #endif //__USE_GCD__
         unsigned int id = pnts_to_evaluate[i];
 
@@ -133,14 +132,14 @@ namespace hdi {
         emb_index.findNeighbors(emb_result_set,&(embedding.getContainer()[id*embedding.numDimensions()]),nanoflann::SearchParams(10));
 
         std::unordered_set<unsigned int> hd_id_set;
-        for(int j = 0; j < K; ++j){
-          hd_id_set.insert(indices_hd[1+j].index());
+        for(unsigned int j = 0; j < K; ++j){
+          hd_id_set.insert(indices_hd[1ll+j].index());
         }
 
-        for(int k = 1; k <= K; ++k){
+        for(unsigned int k = 1; k <= K; ++k){
           unsigned int num_positive(0);
-          for(int j = 0; j < k; ++j){
-            if(hd_id_set.find(indices_emb[1+j]) != hd_id_set.end()){
+          for(unsigned int j = 0; j < k; ++j){
+            if(hd_id_set.find(indices_emb[1ll+j]) != hd_id_set.end()){
               ++num_positive;
             }
           }
@@ -195,8 +194,7 @@ namespace hdi {
       VpTree<DataPoint, euclidean_distance<float> >tree;
       std::vector<DataPoint> obj_X(panel_data.numDataPoints(), DataPoint(panel_data.numDimensions(), -1, panel_data.getData().data()));
       {
-        int n = 0;
-        for(n = 0; n < panel_data.numDataPoints(); n++)
+        for(size_t n = 0; n < panel_data.numDataPoints(); n++)
           obj_X[n] = DataPoint(panel_data.numDimensions(), n, panel_data.getData().data() + n * panel_data.numDimensions());
         tree.create(obj_X);
       }
@@ -207,7 +205,7 @@ namespace hdi {
       dispatch_apply(pnts_to_evaluate.size(), dispatch_get_global_queue(0, 0), ^(size_t i) {
 #else
       #pragma omp parallel for
-      for(int i = 0; i < pnts_to_evaluate.size(); ++i){
+      for(std::int64_t i = 0; i < pnts_to_evaluate.size(); ++i){
 #endif //__USE_GCD__
         unsigned int id_pd = emb_id_to_panel_data_id[pnts_to_evaluate[i]];
         unsigned int id_em = pnts_to_evaluate[i];
@@ -223,14 +221,14 @@ namespace hdi {
         emb_index.findNeighbors(emb_result_set,&(embedding.getContainer()[id_em*embedding.numDimensions()]),nanoflann::SearchParams(10));
 
         std::unordered_set<unsigned int> hd_id_set;
-        for(int j = 0; j < K; ++j){
-          hd_id_set.insert(indices_hd[1+j].index());
+        for(unsigned int j = 0; j < K; ++j){
+          hd_id_set.insert(indices_hd[1ll+j].index());
         }
 
-        for(int k = 1; k <= K; ++k){
+        for(unsigned int k = 1; k <= K; ++k){
           unsigned int num_positive(0);
           for(int j = 0; j < k; ++j){
-            if(hd_id_set.find(emb_id_to_panel_data_id[indices_emb[1+j]]) != hd_id_set.end()){
+            if(hd_id_set.find(emb_id_to_panel_data_id[indices_emb[1ll+j]]) != hd_id_set.end()){
               ++num_positive;
             }
           }

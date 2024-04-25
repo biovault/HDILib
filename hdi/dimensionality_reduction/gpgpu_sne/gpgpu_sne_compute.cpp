@@ -1,12 +1,12 @@
 #ifndef __APPLE__
 
-#include "gpgpu_sne_compute.h"
 #include "compute_shaders.glsl"
+#include "gpgpu_sne_compute.h"
 
-#include <vector>
-#include <limits>
-#include <iostream>
 #include <cmath> // for sqrt
+#include <iostream>
+#include <limits>
+#include <vector>
 
 namespace hdi {
   namespace dr {
@@ -30,7 +30,7 @@ namespace hdi {
     // Linearized sparse neighbourhood matrix
     struct LinearProbabilityMatrix
     {
-      std::vector<uint32_t> neighbours;
+      std::vector<std::uint32_t> neighbours;
       std::vector<float> probabilities;
       std::vector<int> indices;
     };
@@ -38,7 +38,11 @@ namespace hdi {
     GpgpuSneCompute::GpgpuSneCompute() :
       _initialized(false),
       _adaptive_resolution(true),
-      _resolutionScaling(PIXEL_RATIO)
+      _resolutionScaling(PIXEL_RATIO),
+      _bounds(),
+      _function_support(0),
+      _compute_buffers(),
+      _timerQuery()
     {
 
     }
@@ -81,12 +85,12 @@ namespace hdi {
     void GpgpuSneCompute::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P) {
       _params = params;
 
-      unsigned int num_points = embedding->numDataPoints();
+      const std::uint64_t num_points = embedding->numDataPoints();
 
       // Linearize sparse probability matrix
       LinearProbabilityMatrix linear_P;
-      unsigned int num_pnts = embedding->numDataPoints();
-      for (int i = 0; i < num_pnts; ++i) {
+
+      for (std::uint64_t i = 0; i < num_points; ++i) {
         linear_P.indices.push_back(linear_P.neighbours.size());
         int size = 0;
         for (const auto& pij : P[i]) {
@@ -115,7 +119,7 @@ namespace hdi {
       fieldComputation.clean();
     }
 
-    void GpgpuSneCompute::initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P) {
+    void GpgpuSneCompute::initializeOpenGL(unsigned int num_points, const LinearProbabilityMatrix& linear_P) {
       glClearColor(0, 0, 0, 0);
 
       fieldComputation.init(num_points);
@@ -158,7 +162,7 @@ namespace hdi {
       glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * sizeof(Point2D), nullptr, GL_STREAM_DRAW);
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[INTERP_FIELDS]);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * 4 * sizeof(float), nullptr, GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * 4ll * sizeof(float), nullptr, GL_STATIC_DRAW);
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[SUM_Q]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float), nullptr, GL_STREAM_READ);

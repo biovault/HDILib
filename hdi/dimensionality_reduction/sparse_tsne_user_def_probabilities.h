@@ -33,16 +33,17 @@
 #ifndef SPARSE_TSNE_USER_DEF_PROBABILITIES_H
 #define SPARSE_TSNE_USER_DEF_PROBABILITIES_H
 
-#include <vector>
-#include <stdint.h>
 #include "hdi/utils/assert_by_exception.h"
 #include "hdi/utils/abstract_log.h"
-#include <map>
-#include <unordered_map>
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
+
 #include "tsne_parameters.h"
 
+#include <cstdint>
+#include <map>
+#include <unordered_map>
+#include <vector>
 
 namespace hdi{
   namespace dr{
@@ -51,13 +52,17 @@ namespace hdi{
       Implementation of the tSNE algorithm with sparse and user-defined probabilities
       \author Nicola Pezzotti
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<uint32_t,float>>>
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<std::uint32_t, float> >, typename unsigned_integer = std::uint64_t, typename integer = std::int64_t>
     class SparseTSNEUserDefProbabilities{
     public:
       typedef scalar scalar_type;
+      typedef unsigned_integer unsigned_int_type;
+      typedef integer int_type;
       typedef sparse_scalar_matrix sparse_scalar_matrix_type;
-      typedef std::vector<scalar_type> scalar_vector_type;
-      typedef uint32_t data_handle_type;
+      typedef std::vector<scalar_type> scalar_vector_type;              // Vector of scalar_type
+      typedef typename sparse_scalar_matrix_type::value_type map_type;  // default hdi::data::MapMemEff
+      typedef typename map_type::key_type map_key_type;                 // default std::uint32_t
+      typedef typename map_type::mapped_type map_value_type;            // default float
 
     public:
       SparseTSNEUserDefProbabilities();
@@ -74,10 +79,10 @@ namespace hdi{
       bool isInitialized() { return _initialized == true; }
 
       //! Get the position in the embedding for a data point
-      void getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle)const;
+      void getEmbeddingPosition(scalar_vector_type& embedding_position, map_key_type handle)const;
 
       //! Get the number of data points
-      unsigned int getNumberOfDataPoints(){  return _P.size();  }
+      size_t getNumberOfDataPoints(){  return _P.size();  }
       //! Get P
       const sparse_scalar_matrix_type& getDistributionP()const{ return _P; }
       //! Get Q
@@ -126,8 +131,6 @@ namespace hdi{
       void updateTheEmbedding(double mult = 1.);
       //! Compute the exaggeration factor based on the current iteration
       scalar_type exaggerationFactor();
-
-    
 
     private:
       data::Embedding<scalar_type>* _embedding; //! embedding

@@ -42,7 +42,6 @@
 #include <cmath>
 
 
-
 namespace hdi{
   namespace dr{
 
@@ -111,7 +110,7 @@ namespace hdi{
 
     template <typename scalar_type>
     void EmbeddingEqualizer<scalar_type>::doAnIteration1Dto1D(double mult){
-      const int num_pnts = _embedding_master->numDataPoints();
+      const std::uint64_t num_pnts = _embedding_master->numDataPoints();
 
       std::vector<scalar_type> slave_bb, master_bb;
       _embedding_slave  -> computeEmbeddingBBox(slave_bb);
@@ -120,7 +119,7 @@ namespace hdi{
       const auto& master_data = _embedding_master->getContainer();
           auto& slave_data  = _embedding_slave->getContainer();
 
-      for(int i = 0; i < num_pnts; ++i){
+      for(std::uint64_t i = 0; i < num_pnts; ++i){
         double master_position = (master_data[i]-master_bb[0])/(master_bb[1]-master_bb[0]);
         double slave_position  = (slave_data [i]-slave_bb [0])/(slave_bb [1]-slave_bb [0]);
 
@@ -132,7 +131,7 @@ namespace hdi{
 
     template <typename scalar_type>
     void EmbeddingEqualizer<scalar_type>::doAnIteration1Dto2D(double mult){
-      const int num_pnts = _embedding_master->numDataPoints();
+      const std::uint64_t num_pnts = _embedding_master->numDataPoints();
 
       std::vector<scalar_type> slave_bb, master_bb;
       _embedding_slave  -> computeEmbeddingBBox(slave_bb);
@@ -149,7 +148,7 @@ namespace hdi{
         ratio = (slave_bb [3]-slave_bb [2])/(slave_bb [1]-slave_bb [0]);
       }
 
-      for(int i = 0; i < num_pnts; ++i){
+      for(std::uint64_t i = 0; i < num_pnts; ++i){
         double master_position = (master_data[i]  -master_bb[0])/(master_bb[1]-master_bb[0]);
         double slave_position  = (slave_data [i*2+1]-slave_bb [2])/(slave_bb [3]-slave_bb [2]);
 
@@ -166,7 +165,7 @@ namespace hdi{
 
     template <typename scalar_type>
     void EmbeddingEqualizer<scalar_type>::doAnIteration2Dto1D(double mult){
-      const int num_pnts = _embedding_master->numDataPoints();
+      const std::uint64_t num_pnts = _embedding_master->numDataPoints();
 
       std::vector<scalar_type> slave_bb, master_bb;
       _embedding_slave  -> computeEmbeddingBBox(slave_bb);
@@ -175,7 +174,7 @@ namespace hdi{
       const auto& master_data = _embedding_master->getContainer();
           auto& slave_data  = _embedding_slave->getContainer();
 
-      for(int i = 0; i < num_pnts; ++i){
+      for(std::uint64_t i = 0; i < num_pnts; ++i){
         double master_position = (master_data[i*2+1]-master_bb[2])/(master_bb[3]-master_bb[2]);
         double slave_position  = (slave_data [i]  -slave_bb [0])/(slave_bb [1]-slave_bb [0]);
 
@@ -187,8 +186,8 @@ namespace hdi{
 
     template <typename scalar_type>
     void EmbeddingEqualizer<scalar_type>::doAnIteration1Dto1DConnections(double mult){
-      const int num_pnts = _embedding_master->numDataPoints();
-      const int num_pnts_slave = _embedding_slave->numDataPoints();
+      const std::uint64_t num_pnts = _embedding_master->numDataPoints();
+      const std::uint64_t num_pnts_slave = _embedding_slave->numDataPoints();
 
       std::vector<scalar_type> slave_bb, master_bb;
       _embedding_slave  -> computeEmbeddingBBox(slave_bb);
@@ -197,7 +196,7 @@ namespace hdi{
       const auto& master_data = _embedding_master->getContainer();
           auto& slave_data  = _embedding_slave->getContainer();
 
-      for(int i = 0; i < num_pnts_slave; ++i){
+      for(std::uint64_t i = 0; i < num_pnts_slave; ++i){
         double slave_position = (slave_data[i]  -slave_bb[0])/(slave_bb[1]-slave_bb[0]);
         //The master is computed as the weighted average of the connected elements
         double master_position  = 0;
@@ -220,8 +219,8 @@ namespace hdi{
 
     template <typename scalar_type>
     void EmbeddingEqualizer<scalar_type>::doAnIteration1Dto2DConnections(double mult){
-      const int num_pnts =     _embedding_master->numDataPoints();
-      const int num_pnts_slave = _embedding_slave->numDataPoints();
+      const std::uint64_t num_pnts =     _embedding_master->numDataPoints();
+      const std::uint64_t num_pnts_slave = _embedding_slave->numDataPoints();
 
       std::vector<scalar_type> slave_bb, master_bb;
       _embedding_slave  -> computeEmbeddingBBox(slave_bb);
@@ -238,7 +237,7 @@ namespace hdi{
         ratio = (slave_bb [3]-slave_bb [2])/(slave_bb [1]-slave_bb [0]);
       }
 
-      for(int i = 0; i < num_pnts_slave; ++i){
+      for(std::uint64_t i = 0; i < num_pnts_slave; ++i){
         double slave_position = (slave_data[i*2+1]  -slave_bb[2])/(slave_bb[3]-slave_bb[2]);
         if(x_bigger){
           slave_position = slave_position*ratio + (1-ratio)/2;
@@ -266,8 +265,8 @@ namespace hdi{
 
     template <typename scalar_type>
     void EmbeddingEqualizer<scalar_type>::doAnIteration2Dto1DConnections(double mult){
-      const int num_pnts = _embedding_master->numDataPoints();
-      const int num_pnts_slave = _embedding_slave->numDataPoints();
+      const std::uint64_t num_pnts = _embedding_master->numDataPoints();
+      const std::uint64_t num_pnts_slave = _embedding_slave->numDataPoints();
 
       std::vector<scalar_type> slave_bb, master_bb;
       _embedding_slave  -> computeEmbeddingBBox(slave_bb);
@@ -276,7 +275,7 @@ namespace hdi{
       const auto& master_data = _embedding_master->getContainer();
           auto& slave_data  = _embedding_slave->getContainer();
 
-      for(int i = 0; i < num_pnts_slave; ++i){
+      for(std::uint64_t i = 0; i < num_pnts_slave; ++i){
         double slave_position = (slave_data[i]-slave_bb[0])/(slave_bb[1]-slave_bb[0]);
         //The master is computed as the weighted average of the connected elements
         double master_position  = 0;

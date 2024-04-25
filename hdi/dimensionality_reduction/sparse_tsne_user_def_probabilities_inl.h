@@ -39,61 +39,54 @@
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
 #include "sptree.h"
+
 #include <random>
 
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>
 #endif
 
-#pragma warning( push )
-#pragma warning( disable : 4267)
-#pragma warning( push )
-#pragma warning( disable : 4291)
-#pragma warning( push )
-#pragma warning( disable : 4996)
-#pragma warning( push )
-#pragma warning( disable : 4018)
-#pragma warning( push )
-#pragma warning( disable : 4244)
-//#define FLANN_USE_CUDA
-#include "flann/flann.h"
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-
 namespace hdi{
   namespace dr{
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::SparseTSNEUserDefProbabilities():
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::SparseTSNEUserDefProbabilities():
+      _embedding(nullptr),
+      _embedding_container(nullptr),
       _initialized(false),
-      _logger(nullptr),
+      _exaggeration_baseline(1),
+      _P(),
+      _Q(),
+      _normalization_Q(0),
+      _gradient(),
+      _previous_gradient(),
+      _gain(),
       _theta(0),
-      _exaggeration_baseline(1)
+      _params(),
+      _iteration(0),
+      _logger(nullptr)
     {
 
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::reset(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::reset(){
       _initialized = false;
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::clear(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::clear(){
       _embedding->clear();
       _initialized = false;
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle)const{
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::getEmbeddingPosition(scalar_vector_type& embedding_position, map_key_type handle)const{
       if(!_initialized){
         throw std::logic_error("Algorithm must be initialized before ");
       }
       embedding_position.resize(_params._embedding_dimensionality);
-      for(int i = 0; i < _params._embedding_dimensionality; ++i){
+      for(std::uint64_t i = 0; i < _params._embedding_dimensionality; ++i){
         (*_embedding_container)[i] = (*_embedding_container)[handle*_params._embedding_dimensionality + i];
       }
     }
@@ -102,13 +95,13 @@ namespace hdi{
   /////////////////////////////////////////////////////////////////////////
 
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::initialize(const sparse_scalar_matrix& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params){
       utils::secureLog(_logger,"Initializing tSNE...");
       {//Aux data
         _params = params;
-        unsigned int size = probabilities.size();
-        unsigned int size_sq = probabilities.size()*probabilities.size();
+        const size_t size = probabilities.size();
+        const size_t size_sq = probabilities.size() * probabilities.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -134,13 +127,13 @@ namespace hdi{
       utils::secureLog(_logger,"Initialization complete!");
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params){
       utils::secureLog(_logger,"Initializing tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
-        unsigned int size = distribution.size();
-        unsigned int size_sq = distribution.size()*distribution.size();
+        const size_t size = distribution.size();
+        const size_t size_sq = distribution.size()*distribution.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -166,13 +159,13 @@ namespace hdi{
       utils::secureLog(_logger,"Initialization complete!");
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeHighDimensionalDistribution(const sparse_scalar_matrix& probabilities){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities){
       utils::secureLog(_logger,"Computing high-dimensional joint probability distribution...");
 
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
       //Can be improved by using the simmetry of the matrix (half the memory) //TODO
-      for(int j = 0; j < n; ++j){
+      for(size_t j = 0; j < n; ++j){
         for(auto& elem: probabilities[j]){
           scalar_type v0 = elem.second;
           auto iter = probabilities[elem.first].find(j);
@@ -187,8 +180,8 @@ namespace hdi{
     }
 
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::initializeEmbeddingPosition(int seed, double multiplier){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initializeEmbeddingPosition(int seed, double multiplier){
       utils::secureLog(_logger,"Initializing the embedding...");
       if(seed < 0){
         std::srand(static_cast<unsigned int>(time(NULL)));
@@ -197,7 +190,7 @@ namespace hdi{
         std::srand(seed);
       }
         
-      for (int i = 0; i < _embedding->numDataPoints(); ++i) {
+      for (std::uint64_t i = 0; i < _embedding->numDataPoints(); ++i) {
         double x(0.);
         double y(0.);
         double radius(0.);
@@ -215,8 +208,8 @@ namespace hdi{
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::doAnIteration(double mult){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::doAnIteration(double mult){
       if(!_initialized){
         throw std::logic_error("Cannot compute a gradient descent iteration on unitialized data");
       }
@@ -235,8 +228,8 @@ namespace hdi{
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    scalar SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::exaggerationFactor(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    scalar SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::exaggerationFactor(){
       scalar_type exaggeration = _exaggeration_baseline;
 
       if(_iteration <= _params._remove_exaggeration_iter){
@@ -251,8 +244,8 @@ namespace hdi{
       return exaggeration;
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::doAnIterationExact(double mult){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::doAnIterationExact(double mult){
       //Compute Low-dimensional distribution
       computeLowDimensionalDistribution();
 
@@ -262,8 +255,8 @@ namespace hdi{
       //Update the embedding based on the gradient
       updateTheEmbedding(mult);
     }
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::doAnIterationBarnesHut(double mult){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::doAnIterationBarnesHut(double mult){
       //Compute gradient of the KL function using the Barnes Hut approximation
       computeBarnesHutGradient(exaggerationFactor());
 
@@ -271,18 +264,18 @@ namespace hdi{
       updateTheEmbedding();
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeLowDimensionalDistribution(){
-      const int n = getNumberOfDataPoints();
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeLowDimensionalDistribution(){
+      const size_t n = getNumberOfDataPoints();
 #ifdef __USE_GCD__
       //std::cout << "GCD dispatch, sparse_tsne_user_def_probabilities 285.\n";
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
       #pragma omp parallel for
-      for(int j = 0; j < n; ++j){
+      for(std::int64_t j = 0; j < n; ++j){
 #endif //__USE_GCD__
         _Q[j*n + j] = 0;
-        for(int i = j+1; i < n; ++i){
+        for(size_t i = j+1; i < n; ++i){
           const double euclidean_dist_sq(
               utils::euclideanDistanceSquared<scalar_type>(
                 (*_embedding_container).begin()+j*_params._embedding_dimensionality,
@@ -300,36 +293,36 @@ namespace hdi{
       );
 #endif // __USE_GCD__
       double sum_Q = 0;
-      for(auto& v : _Q){
+      for(const auto& v : _Q){
         sum_Q += v;
       }
       _normalization_Q = static_cast<scalar_type>(sum_Q);
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeExactGradient(double exaggeration){
-      const int n = getNumberOfDataPoints();
-      const int dim = _params._embedding_dimensionality;
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeExactGradient(double exaggeration){
+      const size_t n = getNumberOfDataPoints();
+      const std::uint64_t dim = _params._embedding_dimensionality;
 
-      for(int i = 0; i < n; ++i){
-        for(int d = 0; d < dim; ++d){
+      for(size_t i = 0; i < n; ++i){
+        for(std::uint64_t d = 0; d < dim; ++d){
           _gradient[i * dim + d] = 0;
         }
       }
 
-      for(int i = 0; i < n; ++i){
-        for(int j = 0; j < n; ++j){
-          for(int d = 0; d < dim; ++d){
-            const int idx = i*n + j;
+      for(size_t i = 0; i < n; ++i){
+        for(size_t j = 0; j < n; ++j){
+          for(std::uint64_t d = 0; d < dim; ++d){
+            const size_t idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
             const double negative(_Q[idx] * _Q[idx] / _normalization_Q * distance);
             _gradient[i * dim + d] += static_cast<scalar_type>(-4*negative);
           }
         }
-        for(auto& elem: _P[i]){
-          for(int d = 0; d < dim; ++d){
-            const int j = elem.first;
-            const int idx = i*n + j;
+        for(const auto& elem: _P[i]){
+          for(std::uint64_t d = 0; d < dim; ++d){
+            const auto j = elem.first;
+            const size_t idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
             double p_ij = elem.second/n;
 
@@ -340,8 +333,8 @@ namespace hdi{
       }
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeBarnesHutGradient(double exaggeration){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeBarnesHutGradient(double exaggeration){
       typedef double hp_scalar_type;
 
       SPTree<scalar_type> sptree(_params._embedding_dimensionality,_embedding->getContainer().data(),getNumberOfDataPoints());
@@ -358,7 +351,7 @@ namespace hdi{
 //      dispatch_apply(getNumberOfDataPoints(), dispatch_get_global_queue(0, 0), ^(size_t n) {
 //#else
       #pragma omp parallel for
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(std::int64_t n = 0; n < getNumberOfDataPoints(); n++){
 //#endif //__USE_GCD__
         sptree.computeNonEdgeForcesOMP(n, _theta, negative_forces.data() + n * _params._embedding_dimensionality, sum_Q_subvalues[n]);
       }
@@ -367,11 +360,11 @@ namespace hdi{
 //#endif
 
       sum_Q = 0;
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(size_t n = 0; n < getNumberOfDataPoints(); n++){
         sum_Q += sum_Q_subvalues[n];
       }
 
-      for(int i = 0; i < _gradient.size(); i++){
+      for(size_t i = 0; i < _gradient.size(); i++){
         _gradient[i] = positive_forces[i] - (negative_forces[i] / sum_Q);
       }
 
@@ -381,9 +374,9 @@ namespace hdi{
     template <typename T>
     T sign(T x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::updateTheEmbedding(double mult){
-      for(int i = 0; i < _gradient.size(); ++i){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::updateTheEmbedding(double mult){
+      for(size_t i = 0; i < _gradient.size(); ++i){
         _gain[i] = static_cast<scalar_type>((sign(_gradient[i]) != sign(_previous_gradient[i])) ? (_gain[i] + .2) : (_gain[i] * .8));
         if(_gain[i] < _params._minimum_gain){
           _gain[i] = static_cast<scalar_type>(_params._minimum_gain);
@@ -404,8 +397,8 @@ namespace hdi{
       ++_iteration;
     }
 
-    template <typename scalar, typename sparse_scalar_matrix>
-    double SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeKullbackLeiblerDivergence(){
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    double SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeKullbackLeiblerDivergence(){
       assert(false);
       return 0;
     }

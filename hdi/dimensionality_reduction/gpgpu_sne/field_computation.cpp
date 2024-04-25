@@ -1,9 +1,9 @@
 #include "field_computation.h"
 
 #include <cmath>
-#include <vector>
-#include <iostream>
 #include <cstdint>
+#include <iostream>
+#include <vector>
 
 #define GLSL(version, shader)  "#version " #version "\n" #shader
 
@@ -137,15 +137,15 @@ const char* gpgpu_compute_fields_source = GLSL(430,
 );
 
 void RasterFieldComputation::generateTSNEKernel(float kernel_radius, std::vector<float>& kernel, float function_support) {
-  uint32_t kernel_width = kernel_radius * 2 + 1;
+  std::uint32_t kernel_width = kernel_radius * 2 + 1;
 
-  kernel.resize(kernel_width*kernel_width * 4);
+  kernel.resize(static_cast<std::uint64_t>(kernel_width)*kernel_width * 4);
 
   const double pi = std::acos(-1);
   const float mult = 1. / std::sqrt(pi);
 
-  for (int j = 0; j < kernel_width; ++j) {
-    for (int i = 0; i < kernel_width; ++i) {
+  for (std::uint32_t j = 0; j < kernel_width; ++j) {
+    for (std::uint32_t i = 0; i < kernel_width; ++i) {
       const double x = (double(i) - kernel_radius) / kernel_radius*function_support;
       const double y = (double(j) - kernel_radius) / kernel_radius*function_support;
       const double eucl_sqrd = x*x + y*y;
@@ -153,10 +153,10 @@ void RasterFieldComputation::generateTSNEKernel(float kernel_radius, std::vector
 
       const uint32_t id = (j*kernel_width + i) * 4;
       //assert(id + 3 < _kernel.size());
-      kernel[id + 0] = tstud;
-      kernel[id + 1] = tstud*tstud*x;
-      kernel[id + 2] = tstud*tstud*y;
-      kernel[id + 3] = 0;
+      kernel[id + 0ll] = tstud;
+      kernel[id + 1ll] = tstud*tstud*x;
+      kernel[id + 2ll] = tstud*tstud*y;
+      kernel[id + 3ll] = 0;
     }
   }
 }
@@ -178,7 +178,7 @@ void RasterFieldComputation::init(GLuint positionBuffer, float function_support)
   }
 
   float kernel_radius = 32;
-  uint32_t kernel_width = kernel_radius * 2 + 1;
+  std::uint32_t kernel_width = kernel_radius * 2 + 1;
 
   // Generate fields texture
   glGenTextures(1, &_field_texture);

@@ -32,8 +32,12 @@
 
 #include "gradient_descent_tsne_texture_inl.h"
 
+#include <vector>
+
 namespace hdi {
   namespace dr {
+
+    template class GradientDescentTSNETexture<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>;
 
   }
 }

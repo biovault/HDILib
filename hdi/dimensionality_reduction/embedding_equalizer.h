@@ -33,12 +33,13 @@
 #ifndef EMBEDDING_EQUALIZER_H
 #define EMBEDDING_EQUALIZER_H
 
-#include <vector>
-#include <stdint.h>
 #include "hdi/utils/assert_by_exception.h"
 #include "hdi/utils/abstract_log.h"
 #include "hdi/data/embedding.h"
+
+#include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 namespace hdi{
   namespace dr{
@@ -47,8 +48,8 @@ namespace hdi{
     class EmbeddingEqualizer{
     public:
       typedef std::vector<scalar_type> scalar_vector_type;
-      typedef uint32_t data_handle_type;
-      typedef std::vector<std::unordered_map<uint32_t,uint32_t>> connections_type;
+      typedef std::uint32_t data_handle_type;
+      typedef std::vector<std::unordered_map<std::uint32_t, std::uint32_t>> connections_type;
 
     public:
       EmbeddingEqualizer();
@@ -56,9 +57,9 @@ namespace hdi{
       void initialize(data::Embedding<scalar_type>* embedding_master, data::Embedding<scalar_type>* embedding_slave);
       void initialize(data::Embedding<scalar_type>* embedding_master, data::Embedding<scalar_type>* embedding_slave, const connections_type* connections);
 
-          scalar_type& step_size()   {return _step_size;}
+      scalar_type& step_size()   {return _step_size;}
       const scalar_type& step_size()const{return _step_size;}
-          scalar_type& momentum()    {return _momentum;}
+      scalar_type& momentum()    {return _momentum;}
       const scalar_type& momentum()const {return _momentum;}
 
 

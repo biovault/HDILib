@@ -68,7 +68,7 @@ namespace hdi {
       };
 
       typedef hdi::data::Embedding<float> embedding_type;
-      typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
+      typedef std::vector<hdi::data::MapMemEff<std::uint32_t, float>> sparse_scalar_matrix_type;
 
     public:
       GpgpuSneCompute();
@@ -86,7 +86,7 @@ namespace hdi {
 		  }
 		  _params = params; 
 	  };
-      bool isInitialized() { return _initialized == true; }
+      bool isInitialized() const { return _initialized == true; }
 
     private:
       void initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P);
