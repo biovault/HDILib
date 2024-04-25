@@ -43,14 +43,14 @@ namespace hdi{
     template <typename scalar_type>
     void sum(std::vector<scalar_type>& res, const std::vector<scalar_type>& a, const std::vector<scalar_type>& b){
       assert( res.size() == a.size() && a.size() == b.size() );
-      for(int i = 0; i < res.size(); ++i){
+      for(size_t i = 0; i < res.size(); ++i){
         res[i] = a[i] + b[i];
       }
     }
 
     template <typename scalar_type>
     void multiply(std::vector<scalar_type>& v, scalar_type a){
-      for(int i = 0; i < v.size(); ++i){
+      for(size_t i = 0; i < v.size(); ++i){
         v[i] *= a;
       }
     }
@@ -58,12 +58,12 @@ namespace hdi{
     template <typename scalar_type>
     void normalize(std::vector<scalar_type>& v){
       scalar_type sum = 0;
-      for(int i = 0; i < v.size(); ++i){
+      for(size_t i = 0; i < v.size(); ++i){
         sum += v[i]*v[i];
       }
       if(sum != 0){
         sum = std::sqrt(sum);
-        for(int i = 0; i < v.size(); ++i){
+        for(size_t i = 0; i < v.size(); ++i){
           v[i] /= sum;
         }
       }else{
@@ -76,15 +76,15 @@ namespace hdi{
     template <typename scalar_type>
     void normalizeL1(std::vector<scalar_type>& v){
       double sum = 0;
-      for(int i = 0; i < v.size(); ++i){
+      for(size_t i = 0; i < v.size(); ++i){
         sum += v[i];
       }
       if(sum != 0){
-        for(int i = 0; i < v.size(); ++i){
+        for(size_t i = 0; i < v.size(); ++i){
           v[i] /= sum;
         }
       }else{
-        for(int i = 0; i < v.size(); ++i){
+        for(size_t i = 0; i < v.size(); ++i){
           v[i] = 1./v.size();
         }
       }
@@ -92,11 +92,11 @@ namespace hdi{
     template <typename scalar_type>
     void softMax(std::vector<scalar_type>& v){
       double sum = 0;
-      for(int i = 0; i < v.size(); ++i){
+      for(size_t i = 0; i < v.size(); ++i){
         v[i] = std::exp(v[i]);
         sum += v[i];
       }
-      for(int i = 0; i < v.size(); ++i){
+      for(size_t i = 0; i < v.size(); ++i){
         v[i] /= sum;
       }
     }
@@ -105,7 +105,7 @@ namespace hdi{
     scalar_type dotProduct(const std::vector<scalar_type>& a, const std::vector<scalar_type>& b){
       assert(a.size() == b.size());
       double res(0);
-      for(int i = 0; i < a.size(); ++i){
+      for(size_t i = 0; i < a.size(); ++i){
         res += double(a[i])*double(b[i]);
       }
       return static_cast<scalar_type>(res);

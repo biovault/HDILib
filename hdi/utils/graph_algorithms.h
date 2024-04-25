@@ -33,21 +33,22 @@
 #ifndef GRAPH_ALGORITHMS_H
 #define GRAPH_ALGORITHMS_H
 
+#include <cstdint>
 #include <vector>
 
 namespace hdi{
   namespace utils{
 
-    template <class map_type>
-    void computeConnectedComponents(const std::vector<map_type>& weighted_graph, std::vector<unsigned int>& vertex_to_cluster, std::vector<unsigned int>& cluster_to_vertex, std::vector<unsigned int>& cluster_size, typename map_type::mapped_type thresh = 0);
+    template <class map_type, typename unsigned_integer_type>
+    void computeConnectedComponents(const std::vector<map_type>& weighted_graph, std::vector<unsigned_integer_type>& vertex_to_cluster, std::vector<unsigned_integer_type>& cluster_to_vertex, std::vector<unsigned_integer_type>& cluster_size, typename map_type::mapped_type thresh = 0);
 
     //! Extract a subgraph with the selected indexes and the vertices connected to them by an edge with a weight higher then thresh
-    template <class map_type>
-    void extractSubGraph(const std::vector<map_type>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<map_type>& new_transition_matrix, std::vector<unsigned int>& new_idxes, typename map_type::mapped_type thresh = 0);
+    template <class map_type, typename unsigned_integer_type>
+    void extractSubGraph(const std::vector<map_type>& orig_transition_matrix, const std::vector<unsigned_integer_type>& selected_idxes, std::vector<map_type>& new_transition_matrix, std::vector<unsigned_integer_type>& new_idxes, typename map_type::mapped_type thresh = 0);
 
     //! Remove the edges to the vertices that  are not included in valid vertices
-    template <class sparse_scalar_matrix_type>
-    void removeEdgesToUnselectedVertices(sparse_scalar_matrix_type& adjacency_matrix, const std::vector<unsigned int>& valid_vertices);
+    template <class sparse_scalar_matrix_type, typename unsigned_integer_type>
+    void removeEdgesToUnselectedVertices(sparse_scalar_matrix_type& adjacency_matrix, const std::vector<unsigned_integer_type>& valid_vertices);
 
     //! expand the matrix (see Markov Clustering)
     template <class sparse_scalar_matrix_type>

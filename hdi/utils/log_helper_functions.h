@@ -104,7 +104,7 @@ namespace hdi{
           double sum(0);
           double min(std::numeric_limits<double>::max());
           double max(-std::numeric_limits<double>::max());
-          for(int i = 0; i < vector.size(); ++i){
+          for(size_t i = 0; i < vector.size(); ++i){
             avg += static_cast<double>(vector[i]);
             avg_sq += static_cast<double>(vector[i]*vector[i]);
             min = std::min(min,static_cast<double>(vector[i]));
@@ -147,7 +147,7 @@ namespace hdi{
       if(enabled){
         if(logPtr != nullptr){
           double sum(0);
-          for(int i = 0; i < vector.size(); ++i){
+          for(size_t i = 0; i < vector.size(); ++i){
             if(vector[i] == data){
               ++sum;
             }

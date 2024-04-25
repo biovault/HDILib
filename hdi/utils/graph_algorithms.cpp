@@ -31,10 +31,10 @@
  */
 
 #include "graph_algorithms_inl.h"
-#include <map>
-#include <unordered_map>
 #include "hdi/data/map_mem_eff.h"
 
+#include <map>
+#include <unordered_map>
 
 namespace hdi{
   namespace utils{
