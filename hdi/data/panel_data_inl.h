@@ -96,7 +96,7 @@ namespace hdi{
 
     //! Reserve memory for n data-points
     template <typename scalar_type>
-    void PanelData<scalar_type>::reserve(int n){
+    void PanelData<scalar_type>::reserve(size_t n){
       checkAndThrowLogic(_initialized,"Panel data must be initialized before a reserve operation can be computed");
       _data_points.reserve(n);
       _data.reserve(n*numDimensions());
@@ -214,7 +214,7 @@ namespace hdi{
 
       for(auto idx: idxes){
         std::vector<scalar_type> data(dimensions.size());
-        for(int d = 0; d < dimensions.size(); ++d){
+        for(size_t d = 0; d < dimensions.size(); ++d){
           data[d] = ori_panel_data.dataAt(idx,d);
         }
         dst_panel_data.addDataPoint(data_points[idx],data);
@@ -228,7 +228,7 @@ namespace hdi{
           dst_panel_data.requestProperty(name);
           const auto& ori_property = ori_panel_data.getProperty(name);
               auto& dst_property = dst_panel_data.getProperty(name);
-          for(int i = 0; i < idxes.size(); ++i){
+          for(size_t i = 0; i < idxes.size(); ++i){
             dst_property[i] = ori_property[idxes[i]];
           }
         }
@@ -248,39 +248,39 @@ namespace hdi{
 
     template <typename scalar_type>
     void zScoreNormalization(PanelData<scalar_type>& panel_data){
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
       auto& data = panel_data.getData();
 
-      for(int d = 0; d < num_dimensions; ++d){
+      for(size_t d = 0; d < num_dimensions; ++d){
         double avg(0);
         double avg_sq(0);
-        for(int p = 0; p < num_data_points; ++p){
+        for(size_t p = 0; p < num_data_points; ++p){
           avg   += data[p*num_dimensions+d];
           avg_sq  += data[p*num_dimensions+d]*data[p*num_dimensions+d];
         }
         avg /= num_data_points;
         avg_sq /= num_data_points;
         double std_dev = std::sqrt(avg_sq-avg*avg);
-        for(int p = 0; p < num_data_points; ++p){
+        for(size_t p = 0; p < num_data_points; ++p){
           data[p*num_dimensions+d] = (data[p*num_dimensions+d]-avg)/((std_dev!=0)?std_dev:1);
         }
       }
     }
     template <typename scalar_type>
     void minMaxNormalization(PanelData<scalar_type>& panel_data){
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
       auto& data = panel_data.getData();
 
-      for(int d = 0; d < num_dimensions; ++d){
+      for(size_t d = 0; d < num_dimensions; ++d){
         double min(std::numeric_limits<double>::max());
         double max(-std::numeric_limits<double>::max());
-        for(int p = 0; p < num_data_points; ++p){
+        for(size_t p = 0; p < num_data_points; ++p){
           min  = std::min<double>(min,data[p*num_dimensions+d]);
           max  = std::max<double>(max,data[p*num_dimensions+d]);
         }
-        for(int p = 0; p < num_data_points; ++p){
+        for(size_t p = 0; p < num_data_points; ++p){
           if(max!=min){
             data[p*num_dimensions+d] = (data[p*num_dimensions+d]-min)/(max-min);
           }else{
@@ -293,14 +293,14 @@ namespace hdi{
     template <typename scalar_type>
     void transposePanelData(const PanelData<scalar_type>& panel_data, PanelData<scalar_type>& transpose_panel_data){
       transpose_panel_data.clear();
-      for(int i = 0; i < panel_data.getDataPoints().size(); ++i){
+      for(size_t i = 0; i < panel_data.getDataPoints().size(); ++i){
         transpose_panel_data.addDimension(panel_data.getDataPoints()[i]);
       }
       transpose_panel_data.initialize();
 
-      for(int i = 0; i < panel_data.numDimensions(); ++i){
+      for(size_t i = 0; i < panel_data.numDimensions(); ++i){
         std::vector<scalar_type> input(transpose_panel_data.numDimensions(),0);
-        for(int f = 0; f < panel_data.numDataPoints(); ++f){
+        for(size_t f = 0; f < panel_data.numDataPoints(); ++f){
           input[f] = panel_data.dataAt(f,i);
         }
         transpose_panel_data.addDataPoint(panel_data.getDimensions()[i],input);
@@ -309,13 +309,13 @@ namespace hdi{
 
     template <typename scalar_type>
     double computePanelDataSparsity(const PanelData<scalar_type>& panel_data){
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
       auto& data = panel_data.getData();
 
       double sparsity = 0;
-      for(int d = 0; d < num_dimensions; ++d){
-        for(int p = 0; p < num_data_points; ++p){
+      for(size_t d = 0; d < num_dimensions; ++d){
+        for(size_t p = 0; p < num_data_points; ++p){
           if(data[p*num_dimensions+d] == scalar_type(0)){
             ++sparsity;
           }
@@ -326,14 +326,14 @@ namespace hdi{
 
     template <typename scalar_type>
     void getMaxPerDimension(const PanelData<scalar_type>& panel_data, std::vector<scalar_type>& max){
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
 
       max.clear();
       max.resize(num_dimensions,-std::numeric_limits<scalar_type>::max());
 
-      for(int d = 0; d < num_dimensions; ++d){
-        for(int p = 0; p < num_data_points; ++p){
+      for(size_t d = 0; d < num_dimensions; ++d){
+        for(size_t p = 0; p < num_data_points; ++p){
           max[d] = std::max<scalar_type>(max[d],panel_data.dataAt(p,d));
         }
       }
@@ -341,14 +341,14 @@ namespace hdi{
 
     template <typename scalar_type>
     void getMinPerDimension(const PanelData<scalar_type>& panel_data, std::vector<scalar_type>& min){
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
 
       min.clear();
       min.resize(num_dimensions,std::numeric_limits<scalar_type>::max());
 
-      for(int d = 0; d < num_dimensions; ++d){
-        for(int p = 0; p < num_data_points; ++p){
+      for(size_t d = 0; d < num_dimensions; ++d){
+        for(size_t p = 0; p < num_data_points; ++p){
           min[d] = std::min<scalar_type>(min[d],panel_data.dataAt(p,d));
         }
       }
@@ -356,8 +356,8 @@ namespace hdi{
 
     template <typename scalar_type>
     void computeMean(const PanelData<scalar_type>& panel_data, std::vector<scalar_type>& mean){
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
       auto& data = panel_data.getData();
 
       mean.clear();
@@ -366,23 +366,23 @@ namespace hdi{
       if(panel_data.hasProperty("weights")){
         auto& weights = panel_data.getProperty("weights");
         scalar_type sum_weights = 0;
-        for(int p = 0; p < num_data_points; ++p){
+        for(size_t p = 0; p < num_data_points; ++p){
           sum_weights += weights[p];
-          for(int d = 0; d < num_dimensions; ++d){
+          for(size_t d = 0; d < num_dimensions; ++d){
             mean[d] += data[p*num_dimensions+d]*weights[p];
 
           }
         }
-        for(int d = 0; d < num_dimensions; ++d){
+        for(size_t d = 0; d < num_dimensions; ++d){
           mean[d] /= sum_weights;
         }
       }else{
-        for(int p = 0; p < num_data_points; ++p){
-          for(int d = 0; d < num_dimensions; ++d){
+        for(size_t p = 0; p < num_data_points; ++p){
+          for(size_t d = 0; d < num_dimensions; ++d){
             mean[d] += data[p*num_dimensions+d];
           }
         }
-        for(int d = 0; d < num_dimensions; ++d){
+        for(size_t d = 0; d < num_dimensions; ++d){
           mean[d] /= num_data_points;
         }
       }
@@ -390,8 +390,8 @@ namespace hdi{
 
     template <typename scalar_type>
     void computeSelectionMean(const PanelData<scalar_type>& panel_data, std::vector<scalar_type>& mean){
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
       const auto& flags = panel_data.getFlagsDataPoints();
       auto& data = panel_data.getData();
 
@@ -401,29 +401,29 @@ namespace hdi{
       if(panel_data.hasProperty("weights")){
         auto& weights = panel_data.getProperty("weights");
         scalar_type sum_weights = 0;
-        for(int p = 0; p < num_data_points; ++p){
+        for(size_t p = 0; p < num_data_points; ++p){
           if((flags[p]&PanelData<scalar_type>::Selected) == PanelData<scalar_type>::Selected){
             sum_weights += weights[p];
-            for(int d = 0; d < num_dimensions; ++d){
+            for(size_t d = 0; d < num_dimensions; ++d){
               mean[d] += data[p*num_dimensions+d]*weights[p];
 
             }
           }
         }
-        for(int d = 0; d < num_dimensions; ++d){
+        for(size_t d = 0; d < num_dimensions; ++d){
           mean[d] /= sum_weights;
         }
       }else{
-        int selected = 0;
-        for(int p = 0; p < num_data_points; ++p){
+        size_t selected = 0;
+        for(size_t p = 0; p < num_data_points; ++p){
           if((flags[p]&PanelData<scalar_type>::Selected) == PanelData<scalar_type>::Selected){
-            for(int d = 0; d < num_dimensions; ++d){
+            for(size_t d = 0; d < num_dimensions; ++d){
               mean[d] += data[p*num_dimensions+d];
             }
             ++selected;
           }
         }
-        for(int d = 0; d < num_dimensions; ++d){
+        for(size_t d = 0; d < num_dimensions; ++d){
           mean[d] /= selected;
         }
       }
@@ -431,16 +431,16 @@ namespace hdi{
 
     template <typename scalar_type>
     void computeWeightedMean(const PanelData<scalar_type>& panel_data, const std::vector<scalar_type>& weights, std::vector<scalar_type>& mean) {
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
 
       auto& data = panel_data.getData();
 
       mean.resize(num_dimensions);
 
-      for (int d = 0; d < num_dimensions; ++d) {
+      for (size_t d = 0; d < num_dimensions; ++d) {
         scalar_type sum_weights = 0;
-        for (int p = 0; p < num_data_points; ++p) {
+        for (size_t p = 0; p < num_data_points; ++p) {
           sum_weights += weights[p];
           mean[d] += data[p*num_dimensions + d] * weights[p];
         }
@@ -450,16 +450,16 @@ namespace hdi{
 
     template <typename scalar_type>
     void computeWeightedStddev(const PanelData <scalar_type>& panel_data, const std::vector<scalar_type>& weights, std::vector<scalar_type>& mean, std::vector<scalar_type>& std_dev) {
-      const unsigned int num_dimensions = panel_data.numDimensions();
-      const unsigned int num_data_points = panel_data.numDataPoints();
+      const size_t num_dimensions = panel_data.numDimensions();
+      const size_t num_data_points = panel_data.numDataPoints();
 
       auto& data = panel_data.getData();
 
       std_dev.resize(num_dimensions);
 
-      for (int d = 0; d < num_dimensions; ++d) {
+      for (size_t d = 0; d < num_dimensions; ++d) {
         scalar_type sum_weights = 0;
-        for (int p = 0; p < num_data_points; ++p) {
+        for (size_t p = 0; p < num_data_points; ++p) {
           sum_weights += weights[p];
           scalar_type deviation = (data[p*num_dimensions + d] - mean[d]);
           std_dev[d] += deviation * deviation * weights[p];

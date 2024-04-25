@@ -33,8 +33,9 @@
 #ifndef EMBEDDING_H
 #define EMBEDDING_H
 
+#include <cassert>
+#include <cstdint>
 #include <vector>
-#include <assert.h>
 
 namespace hdi{
   namespace data{
@@ -51,16 +52,16 @@ namespace hdi{
 
     public:
       Embedding();
-      Embedding(unsigned int num_dimensions, unsigned int num_data_points, scalar_type v = 0);
+      Embedding(std::uint64_t num_dimensions, std::uint64_t num_data_points, scalar_type v = 0);
 
       //! Clear the container
       void clear();
       //! Resize the container
-      void resize(unsigned int num_dimensions, unsigned int num_data_points, scalar_type v = 0);
+      void resize(std::uint64_t num_dimensions, std::uint64_t num_data_points, scalar_type v = 0);
       //! Return the dimensionality of the embedding
-      unsigned int numDimensions()const{return _num_dimensions;}
+      std::uint64_t numDimensions()const{return _num_dimensions;}
       //! Return the number of data points in the container
-      unsigned int numDataPoints()const{return _num_data_points;}
+      std::uint64_t numDataPoints()const{return _num_data_points;}
       //! Compute a boundinb box that contains the embedding. An offset can be provided (percentage)
       void computeEmbeddingBBox(scalar_vector_type& limits, scalar_type offset = 0, bool squared_limits = true);
 
@@ -74,20 +75,20 @@ namespace hdi{
       scalar_vector_type& getContainer(){return _embedding;}
       const scalar_vector_type& getContainer()const{return _embedding;}
 
-      inline scalar_type& dataAt(unsigned int data_point, unsigned int dimension){
+      inline scalar_type& dataAt(std::uint64_t data_point, std::uint64_t dimension){
         assert(data_point < _num_data_points);
         assert(dimension < _num_dimensions);
         return _embedding[data_point*_num_dimensions+dimension];
       }
-      inline const scalar_type& dataAt(unsigned int data_point, unsigned int dimension)const{
+      inline const scalar_type& dataAt(std::uint64_t data_point, std::uint64_t dimension)const{
         assert(data_point < _num_data_points);
         assert(dimension < _num_dimensions);
         return _embedding[data_point*_num_dimensions+dimension];
       }
 
     private:
-      unsigned int _num_dimensions;
-      unsigned int _num_data_points;
+      std::uint64_t _num_dimensions;
+      std::uint64_t _num_data_points;
       scalar_vector_type _embedding;
     };
 

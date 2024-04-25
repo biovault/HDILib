@@ -33,11 +33,13 @@
 #ifndef MAP_MEM_EFF_H
 #define MAP_MEM_EFF_H
 
-#include <utility>
-#include <vector>
-#include <cstddef>
-#include <cassert>
 #include "hdi/utils/assert_by_exception.h"
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+#include <utility>
 
 namespace hdi{
   namespace data{
@@ -90,9 +92,9 @@ namespace hdi{
 
     template <class Key, class T>
     typename MapMemEff<Key,T>::mapped_type& MapMemEff<Key,T>::operator[](const key_type& k){
-      int l = 0;
-      int r = _memory.size()-1;
-      int m = 0;
+      std::int64_t l = 0;
+      std::int64_t r = _memory.size()-1;
+      std::int64_t m = 0;
 
       if(size()==0){
         _memory.push_back(std::make_pair(k,mapped_type(0)));
@@ -127,9 +129,9 @@ namespace hdi{
 
     template <class Key, class T>
     typename MapMemEff<Key,T>::const_iterator MapMemEff<Key,T>::find(const key_type& k)const {
-      int l = 0;
-      int r = _memory.size()-1;
-      int m = 0;
+      std::int64_t l = 0;
+      std::int64_t r = _memory.size()-1;
+      std::int64_t m = 0;
 
       if(size()==0){
         return end();
@@ -165,7 +167,7 @@ namespace hdi{
       if(begin==end)
         return;
 
-      int num_elem = begin->second > thresh?1:0;
+      std::int64_t num_elem = begin->second > thresh ? 1 : 0;
       {//check for ordered element
         Key v = begin->first;
         It it = begin;
