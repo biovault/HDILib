@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.15)
+cmake_minimum_required (VERSION 3.21)
 
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
@@ -27,7 +27,7 @@ endif()
 # -----------------------------------------------------------------------------
 # CMake Options
 # -----------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable the INSTALL project for building by default in VS
