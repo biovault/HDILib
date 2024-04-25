@@ -79,21 +79,21 @@ namespace hdi{
       template <typename sparse_scalar_matrix_type, class output_stream_type>
       void saveSparseScalarMatrix(const sparse_scalar_matrix_type& matrix, output_stream_type& stream, utils::AbstractLog* log = nullptr){
         typedef float io_scalar_type;
-        typedef std::uint64_t io_unsigned_int_type;
+        typedef uint32_t io_unsigned_int_type;
 
         //number of rows first
         io_unsigned_int_type num_rows = static_cast<io_unsigned_int_type>(matrix.size());
-        stream.write(reinterpret_cast<char*>(&num_rows),sizeof(io_unsigned_int_type));
-        for(io_unsigned_int_type j = 0; j < num_rows; ++j){
+        stream.write(reinterpret_cast<char*>(&num_rows), sizeof(io_unsigned_int_type));
+        for (int j = 0; j < num_rows; ++j) {
           //number of elements in the current row
           io_unsigned_int_type num_elems = static_cast<io_unsigned_int_type>(matrix[j].size());
 
-          stream.write(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
-          for(auto& elem: matrix[j]){
+          stream.write(reinterpret_cast<char*>(&num_elems), sizeof(io_unsigned_int_type));
+          for (auto& elem : matrix[j]) {
             io_unsigned_int_type id = static_cast<io_unsigned_int_type>(elem.first);
             io_scalar_type v = static_cast<io_scalar_type>(elem.second);
-            stream.write(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
-            stream.write(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
+            stream.write(reinterpret_cast<char*>(&id), sizeof(io_unsigned_int_type));
+            stream.write(reinterpret_cast<char*>(&v), sizeof(io_scalar_type));
           }
         }
       }
@@ -181,7 +181,6 @@ namespace hdi{
         }
       }
 
-
     ///////////////////////////////////////////////////////////////////////
 
       template <template <typename...> class Container, typename Key, typename Value, class output_stream_type>
@@ -225,22 +224,22 @@ namespace hdi{
       template <typename sparse_scalar_matrix_type, class output_stream_type>
       void loadSparseScalarMatrix(sparse_scalar_matrix_type& matrix, output_stream_type& stream, utils::AbstractLog* log = nullptr){
         typedef float io_scalar_type;
-        typedef std::uint64_t io_unsigned_int_type;
+        typedef uint32_t io_unsigned_int_type;
 
         //number of rows first
         io_unsigned_int_type num_rows = {};
-        stream.read(reinterpret_cast<char*>(&num_rows),sizeof(io_unsigned_int_type));
+        stream.read(reinterpret_cast<char*>(&num_rows), sizeof(io_unsigned_int_type));
         matrix.clear();
         matrix.resize(num_rows);
-        for(io_unsigned_int_type j = 0; j < num_rows; ++j){
+        for (int j = 0; j < num_rows; ++j) {
           //number of elements in the current row
           io_unsigned_int_type num_elems = {};
-          stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
-          for(io_unsigned_int_type i = 0; i < num_elems; ++i){
+          stream.read(reinterpret_cast<char*>(&num_elems), sizeof(io_unsigned_int_type));
+          for (int i = 0; i < num_elems; ++i) {
             io_unsigned_int_type id = {};
             io_scalar_type v = {};
-            stream.read(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
-            stream.read(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
+            stream.read(reinterpret_cast<char*>(&id), sizeof(io_unsigned_int_type));
+            stream.read(reinterpret_cast<char*>(&v), sizeof(io_scalar_type));
             matrix[j][id] = v;
           }
         }
@@ -307,7 +306,7 @@ namespace hdi{
         for (int i = 0; i < num_elems; ++i) {
           io_unsigned_int_type num_elems_inner = {};
           stream.read(reinterpret_cast<char*>(&num_elems_inner), sizeof(io_unsigned_int_type));
-          vector[i].reserve(num_elems_inner) = {};
+          vector[i].reserve(num_elems_inner);
           for (int j = 0; j < num_elems_inner; ++j) {
             io_unsigned_int_type v = {};
             stream.read(reinterpret_cast<char*>(&v), sizeof(io_unsigned_int_type));
