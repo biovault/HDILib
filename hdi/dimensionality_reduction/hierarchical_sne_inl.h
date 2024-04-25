@@ -47,10 +47,12 @@
 #include "hnswlib/hnswlib.h"
 #include "hnswlib/space_l2.h"
 
+#pragma warning( push )
+#pragma warning( disable : 4477) // mismatch in type for fprintf with (unused) verbose setting
 #include "annoylib.h"
+#pragma warning( pop )
 #include "kissrandom.h"
 
-//#define FLANN_USE_CUDA
 #include "flann/flann.h"
 
 #include <random>
@@ -252,31 +254,51 @@ namespace hdi {
     template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
     void HierarchicalSNE<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeNeighborhoodGraph(scalar_vector_type& distance_based_probabilities, std::vector<int>& neighborhood_graph) {
 
-      unsigned_int_type nn = _params._num_neighbors + 1;
+      const unsigned_int_type nn = _params._num_neighbors + 1;
       scalar_type perplexity = _params._num_neighbors / 3.;
       neighborhood_graph.resize(_num_dps*nn);
       distance_based_probabilities.resize(_num_dps*nn);
         
       if(_params._aknn_algorithm == hdi::dr::KNN_FLANN)
       {
-        utils::secureLog(_logger, "Computing the neighborhood graph...");
+        utils::secureLog(_logger, "Computing approximated neighborhood graph with Flann...");
         flann::Matrix<scalar_type> dataset(_high_dimensional_data, _num_dps, _dimensionality);
         flann::Matrix<scalar_type> query(_high_dimensional_data, _num_dps, _dimensionality);
 
         flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(_params._aknn_num_trees));
+
         utils::secureLog(_logger, "\tBuilding the trees...");
-        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
-        index.buildIndex();
-        flann::Matrix<int> indices_mat(neighborhood_graph.data(), query.rows, nn);
-        flann::Matrix<scalar_type> dists_mat(distance_based_probabilities.data(), query.rows, nn);
-        flann::SearchParams params(_params._aknn_num_checks);
-        params.cores = 0; //all cores
+        {
+          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
+          index.buildIndex();
+        }
+
         utils::secureLog(_logger, "\tAKNN queries...");
-        index.knnSearch(query, indices_mat, dists_mat, nn, params);
+        {
+          flann::Matrix<scalar_type> dists_mat(distance_based_probabilities.data(), query.rows, nn);
+          flann::SearchParams flann_params(_params._aknn_num_checks);
+          flann_params.cores = 0; //all cores
+
+          // flann's knnSearch only accepts int and size_t indices
+          if constexpr (std::is_same_v<int_type, size_t> || std::is_same_v<int_type, int>)
+          {
+            flann::Matrix<int_type> indices_mat(neighborhood_graph.data(), query.rows, nn);
+            index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
+          }
+          else
+          {
+            std::vector<size_t> flannIndices;
+            flannIndices.reserve(neighborhood_graph.size());
+            std::transform(neighborhood_graph.cbegin(), neighborhood_graph.cend(), std::back_inserter(flannIndices),
+              [](auto value) { return static_cast<size_t>(value); });
+            flann::Matrix<size_t> indices_mat(flannIndices.data(), query.rows, nn);
+            index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
+          }
+        }
       }
       else if (_params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
-        utils::secureLog(_logger, "Computing the neighborhood graph with HNSW Lib...");
+        utils::secureLog(_logger, "Computing approximated neighborhood graph with HNSW Lib...");
 
         hnswlib::SpaceInterface<float> *space = NULL;
         switch (_params._aknn_metric) {
@@ -293,20 +315,26 @@ namespace hdi {
         hnswlib::HierarchicalNSW<scalar_type> appr_alg(space, _num_dps, _params._aknn_algorithmP1, _params._aknn_algorithmP2, 0);
 
         utils::secureLog(_logger, "\tBuilding the search structure...");
-        utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
-        appr_alg.addPoint((void*)_high_dimensional_data, (std::size_t) 0);
-        unsigned num_threads = std::thread::hardware_concurrency();
-        hnswlib::ParallelFor(1, _num_dps, num_threads, [&](size_t i, size_t threadId) {
-          appr_alg.addPoint((void*)(_high_dimensional_data + (i * _dimensionality)), (hnswlib::labeltype) i);
-          });
+        {
+          utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
+          appr_alg.addPoint((void*)_high_dimensional_data, (std::size_t)0);
+          unsigned num_threads = std::thread::hardware_concurrency();
+          hnswlib::ParallelFor(1, _num_dps, num_threads, [&](size_t i, size_t threadId) {
+            appr_alg.addPoint((void*)(_high_dimensional_data + (i * _dimensionality)), (hnswlib::labeltype)i);
+            });
+        }
+
         utils::secureLog(_logger, "\tAKNN queries...");
-        for (unsigned_int_type i = 0; i < _num_dps; ++i)
+#pragma omp parallel for
+        for (std::int64_t i = 0; i < _num_dps; ++i)
         {
           auto top_candidates = appr_alg.searchKnn(_high_dimensional_data + (i*_dimensionality), (hnswlib::labeltype)nn);
-
-          scalar_type *distances = distance_based_probabilities.data() + (i*nn);
-          int *indices = neighborhood_graph.data() + (i*nn);
-          int j = 0;
+          while (top_candidates.size() > nn) {
+            top_candidates.pop();
+          }
+          auto *distances = distance_based_probabilities.data() + (i*nn);
+          auto *indices = neighborhood_graph.data() + (i*nn);
+          std::int64_t j = 0;
           assert(top_candidates.size() == nn);
           while (top_candidates.size() > 0)
           {
@@ -321,44 +349,44 @@ namespace hdi {
       else if (_params._aknn_algorithm == hdi::dr::KNN_ANNOY)
       {
         using namespace Annoy;
-        hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy...");
+        hdi::utils::secureLog(_logger, "Computing approximated neighborhood graph with Annoy...");
 
         int search_k = nn * _params._aknn_num_trees;
 
-        AnnoyIndexInterface<int32_t, double>* tree = nullptr;
+        AnnoyIndexInterface<int_type, scalar>* tree = nullptr;
         switch (_params._aknn_metric) {
         case hdi::dr::KNN_METRIC_EUCLIDEAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int_type, scalar, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
         case hdi::dr::KNN_METRIC_COSINE:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new AnnoyIndex<int32_t, double, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int_type, scalar, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
         case hdi::dr::KNN_METRIC_MANHATTAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new AnnoyIndex<int32_t, double, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int_type, scalar, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
           //case hdi::dr::KNN_METRIC_HAMMING:
           //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //  tree = new AnnoyIndex<int32_t, double, Hamming, Kiss64Random>(num_dim);
+          //  tree = new AnnoyIndex<int_type, scalar, Hamming, Kiss64Random>(num_dim);
           //  break;
         case hdi::dr::KNN_METRIC_DOT:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new AnnoyIndex<int32_t, double, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int_type, scalar, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
         default:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
+          tree = new AnnoyIndex<int_type, scalar, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(_dimensionality);
           break;
         }
 
+        utils::secureLog(_logger, "\tBuilding the search structure...");
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
 
-          utils::secureLog(_logger, "\tBuilding the search structure...");
           for (unsigned_int_type i = 0; i < _num_dps; ++i) {
-            double* vec = new double[_dimensionality];
+            scalar* vec = new scalar[_dimensionality];
             for (unsigned_int_type z = 0; z < _dimensionality; ++z) {
               vec[z] = _high_dimensional_data[i * _dimensionality + z];
             }
@@ -367,8 +395,8 @@ namespace hdi {
           tree->build(_params._aknn_num_trees);
 
           // Sample check if it returns enough neighbors
-          std::vector<int> closest;
-          std::vector<double> closest_distances;
+          std::vector<int_type> closest;
+          std::vector<scalar> closest_distances;
           for (size_t n = 0; n < 100; n++) {
             tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
             size_t neighbors_count = closest.size();
@@ -384,8 +412,8 @@ namespace hdi {
           for (int_type n = 0; n < _num_dps; n++)
           {
             // Find nearest neighbors
-            std::vector<int> closest;
-            std::vector<double> closest_distances;
+            std::vector<int_type> closest;
+            std::vector<scalar> closest_distances;
             tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
 
             // Copy current row
