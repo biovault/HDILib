@@ -48,7 +48,7 @@ int main(int argc, char** argv)
         std::cout << "Probability distributions created\n";    
         
         std::cout << "Create a Gradient Descent TSNE instance\n";
-        GradientDescentTSNETexture tSNE; 
+        GradientDescentTSNETexture<float> tSNE; 
         CoutLog log;
         tSNE.setLogger(&log);
         assert(tSNE.isInitialized() == false);
