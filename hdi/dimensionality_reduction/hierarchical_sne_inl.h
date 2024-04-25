@@ -288,11 +288,12 @@ namespace hdi {
           else
           {
             std::vector<size_t> flannIndices;
-            flannIndices.reserve(neighborhood_graph.size());
-            std::transform(neighborhood_graph.cbegin(), neighborhood_graph.cend(), std::back_inserter(flannIndices),
-              [](auto value) { return static_cast<size_t>(value); });
+            flannIndices.resize(neighborhood_graph.size());
             flann::Matrix<size_t> indices_mat(flannIndices.data(), query.rows, nn);
             index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
+#pragma omp parallel for
+            for (std::int64_t i = 0; i < neighborhood_graph.size(); ++i)
+              neighborhood_graph[i] = static_cast<int_type>(flannIndices[i]);
           }
         }
       }

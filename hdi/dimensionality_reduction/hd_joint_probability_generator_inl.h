@@ -194,17 +194,18 @@ namespace hdi {
           else
           {
             std::vector<size_t> flannIndices;
-            flannIndices.reserve(indices.size());
-            std::transform(indices.cbegin(), indices.cend(), std::back_inserter(flannIndices),
-              [](auto value) { return static_cast<size_t>(value); });
+            flannIndices.resize(indices.size());
             flann::Matrix<size_t> indices_mat(flannIndices.data(), query.rows, nn);
             index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
+#pragma omp parallel for
+            for (std::int64_t i = 0; i < indices.size(); ++i)
+              indices[i] = static_cast<int_type>(flannIndices[i]);
           }
         }
       }
       else if (params._aknn_algorithm == hdi::dr::KNN_HNSW)
       {
-        hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
+        hdi::utils::secureLog(_logger, "Computing approximated knn with HNSW Lib...");
 
         hnswlib::SpaceInterface<scalar> *space = NULL;
         switch (params._aknn_metric) {
