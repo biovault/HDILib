@@ -46,5 +46,7 @@ namespace hdi{
     template class SparseTSNEUserDefProbabilities<double, std::vector<std::unordered_map<uint32_t, double>>>;
     template class SparseTSNEUserDefProbabilities<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>;
     template class SparseTSNEUserDefProbabilities<double, std::vector<hdi::data::MapMemEff<uint32_t, double>>>;
+    template class SparseTSNEUserDefProbabilities<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>>;
+    template class SparseTSNEUserDefProbabilities<double, std::vector<hdi::data::MapMemEff<uint64_t, double>>>;
   }
 }

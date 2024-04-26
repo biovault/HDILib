@@ -32,6 +32,12 @@
 
 #include "hd_joint_probability_generator_inl.h"
 
+#include "hdi/data/map_mem_eff.h"
+
+#include <map>
+#include <unordered_map>
+#include <vector>
+
 namespace hdi{
   namespace dr{
 	  int HDJointProbabilityGenerator_NrOfKnnAlgorithms()
@@ -46,6 +52,13 @@ namespace hdi{
 #endif
           return numSupported;
 	  }
-    template class HDJointProbabilityGenerator<float>;
+
+    template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>>;
+
+    template class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<uint32_t, float>>>;
+
+    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>;
+    template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>>;
+
   }
 }

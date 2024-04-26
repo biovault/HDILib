@@ -65,10 +65,22 @@ namespace hdi {
     void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::setType(GpgpuSneType tsne_type) {
       if (tsne_type == AUTO_DETECT)
       {
-        //resolve the optimal type to use based on the available OpenGL version
+        // resolve the optimal type to use based on the available OpenGL version
         if (GLAD_GL_VERSION_4_3)
         {
-          _gpgpu_type = COMPUTE_SHADER;
+          if (std::is_same_v<map_key_type, std::uint64_t>)
+          {
+            const GLubyte* glExtensions = glGetString(GL_EXTENSIONS);
+            if (strstr((const char*)glExtensions, "GL_ARB_gpu_shader_int64") == nullptr)
+            {
+              std::cout << "GL_ARB_gpu_shader_int64 extension not available, using rasterization fallback" << std::endl;
+              _gpgpu_type = RASTER;
+            }
+            else
+              _gpgpu_type = COMPUTE_SHADER;
+          }
+          else            
+            _gpgpu_type = COMPUTE_SHADER;
         }
         else if (GLAD_GL_VERSION_3_3)
         {

@@ -45,6 +45,7 @@
 
 namespace hdi {
   namespace dr {
+    template<typename T, typename S>
     struct LinearProbabilityMatrix;
 
     //! Computation class for texture-based t-SNE using compute shaders
@@ -52,6 +53,7 @@ namespace hdi {
     Computation class for texture-based t-SNE using compute shaders
     \author Julian Thijssen
     */
+    template <typename unsigned_integer = std::uint32_t>
     class GpgpuSneCompute {
     public:
       struct Point2D {
@@ -67,8 +69,10 @@ namespace hdi {
         }
       };
 
-      typedef hdi::data::Embedding<float> embedding_type;
-      typedef std::vector<hdi::data::MapMemEff<std::uint32_t, float>> sparse_scalar_matrix_type;
+      using unsigned_int_type = unsigned_integer;
+      using int_type = typename std::conditional<std::is_same_v<unsigned_integer, std::uint32_t>, std::int32_t, std::int64_t>::type;
+      using embedding_type = hdi::data::Embedding<float>;
+      using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
 
     public:
       GpgpuSneCompute();
@@ -89,51 +93,51 @@ namespace hdi {
       bool isInitialized() const { return _initialized == true; }
 
     private:
-      void initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P);
+      void initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix<unsigned_int_type, int_type>& linear_P);
 
       Bounds2D computeEmbeddingBounds(const embedding_type* embedding, float padding = 0);
 
       void startTimer();
       void stopTimer();
       double getElapsed();
-      void computeEmbeddingBounds1(unsigned int num_points, const float* points, float padding = 0, bool square = false);
+      void computeEmbeddingBounds1(unsigned_int_type num_points, const float* points, float padding = 0, bool square = false);
       void interpolateFields(float* sum_Q);
-      void computeGradients(unsigned int num_points, float sum_Q, double exaggeration);
-      void updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult);
-      void updateEmbedding(unsigned int num_points, float exaggeration, float iteration, float mult);
+      void computeGradients(unsigned_int_type num_points, float sum_Q, double exaggeration);
+      void updatePoints(unsigned_int_type num_points, float* points, embedding_type* embedding, float iteration, float mult);
+      void updateEmbedding(unsigned_int_type num_points, float exaggeration, float iteration, float mult);
 
     private:
       const unsigned int FIXED_FIELDS_SIZE = 40;
       const unsigned int MINIMUM_FIELDS_SIZE = 5;
       const float PIXEL_RATIO = 2;
 
-      bool _initialized;
-      bool _adaptive_resolution;
+      bool _initialized = false;
+      bool _adaptive_resolution = true;
 
-      float _resolutionScaling;
+      float _resolutionScaling = PIXEL_RATIO;
 
       // Shaders
-      ShaderProgram _interp_program;
-      ShaderProgram _forces_program;
-      ShaderProgram _update_program;
-      ShaderProgram _bounds_program;
-      ShaderProgram _center_and_scale_program;
+      ShaderProgram _interp_program = {};
+      ShaderProgram _forces_program = {};
+      ShaderProgram _update_program = {};
+      ShaderProgram _bounds_program = {};
+      ShaderProgram _center_and_scale_program = {};
 
       // SSBOs
-      std::array<GLuint, 10> _compute_buffers;
+      std::array<GLuint, 10> _compute_buffers = {};
 
-      GLuint _timerQuery[2];
+      GLuint _timerQuery[2] = {};
 
-      ComputeFieldComputation fieldComputation;
+      ComputeFieldComputation fieldComputation = {};
 
       // Embedding bounds
-      Bounds2D _bounds;
+      Bounds2D _bounds = {};
 
       // T-SNE parameters
-      TsneParameters _params;
+      TsneParameters _params = {};
 
       // Probability distribution function support 
-      float _function_support;
+      float _function_support = 0;
     };
   }
 }

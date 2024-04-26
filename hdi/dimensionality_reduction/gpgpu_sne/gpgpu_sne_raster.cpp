@@ -9,8 +9,9 @@
 
 namespace hdi {
   namespace dr {
-    typedef GpgpuSneRaster::Bounds2D Bounds2D;
-    typedef GpgpuSneRaster::Point2D Point2D;
+
+    template <typename unsigned_integer>
+    using Point2D = struct GpgpuSneRaster<unsigned_integer>::Point2D;
 
     enum BufferType
     {
@@ -18,25 +19,24 @@ namespace hdi {
     };
 
     // Linearized sparse neighbourhood matrix
+    template <typename unsigned_integer = std::uint32_t, typename integer = std::int32_t >
     struct LinearProbabilityMatrix
     {
-      std::vector<uint32_t> neighbours;
+      std::vector<unsigned_integer> neighbours;
       std::vector<float> probabilities;
-      std::vector<int> indices;
+      std::vector<integer> indices;
     };
 
-    GpgpuSneRaster::GpgpuSneRaster() :
-      _initialized(false),
-      _adaptive_resolution(true),
-      _resolutionScaling(PIXEL_RATIO)
+    template <typename unsigned_integer>
+    GpgpuSneRaster<unsigned_integer>::GpgpuSneRaster()
     {
-
     }
 
-    Bounds2D GpgpuSneRaster::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
+    template <typename unsigned_integer>
+    typename GpgpuSneRaster<unsigned_integer>::Bounds2D GpgpuSneRaster<unsigned_integer>::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
       const float* const points = embedding->getContainer().data();
 
-      Bounds2D bounds;
+      Bounds2D bounds = {};
       bounds.min.x = std::numeric_limits<float>::max();
       bounds.max.x = -std::numeric_limits<float>::max();
       bounds.min.y = std::numeric_limits<float>::max();
@@ -68,11 +68,12 @@ namespace hdi {
       return bounds;
     }
 
-    void GpgpuSneRaster::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P) {
+    template <typename unsigned_integer>
+    void GpgpuSneRaster<unsigned_integer>::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P) {
       _params = params;
       _P = P;
 
-      unsigned int num_points = embedding->numDataPoints();
+      const unsigned_integer num_points = static_cast<unsigned_integer>(embedding->numDataPoints());
 
       _gradient.resize(num_points * params._embedding_dimensionality, 0);
       _previous_gradient.resize(num_points * params._embedding_dimensionality, 0);
@@ -80,15 +81,15 @@ namespace hdi {
       _positive_forces.resize(num_points*_params._embedding_dimensionality);
       _negative_forces.resize(num_points*_params._embedding_dimensionality);
 
-      _interpolated_fields.resize(4 * P.size());
+      _interpolated_fields.resize(4 * _P.size());
 
       // Linearize sparse probability matrix
-      LinearProbabilityMatrix linear_P;
-      unsigned int num_pnts = embedding->numDataPoints();
-      for (int i = 0; i < num_pnts; ++i) {
+      LinearProbabilityMatrix<unsigned_int_type, int_type> linear_P;
+      std::uint64_t num_pnts = embedding->numDataPoints();
+      for (std::uint64_t i = 0; i < num_pnts; ++i) {
         linear_P.indices.push_back(linear_P.neighbours.size());
-        int size = 0;
-        for (const auto& pij : P[i]) {
+        int_type size = 0;
+        for (const auto& pij : _P[i]) {
           linear_P.neighbours.push_back(pij.first);
           linear_P.probabilities.push_back(pij.second);
           size++;
@@ -107,14 +108,16 @@ namespace hdi {
       _initialized = true;
     }
 
-    void GpgpuSneRaster::clean()
+    template <typename unsigned_integer>
+    void GpgpuSneRaster<unsigned_integer>::clean()
     {
       glDeleteBuffers(1, &_position_buffer);
 
       fieldComputation.clean();
     }
 
-    void GpgpuSneRaster::initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P) {
+    template <typename unsigned_integer>
+    void GpgpuSneRaster<unsigned_integer>::initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix<unsigned_int_type, int_type>& linear_P) {
       glClearColor(0, 0, 0, 0);
 
       // Create dummy vao and already bind the position buffer to it for the interpolation step
@@ -159,7 +162,8 @@ namespace hdi {
       glDrawBuffers(1, DrawBuffers);
     }
 
-    void GpgpuSneRaster::compute(embedding_type* embedding, float exaggeration, float iteration, float mult) {
+    template <typename unsigned_integer>
+    void GpgpuSneRaster<unsigned_integer>::compute(embedding_type* embedding, float exaggeration, float iteration, float mult) {
       float* points = embedding->getContainer().data();
 
       glBindBuffer(GL_ARRAY_BUFFER, _position_buffer);
@@ -186,7 +190,8 @@ namespace hdi {
       //std::cout << "Bounds: " << boundsTime << " Fields: " << fieldsTime << " Gradients: " << gradientTime << " Update: " << updateTime << std::endl;
     }
 
-    void GpgpuSneRaster::interpolateFields(unsigned int num_points, unsigned int width, unsigned int height)
+    template <typename unsigned_integer>
+    void GpgpuSneRaster<unsigned_integer>::interpolateFields(unsigned_int_type num_points, unsigned int width, unsigned int height)
     {
       // Bind dummy fbo with empty texture to store interpolated field values
       int fbo_size = ceil(sqrt(num_points));
@@ -223,7 +228,8 @@ namespace hdi {
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
-    void GpgpuSneRaster::computeGradients(embedding_type* embedding, unsigned int num_points, double exaggeration)
+    template <typename unsigned_integer>
+    void GpgpuSneRaster<unsigned_integer>::computeGradients(embedding_type* embedding, unsigned_int_type num_points, double exaggeration)
     {
       const uint32_t n_pnts = num_points;
       float* embedding_ptr = embedding->getContainer().data();
@@ -231,7 +237,7 @@ namespace hdi {
 
       // Compute sumQ value
       float sum_Q = 0;
-      for (int i = 0; i < n_pnts; i++)
+      for (unsigned_int_type i = 0; i < n_pnts; i++)
       {
         sum_Q += std::max<float>(interpolated_fields_ptr[i * 4] - 1, 0.);
       }
@@ -241,7 +247,7 @@ namespace hdi {
         return;
       }
 
-      for (int i = 0; i < n_pnts; ++i) {
+      for (unsigned_int_type i = 0; i < n_pnts; ++i) {
         const float xi = embedding_ptr[i * 2];
         const float yi = embedding_ptr[i * 2 + 1];
 
@@ -272,8 +278,9 @@ namespace hdi {
     template <typename T>
     T sign(T x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
-    void GpgpuSneRaster::updateEmbedding(embedding_type* embedding, float exaggeration, float iteration, float mult) {
-      for (int i = 0; i < _gradient.size(); ++i) {
+    template <typename unsigned_integer>
+    void GpgpuSneRaster<unsigned_integer>::updateEmbedding(embedding_type* embedding, float exaggeration, float iteration, float mult) {
+      for (size_t i = 0; i < _gradient.size(); ++i) {
         _gain[i] = static_cast<float>((sign(_gradient[i]) != sign(_previous_gradient[i])) ? (_gain[i] + .2) : (_gain[i] * .8));
         if (_gain[i] < _params._minimum_gain) {
           _gain[i] = static_cast<float>(_params._minimum_gain);
@@ -292,5 +299,9 @@ namespace hdi {
         embedding->zeroCentered();
       }
     }
-  }
-}
+
+    template class GpgpuSneRaster<std::uint32_t>;
+    template class GpgpuSneRaster<std::uint64_t>;
+
+  } // dr
+} // hdi

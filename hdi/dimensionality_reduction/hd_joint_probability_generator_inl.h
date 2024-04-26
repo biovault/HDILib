@@ -509,7 +509,7 @@ namespace hdi {
 #endif
 
       for (size_t j = 0; j < n; ++j) {
-        for (int k = 0; k < nn; ++k) {
+        for (unsigned_int_type k = 0; k < nn; ++k) {
           const size_t i = j * nn + k;
           distribution[j][k] = temp_vector[i];
         }

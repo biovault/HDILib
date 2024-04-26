@@ -154,10 +154,10 @@ namespace hdi {
       scalar_type _normalization_Q; //! Normalization factor of Q - Z in the original paper
 
 #ifndef __APPLE__
-      GpgpuSneCompute _gpgpu_compute_tsne;
+      GpgpuSneCompute<map_key_type> _gpgpu_compute_tsne;
       GpgpuSneType _gpgpu_type;
 #endif // __APPLE__
-      GpgpuSneRaster _gpgpu_raster_tsne;
+      GpgpuSneRaster<map_key_type> _gpgpu_raster_tsne;
 
       TsneParameters _params;
       unsigned int _iteration;
