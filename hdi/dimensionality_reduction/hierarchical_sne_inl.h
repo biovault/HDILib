@@ -1745,7 +1745,7 @@ namespace hdi {
         utils::secureLog(log, "Loading file with version marker " + std::to_string(static_cast<int>(major_version)) + "." + std::to_string(static_cast<int>(minor_version)));
 
         checkAndThrowRuntime(major_version == 0.f, "Invalid major version");
-        checkAndThrowRuntime(minor_version >= 0 && minor_version <= 1.f, "Invalid minor version");
+        checkAndThrowRuntime(minor_version >= 0.f && minor_version <= 1.f, "Invalid minor version");
 
         // backwards compatible loading
         if (major_version == 0.f && minor_version == 0.f)
