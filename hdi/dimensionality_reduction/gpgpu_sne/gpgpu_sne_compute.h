@@ -71,7 +71,7 @@ namespace hdi {
       };
 
       using unsigned_int_type = unsigned_integer;
-      using int_type = typename std::conditional<std::is_same_v<unsigned_integer, std::uint32_t>, std::int32_t, std::int64_t>::type;
+      using int_type = typename std::conditional<std::is_same<unsigned_integer, std::uint32_t>::value == true, std::int32_t, std::int64_t>::type;
       using embedding_type = hdi::data::Embedding<float>;
       using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
 
