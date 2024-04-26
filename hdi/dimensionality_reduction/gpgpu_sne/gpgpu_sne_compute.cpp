@@ -6,9 +6,9 @@
 #include "hdi/utils/glad/glad.h"
 
 #include <cmath> // for sqrt
+#include <cstring>
 #include <iostream>
 #include <limits>
-#include <string.h>
 #include <vector>
 
 namespace hdi {
@@ -127,7 +127,7 @@ namespace hdi {
       {
         // Check for the presence of required GL_ARB_gpu_shader_int64 extension
         const GLubyte* glExtensions = glGetString(GL_EXTENSIONS);
-        if (strstr((const char*)glExtensions, "GL_ARB_gpu_shader_int64") == nullptr) {
+        if (std::strstr((const char*)glExtensions, "GL_ARB_gpu_shader_int64") == nullptr) {
           std::cerr << "Required extension GL_ARB_gpu_shader_int64 is not supported, use GpgpuSneCompute<std::uint32_t> instead of GpgpuSneCompute<std::uint64_t>" << std::endl;
         }
       }
