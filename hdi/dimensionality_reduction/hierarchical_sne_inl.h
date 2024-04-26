@@ -55,11 +55,12 @@
 
 #include "flann/flann.h"
 
-#include <random>
 #include <chrono>
-#include <unordered_set>
-#include <unordered_map>
 #include <numeric>
+#include <unordered_map>
+#include <unordered_set>
+#include <random>
+#include <string>
 
 namespace hdi {
   namespace dr {
@@ -1685,10 +1686,12 @@ namespace hdi {
         utils::secureLog(log, "Saving H-SNE hierarchy to file");
 
         //Version
-        float major_version = 0;
-        float minor_version = 1;
+        float major_version = 0.f;
+        float minor_version = 1.f;
         stream.write(reinterpret_cast<char*>(&major_version), sizeof(float));
         stream.write(reinterpret_cast<char*>(&minor_version), sizeof(float));
+
+        utils::secureLog(log, "Saving with version marker " + std::to_string(static_cast<int>(major_version)) + "." + std::to_string(static_cast<int>(minor_version)));
 
         //Number of scales
         size_t num_scales = hsne.hierarchy().size();
@@ -1734,17 +1737,22 @@ namespace hdi {
         utils::secureLog(log, "Loading H-SNE hierarchy from file");
 
         //Version
-        float major_version = 0;
-        float minor_version = 1;
+        float major_version = -1.f;
+        float minor_version = -1.f;
         stream.read(reinterpret_cast<char*>(&major_version), sizeof(float));
         stream.read(reinterpret_cast<char*>(&minor_version), sizeof(float));
-        checkAndThrowRuntime(major_version == 0, "Invalid major version");
-        checkAndThrowRuntime(minor_version > 1,  "Invalid minor version");
+
+        utils::secureLog(log, "Loading file with version marker " + std::to_string(static_cast<int>(major_version)) + "." + std::to_string(static_cast<int>(minor_version)));
+
+        checkAndThrowRuntime(major_version == 0.f, "Invalid major version");
+        checkAndThrowRuntime(minor_version >= 0 && minor_version <= 1.f, "Invalid minor version");
 
         // backwards compatible loading
-        if (major_version == 0 && minor_version == 0)
+        if (major_version == 0.f && minor_version == 0.f)
         {
           typedef float io_unsigned_int_type;
+
+          utils::secureLog(log, "Loading backwards compatible pre HDILib 1.3.0 file");
 
           //Number of scales
           io_unsigned_int_type num_scales = {};
