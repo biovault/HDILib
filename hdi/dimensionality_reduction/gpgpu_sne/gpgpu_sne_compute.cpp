@@ -288,7 +288,7 @@ namespace hdi {
     }
 
     template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::computeEmbeddingBounds1(unsigned_integer num_points, const float* points, float padding, bool square)
+    void GpgpuSneCompute<unsigned_integer>::computeEmbeddingBounds1(unsigned_int_type num_points, const float* points, float padding, bool square)
     {
       // Compute bounds
       _bounds_program.bind();
@@ -333,7 +333,7 @@ namespace hdi {
     }
 
     template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::computeGradients(unsigned_integer num_points, float sum_Q, double exaggeration)
+    void GpgpuSneCompute<unsigned_integer>::computeGradients(unsigned_int_type num_points, float sum_Q, double exaggeration)
     {
       _forces_program.bind();
 
@@ -356,7 +356,7 @@ namespace hdi {
     }
 
     template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::updatePoints(unsigned_integer num_points, float* points, embedding_type* embedding, float iteration, float mult)
+    void GpgpuSneCompute<unsigned_integer>::updatePoints(unsigned_int_type num_points, float* points, embedding_type* embedding, float iteration, float mult)
     {
       _update_program.bind();
 
@@ -382,7 +382,7 @@ namespace hdi {
     }
 
     template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::updateEmbedding(unsigned_integer num_points, float exaggeration, float iteration, float mult) {
+    void GpgpuSneCompute<unsigned_integer>::updateEmbedding(unsigned_int_type num_points, float exaggeration, float iteration, float mult) {
       _center_and_scale_program.bind();
 
       _center_and_scale_program.uniform1ui("num_points", num_points);
