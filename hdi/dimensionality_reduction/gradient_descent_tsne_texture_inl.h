@@ -40,6 +40,7 @@
 #include "hdi/utils/scoped_timers.h"
 #include "sptree.h"
 
+#include <cstring>
 #include <random>
 
 namespace hdi {
@@ -71,7 +72,7 @@ namespace hdi {
           if (std::is_same_v<map_key_type, std::uint64_t>)
           {
             const GLubyte* glExtensions = glGetString(GL_EXTENSIONS);
-            if (strstr((const char*)glExtensions, "GL_ARB_gpu_shader_int64") == nullptr)
+            if (std::strstr((const char*)glExtensions, "GL_ARB_gpu_shader_int64") == nullptr)
             {
               std::cout << "GL_ARB_gpu_shader_int64 extension not available, using rasterization fallback" << std::endl;
               _gpgpu_type = RASTER;
@@ -147,7 +148,7 @@ namespace hdi {
         _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
-#else
+  
       _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #endif
 
