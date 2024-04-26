@@ -8,6 +8,7 @@
 #include <cmath> // for sqrt
 #include <iostream>
 #include <limits>
+#include <stdio.h>
 #include <vector>
 
 namespace hdi {
