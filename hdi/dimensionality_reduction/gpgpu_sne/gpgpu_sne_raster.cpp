@@ -42,7 +42,7 @@ namespace hdi {
       bounds.min.y = std::numeric_limits<float>::max();
       bounds.max.y = -std::numeric_limits<float>::max();
 
-      for (int i = 0; i < embedding->numDataPoints(); ++i) {
+      for (std::uint64_t i = 0; i < embedding->numDataPoints(); ++i) {
         float x = points[i * 2 + 0];
         float y = points[i * 2 + 1];
 

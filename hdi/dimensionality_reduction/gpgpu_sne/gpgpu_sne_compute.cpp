@@ -189,11 +189,11 @@ namespace hdi {
 
       // Upload sparse probability matrix
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[NEIGHBOUR]);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.neighbours.size() * sizeof(uint32_t), linear_P.neighbours.data(), GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.neighbours.size() * sizeof(unsigned_int_type), linear_P.neighbours.data(), GL_STATIC_DRAW);
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[PROBABILITIES]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.probabilities.size() * sizeof(float), linear_P.probabilities.data(), GL_STATIC_DRAW);
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[INDEX]);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.indices.size() * sizeof(int), linear_P.indices.data(), GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.indices.size() * sizeof(int_type), linear_P.indices.data(), GL_STATIC_DRAW);
 
       // Initialize buffer with 0s
       std::vector<float> zeroes(num_points * 2, 0);
