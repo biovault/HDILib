@@ -146,7 +146,7 @@ namespace hdi {
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
       {
-        if constexpr (std::is_same_v<unsigned_integer, std::uint64_t>)
+        if constexpr (std::is_same_v<map_key_type, std::uint64_t>)
         {
           utils::secureLog(_logger, "Warning: using raster instead of shader compute for 64bit data!");
           _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
@@ -192,7 +192,7 @@ namespace hdi {
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
       {
-        if constexpr (std::is_same_v<unsigned_integer, std::uint64_t>)
+        if constexpr (std::is_same_v<map_key_type, std::uint64_t>)
         {
           utils::secureLog(_logger, "Warning: using raster instead of shader compute for 64bit data!");
           _gpgpu_raster_tsne.initialize(_embedding, _params, _P);

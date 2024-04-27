@@ -56,7 +56,7 @@ namespace hdi {
       Algorithm for the generation of a hierarchical representation of the data as presented in the Hierarchical Stochastic Neighbor Embedding paper
       \author Nicola Pezzotti
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<std::uint32_t, float>>, typename unsigned_integer = std::uint64_t, typename integer = std::int64_t >
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<std::uint32_t, float>>, typename unsigned_integer = std::uint32_t, typename integer = std::int32_t >
     class HierarchicalSNE {
     public:
       typedef scalar scalar_type;

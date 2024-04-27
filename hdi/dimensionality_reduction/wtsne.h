@@ -50,7 +50,7 @@ namespace hdi{
       Implementation of the w-tSNE algorithm with sparse and user-defined probabilities
       \author Nicola Pezzotti
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<std::uint32_t, float> >, typename unsigned_integer = std::uint64_t, typename integer = std::int64_t>
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<std::uint32_t, float> >, typename unsigned_integer = std::uint32_t, typename integer = std::int32_t>
     class WeightedTSNE{
     public:
       typedef scalar scalar_type;

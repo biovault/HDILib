@@ -58,7 +58,7 @@ namespace hdi{
       \author Nicola Pezzotti
       \warning Due to numeric limits, the output matrix is not normalized. In order to have a joint-probability distribution each cell must be divided by 2*num_dps
     */
-    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<std::uint32_t, float> >, typename unsigned_integer = std::uint64_t, typename integer = std::int64_t>
+    template <typename scalar = float, typename sparse_scalar_matrix = std::vector<hdi::data::MapMemEff<std::uint32_t, float> >, typename unsigned_integer = std::uint32_t, typename integer = std::int32_t>
     class HDJointProbabilityGenerator {
     public:
       typedef scalar scalar_type;
