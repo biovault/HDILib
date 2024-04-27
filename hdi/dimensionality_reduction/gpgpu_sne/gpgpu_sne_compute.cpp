@@ -408,7 +408,6 @@ namespace hdi {
     }
 
     template class GpgpuSneCompute<std::uint32_t>;
-    template class GpgpuSneCompute<std::uint64_t>;
 
   } // dr
 } // hdi

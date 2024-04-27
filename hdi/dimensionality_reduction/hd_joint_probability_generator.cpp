@@ -53,10 +53,6 @@ namespace hdi{
           return numSupported;
 	  }
 
-    template class HDJointProbabilityGenerator<float, std::vector<std::map<uint32_t, float>>>;
-
-    template class HDJointProbabilityGenerator<float, std::vector<std::unordered_map<uint32_t, float>>>;
-
     template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>;
     template class HDJointProbabilityGenerator<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>>;
 
