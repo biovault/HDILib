@@ -145,7 +145,15 @@ namespace hdi {
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
-        _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      {
+        if constexpr (std::is_same_v<unsigned_integer, std::uint64_t>)
+        {
+          utils::secureLog(_logger, "Warning: using raster instead of shader compute for 64bit data!");
+          _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+        }
+        else
+          _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      }
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
   
@@ -183,7 +191,15 @@ namespace hdi {
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
-        _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      {
+        if constexpr (std::is_same_v<unsigned_integer, std::uint64_t>)
+        {
+          utils::secureLog(_logger, "Warning: using raster instead of shader compute for 64bit data!");
+          _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+        }
+        else
+          _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      }
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else
