@@ -14,8 +14,7 @@
 namespace hdi {
   namespace dr {
 
-    template <typename unsigned_integer>
-    using Point2D = struct GpgpuSneCompute<unsigned_integer>::Point2D;
+    //using Point2D = struct GpgpuSneCompute::Point2D;
 
     enum BufferType
     {
@@ -32,21 +31,18 @@ namespace hdi {
     };
 
     // Linearized sparse neighbourhood matrix
-    template <typename unsigned_integer = std::uint32_t, typename integer = std::int32_t >
     struct LinearProbabilityMatrix
     {
-      std::vector<unsigned_integer> neighbours;
+      std::vector<std::uint32_t> neighbours;
       std::vector<float> probabilities;
-      std::vector<integer> indices;
+      std::vector<std::int32_t> indices;
     };
 
-    template <typename unsigned_integer>
-    GpgpuSneCompute<unsigned_integer>::GpgpuSneCompute()
+    GpgpuSneCompute::GpgpuSneCompute()
     {
     }
 
-    template <typename unsigned_integer >
-    typename GpgpuSneCompute<unsigned_integer>::Bounds2D GpgpuSneCompute<unsigned_integer>::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
+    GpgpuSneCompute::Bounds2D GpgpuSneCompute::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
       const float* const points = embedding->getContainer().data();
 
       Bounds2D bounds = {};
@@ -81,14 +77,13 @@ namespace hdi {
       return bounds;
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P) {
+    void GpgpuSneCompute::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P) {
       _params = params;
 
-      const unsigned_integer num_points = static_cast<unsigned_integer>(embedding->numDataPoints());
+      const std::uint32_t num_points = static_cast<std::uint32_t>(embedding->numDataPoints());
 
       // Linearize sparse probability matrix
-      LinearProbabilityMatrix<unsigned_int_type, int_type> linear_P;
+      LinearProbabilityMatrix linear_P;
 
       for (std::uint64_t i = 0; i < num_points; ++i) {
         linear_P.indices.push_back(linear_P.neighbours.size());
@@ -112,25 +107,14 @@ namespace hdi {
       _initialized = true;
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::clean()
+    void GpgpuSneCompute::clean()
     {
       glDeleteBuffers(10, _compute_buffers.data());
 
       fieldComputation.clean();
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::initializeOpenGL(unsigned_int_type num_points, const LinearProbabilityMatrix<unsigned_int_type, int_type>& linear_P) {
-
-      if constexpr (std::is_same_v<unsigned_integer, std::uint64_t>)
-      {
-        // Check for the presence of required GL_ARB_gpu_shader_int64 extension
-        const GLubyte* glExtensions = glGetString(GL_EXTENSIONS);
-        if (std::strstr((const char*)glExtensions, "GL_ARB_gpu_shader_int64") == nullptr) {
-          std::cerr << "Required extension GL_ARB_gpu_shader_int64 is not supported, use GpgpuSneCompute<std::uint32_t> instead of GpgpuSneCompute<std::uint64_t>" << std::endl;
-        }
-      }
+    void GpgpuSneCompute::initializeOpenGL(unsigned_int_type num_points, const LinearProbabilityMatrix<unsigned_int_type, int_type>& linear_P) {
 
       glClearColor(0, 0, 0, 0);
 
@@ -145,12 +129,7 @@ namespace hdi {
         _center_and_scale_program.create();
 
         _interp_program.addShader(COMPUTE, interp_fields_source);
-
-        if constexpr (std::is_same_v<unsigned_integer, std::uint64_t>)
-          _forces_program.addShader(COMPUTE, compute_forces_source_64);
-        else
-          _forces_program.addShader(COMPUTE, compute_forces_source);
-
+        _forces_program.addShader(COMPUTE, compute_forces_source);
         _update_program.addShader(COMPUTE, update_source);
         _bounds_program.addShader(COMPUTE, bounds_source);
         _center_and_scale_program.addShader(COMPUTE, center_and_scale_source);
@@ -211,20 +190,17 @@ namespace hdi {
       glGenQueries(2, _timerQuery);
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::startTimer()
+    void GpgpuSneCompute::startTimer()
     {
       glQueryCounter(_timerQuery[0], GL_TIMESTAMP);
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::stopTimer()
+    void GpgpuSneCompute::stopTimer()
     {
       glQueryCounter(_timerQuery[1], GL_TIMESTAMP);
     }
 
-    template <typename unsigned_integer >
-    double GpgpuSneCompute<unsigned_integer>::getElapsed()
+    double GpgpuSneCompute::getElapsed()
     {
       GLint stopTimerAvailable = 0;
       while (!stopTimerAvailable)
@@ -240,8 +216,7 @@ namespace hdi {
       return elapsed;
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::compute(embedding_type* embedding, float exaggeration, float iteration, float mult) {
+    void GpgpuSneCompute::compute(embedding_type* embedding, float exaggeration, float iteration, float mult) {
       float* points = embedding->getContainer().data();
       unsigned int num_points = embedding->numDataPoints();
 
@@ -287,8 +262,7 @@ namespace hdi {
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, embedding->numDataPoints() * sizeof(Point2D), points);
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::computeEmbeddingBounds1(unsigned_int_type num_points, const float* points, float padding, bool square)
+    void GpgpuSneCompute::computeEmbeddingBounds1(unsigned_int_type num_points, const float* points, float padding, bool square)
     {
       // Compute bounds
       _bounds_program.bind();
@@ -305,8 +279,7 @@ namespace hdi {
       glDispatchCompute(1, 1, 1);
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::interpolateFields(float* sum_Q)
+    void GpgpuSneCompute::interpolateFields(float* sum_Q)
     {
       // Bind fields texture for bilinear sampling
       glActiveTexture(GL_TEXTURE0);
@@ -332,8 +305,7 @@ namespace hdi {
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(float), sum_Q);
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::computeGradients(unsigned_int_type num_points, float sum_Q, double exaggeration)
+    void GpgpuSneCompute::computeGradients(unsigned_int_type num_points, float sum_Q, double exaggeration)
     {
       _forces_program.bind();
 
@@ -355,8 +327,7 @@ namespace hdi {
       glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::updatePoints(unsigned_int_type num_points, float* points, embedding_type* embedding, float iteration, float mult)
+    void GpgpuSneCompute::updatePoints(unsigned_int_type num_points, float* points, embedding_type* embedding, float iteration, float mult)
     {
       _update_program.bind();
 
@@ -381,8 +352,7 @@ namespace hdi {
       glDispatchCompute(grid_size, grid_size, 1);
     }
 
-    template <typename unsigned_integer >
-    void GpgpuSneCompute<unsigned_integer>::updateEmbedding(unsigned_int_type num_points, float exaggeration, float iteration, float mult) {
+    void GpgpuSneCompute::updateEmbedding(unsigned_int_type num_points, float exaggeration, float iteration, float mult) {
       _center_and_scale_program.bind();
 
       _center_and_scale_program.uniform1ui("num_points", num_points);
@@ -406,8 +376,6 @@ namespace hdi {
       unsigned int grid_size = sqrt(num_workgroups) + 1;
       glDispatchCompute(grid_size, grid_size, 1);
     }
-
-    template class GpgpuSneCompute<std::uint32_t>;
 
   } // dr
 } // hdi

@@ -46,7 +46,6 @@
 
 namespace hdi {
   namespace dr {
-    template<typename T, typename S>
     struct LinearProbabilityMatrix;
 
     //! Computation class for texture-based t-SNE using compute shaders
@@ -54,7 +53,6 @@ namespace hdi {
     Computation class for texture-based t-SNE using compute shaders
     \author Julian Thijssen
     */
-    template <typename unsigned_integer = std::uint32_t>
     class GpgpuSneCompute {
     public:
       struct Point2D {
@@ -70,8 +68,8 @@ namespace hdi {
         }
       };
 
-      using unsigned_int_type = unsigned_integer;
-      using int_type = typename std::conditional<std::is_same<unsigned_integer, std::uint32_t>::value == true, std::int32_t, std::int64_t>::type;
+      using unsigned_int_type = std::uint32_t;
+      using int_type = std::int32_t;
       using embedding_type = hdi::data::Embedding<float>;
       using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
 
@@ -94,7 +92,7 @@ namespace hdi {
       bool isInitialized() const { return _initialized == true; }
 
     private:
-      void initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix<unsigned_int_type, int_type>& linear_P);
+      void initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix& linear_P);
 
       Bounds2D computeEmbeddingBounds(const embedding_type* embedding, float padding = 0);
 
