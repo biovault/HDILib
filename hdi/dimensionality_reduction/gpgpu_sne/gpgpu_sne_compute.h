@@ -46,7 +46,6 @@
 
 namespace hdi {
   namespace dr {
-    struct LinearProbabilityMatrix;
 
     //! Computation class for texture-based t-SNE using compute shaders
     /*!
@@ -55,6 +54,14 @@ namespace hdi {
     */
     class GpgpuSneCompute {
     public:
+      // Linearized sparse neighbourhood matrix
+      struct LinearProbabilityMatrix
+      {
+        std::vector<std::uint32_t> neighbours;
+        std::vector<float> probabilities;
+        std::vector<std::int32_t> indices;
+      };
+
       struct Point2D {
         float x, y;
       };

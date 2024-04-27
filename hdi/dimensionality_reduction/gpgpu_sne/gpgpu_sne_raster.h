@@ -50,8 +50,6 @@
 
 namespace hdi {
   namespace dr {
-    template<typename T, typename S>
-    struct LinearProbabilityMatrix;
 
     //! Computation class for texture-based t-SNE using rasterization
     /*!
@@ -61,6 +59,21 @@ namespace hdi {
     template <typename unsigned_integer = std::uint32_t>
     class GpgpuSneRaster {
     public:
+
+      using unsigned_int_type = unsigned_integer;
+      using int_type = typename std::conditional<std::is_same<unsigned_integer, std::uint32_t>::value == true, std::int32_t, std::int64_t>::type;
+      using embedding_type = hdi::data::Embedding<float>;
+      using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
+
+      // Linearized sparse neighbourhood matrix
+      struct LinearProbabilityMatrix
+      {
+        std::vector<unsigned_int_type> neighbours;
+        std::vector<float> probabilities;
+        std::vector<int_type> indices;
+      };
+
+
       struct Point2D {
         float x, y;
       };
@@ -73,11 +86,6 @@ namespace hdi {
           return Point2D{ max.x - min.x, max.y - min.y };
         }
       };
-
-      using unsigned_int_type = unsigned_integer;
-      using int_type = typename std::conditional<std::is_same<unsigned_integer, std::uint32_t>::value == true, std::int32_t, std::int64_t>::type;
-      using embedding_type = hdi::data::Embedding<float>;
-      using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
 
     public:
       GpgpuSneRaster();
@@ -97,7 +105,7 @@ namespace hdi {
 	  };
 	  bool isInitialized() { return _initialized == true; }
     private:
-      void initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix<unsigned_int_type, int_type>& linear_P);
+      void initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix& linear_P);
 
       Bounds2D computeEmbeddingBounds(const embedding_type* embedding, float padding = 0);
 

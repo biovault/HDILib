@@ -18,15 +18,6 @@ namespace hdi {
       POSITION
     };
 
-    // Linearized sparse neighbourhood matrix
-    template <typename unsigned_integer = std::uint32_t, typename integer = std::int32_t >
-    struct LinearProbabilityMatrix
-    {
-      std::vector<unsigned_integer> neighbours;
-      std::vector<float> probabilities;
-      std::vector<integer> indices;
-    };
-
     template <typename unsigned_integer>
     GpgpuSneRaster<unsigned_integer>::GpgpuSneRaster()
     {
@@ -83,19 +74,19 @@ namespace hdi {
 
       _interpolated_fields.resize(4 * _P.size());
 
-      // Linearize sparse probability matrix
-      LinearProbabilityMatrix<unsigned_int_type, int_type> linear_P;
-      std::uint64_t num_pnts = embedding->numDataPoints();
-      for (std::uint64_t i = 0; i < num_pnts; ++i) {
-        linear_P.indices.push_back(linear_P.neighbours.size());
-        int_type size = 0;
-        for (const auto& pij : _P[i]) {
-          linear_P.neighbours.push_back(pij.first);
-          linear_P.probabilities.push_back(pij.second);
-          size++;
-        }
-        linear_P.indices.push_back(size);
-      }
+      // Linearize sparse probability matrix dummy
+      LinearProbabilityMatrix linear_P;
+      //std::uint64_t num_pnts = embedding->numDataPoints();
+      //for (std::uint64_t i = 0; i < num_pnts; ++i) {
+      //  linear_P.indices.push_back(linear_P.neighbours.size());
+      //  int_type size = 0;
+      //  for (const auto& pij : _P[i]) {
+      //    linear_P.neighbours.push_back(pij.first);
+      //    linear_P.probabilities.push_back(pij.second);
+      //    size++;
+      //  }
+      //  linear_P.indices.push_back(size);
+      //}
 
       // Compute initial data bounds
       _bounds = computeEmbeddingBounds(embedding);
@@ -117,7 +108,7 @@ namespace hdi {
     }
 
     template <typename unsigned_integer>
-    void GpgpuSneRaster<unsigned_integer>::initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix<unsigned_int_type, int_type>& linear_P) {
+    void GpgpuSneRaster<unsigned_integer>::initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix& linear_P) {
       glClearColor(0, 0, 0, 0);
 
       // Create dummy vao and already bind the position buffer to it for the interpolation step
@@ -256,8 +247,8 @@ namespace hdi {
         double sum_positive_y = 0;
 
         for (const auto& pij : _P[i]) {
-          const float xj = embedding_ptr[pij.first * 2];
-          const float yj = embedding_ptr[pij.first * 2 + 1];
+          const float xj = embedding_ptr[pij.first * 2ll];
+          const float yj = embedding_ptr[pij.first * 2ll + 1ll];
           const double dist_x = (xi - xj);
           const double dist_y = (yi - yj);
           const double qij = 1 / (1 + dist_x*dist_x + dist_y*dist_y);

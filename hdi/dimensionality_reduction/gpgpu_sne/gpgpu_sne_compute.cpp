@@ -30,14 +30,6 @@ namespace hdi {
       BOUNDS
     };
 
-    // Linearized sparse neighbourhood matrix
-    struct LinearProbabilityMatrix
-    {
-      std::vector<std::uint32_t> neighbours;
-      std::vector<float> probabilities;
-      std::vector<std::int32_t> indices;
-    };
-
     GpgpuSneCompute::GpgpuSneCompute()
     {
     }
@@ -114,7 +106,7 @@ namespace hdi {
       fieldComputation.clean();
     }
 
-    void GpgpuSneCompute::initializeOpenGL(unsigned_int_type num_points, const LinearProbabilityMatrix<unsigned_int_type, int_type>& linear_P) {
+    void GpgpuSneCompute::initializeOpenGL(unsigned_int_type num_points, const LinearProbabilityMatrix& linear_P) {
 
       glClearColor(0, 0, 0, 0);
 
