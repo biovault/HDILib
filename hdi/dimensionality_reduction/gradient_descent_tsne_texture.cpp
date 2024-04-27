@@ -38,7 +38,7 @@ namespace hdi {
   namespace dr {
 
     template class GradientDescentTSNETexture<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>;
-    template class GradientDescentTSNETexture<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>>;
+    template class GradientDescentTSNETexture<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>, std::uint64_t, std::int64_t>;
 
   }
 }

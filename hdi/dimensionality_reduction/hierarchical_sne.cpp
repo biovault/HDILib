@@ -60,8 +60,8 @@ namespace hdi{
 
       template void saveHSNE<HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>, std::ofstream>(const HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>& hsne, std::ofstream& stream, utils::AbstractLog* log);
       template void loadHSNE<HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>, std::ifstream>(HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint32_t, float>>>& hsne, std::ifstream& stream, utils::AbstractLog* log);
-      template void saveHSNE<HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>>, std::ofstream>(const HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>>& hsne, std::ofstream& stream, utils::AbstractLog* log);
-      template void loadHSNE<HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>>, std::ifstream>(HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>>& hsne, std::ifstream& stream, utils::AbstractLog* log);
+      template void saveHSNE<HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>, std::uint64_t, std::int64_t>, std::ofstream>(const HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>, std::uint64_t, std::int64_t>& hsne, std::ofstream& stream, utils::AbstractLog* log);
+      template void loadHSNE<HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>, std::uint64_t, std::int64_t>, std::ifstream>(HierarchicalSNE<float, std::vector<hdi::data::MapMemEff<uint64_t, float>>, std::uint64_t, std::int64_t>& hsne, std::ifstream& stream, utils::AbstractLog* log);
     }
   }
 }
