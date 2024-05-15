@@ -70,8 +70,7 @@ git clone --recurse-submodules https://github.com/biovault/HDILib.git
 
 HDILib has all external dependencies as submodules except for flann.
 
-1. Windows build requires: flann 1.8.5
-2. Ubuntu/Mac builds require: flann 1.8.4
+1. The urrent flann version is 1.9.2
 
 Flann can be built from the source (https://github.com/mariusmuja/flann) or conan can be used to
 installed using conan.
@@ -83,7 +82,7 @@ Assumes a python 3.6,3.7,3.8 or 3.9 environment
 1. Install conan
 
  ```bash
- pip install conan==1.40.4
+ pip install conan~=1.64.0
  ```
 
 2. Add the lkeb artifactory

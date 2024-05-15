@@ -26,7 +26,7 @@ endif()
 add_executable(example example.cpp)
 # Link the libraries individually or use the predefined HDILib_LINK_LIBS
 if (WIN32)
-    target_link_libraries(example PRIVATE HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata flann lz4::lz4 OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS})
+    target_link_libraries(example PRIVATE HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata flann::flann lz4::lz4 OpenMP::OpenMP_CXX ${CMAKE_DL_LIBS})
 else()
     # Force the lib order for linking
     if (CMAKE_HOST_SYSTEM_NAME MATCHES "Linux")
