@@ -70,14 +70,14 @@ git clone --recurse-submodules https://github.com/biovault/HDILib.git
 
 HDILib has all external dependencies as submodules except for flann.
 
-1. The urrent flann version is 1.9.2
+1. The current flann version is 1.9.2
 
 Flann can be built from the source (https://github.com/mariusmuja/flann) or conan can be used to
 installed using conan.
 
 ### Installing flann with conan
 
-Assumes a python 3.6,3.7,3.8 or 3.9 environment
+Assumes a python 3.10 or higher environment
 
 1. Install conan
 
