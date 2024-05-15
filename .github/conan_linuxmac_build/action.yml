@@ -74,9 +74,15 @@ runs:
         conan profile update settings.compiler.version=${{ inputs.conan-compiler-version }} action_build
         conan profile update settings.compiler.libcxx=${{ inputs.conan-libcxx-version}} action_build
         conan profile show action_build
+
+        if [[ ${{ inputs.conan-build-os }} == "Macos" ]] && [[ ${{ inputs.conan-compiler-version }} == "14" ]]; then
+          conan profile new compatibility
+          conan profile update settings.lz4/1.9.2:compiler.version=13.0 compatibility
+        fi
+
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
         export HOMEBREW_NO_AUTO_UPDATE=1
-        conan create . HDILib/1.2.6@biovault/stable -pr:h action_build -pr:b action_build -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+        conan create . HDILib/1.2.6@biovault/stable -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
 
       shell: bash
       env:
