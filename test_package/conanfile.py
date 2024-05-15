@@ -25,6 +25,9 @@ class HDILibTestConan(ConanFile):
         tc.variables["flann_ROOT"] = Path(
             self.deps_cpp_info["flann"].rootpath
         ).as_posix()
+        tc.variables["lz4_ROOT"] = Path(
+            self.deps_cpp_info["lz4"].rootpath
+        ).as_posix()
         tc.generate()
         deps = CMakeDeps(self)
         deps.generate()
