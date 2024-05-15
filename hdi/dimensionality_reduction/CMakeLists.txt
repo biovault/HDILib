@@ -17,6 +17,9 @@ get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../exte
 target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
+# Need lz4 include because of the flann serialization dependency
+target_include_directories(${PROJECT} PRIVATE ${lz4_INCLUDE_DIR})
+
 if(DEFINED ENV{CI})
     message (STATUS "Flann include: " ${flann_INCLUDE_DIR})
     message (STATUS "lz4 include: " ${lz4_INCLUDE_DIR})
