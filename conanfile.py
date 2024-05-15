@@ -139,6 +139,7 @@ set(CMAKE_PREFIX_PATH "{package_cmake_path.as_posix()}" ${{CMAKE_PREFIX_PATH}})
         tc.variables[
             "CMAKE_MSVC_RUNTIME_LIBRARY"
         ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+        tc.variables["flann_INCLUDE_DIR"] = Path(self.deps_cpp_info["flann"].rootpath, "include").as_posix()
         print("Call toolchain generate")
         tc.generate()
         self.add_package_cmake_paths("flann", "lib/cmake")
