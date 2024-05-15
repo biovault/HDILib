@@ -20,6 +20,8 @@ file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 message (STATUS "Flann include: " ${flann_INCLUDE_DIR})
 target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR})
+# required for use of flann serialization
+target_include_directories(${PROJECT} PRIVATE ${lz4_INCLUDE_DIR})
 
 if(ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
