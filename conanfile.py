@@ -21,7 +21,7 @@ class HDILibConan(ConanFile):
     license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
     default_user = "lkeb"
     default_channel = "stable"
-    requires = ("flann/1.9.2@lkeb/stable", "lz4/1.9.2")
+    requires = ("flann/1.9.2@lkeb/stable:options.shared=False", "lz4/1.9.2")
 
     generators = "CMakeDeps"
 
