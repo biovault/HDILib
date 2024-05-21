@@ -21,7 +21,7 @@ class HDILibConan(ConanFile):
     license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
     default_user = "lkeb"
     default_channel = "stable"
-    requires = ("flann/1.9.2@lkeb/stable:options.shared=False", "lz4/1.9.2")
+    requires = ("lz4/1.9.2")
 
     generators = "CMakeDeps"
 
@@ -58,6 +58,7 @@ class HDILibConan(ConanFile):
     # either self built 1.8.5 for Windows or system supplied
     # 1.8.4 on Linux and Macos
     def requirements(self):
+        self.requires("flann/1.9.2@lkeb/stable", options={"shared": "False"})
         if self.settings.build_type == "None":
             print("Skip root package requirements for build_type NONE")
             return
