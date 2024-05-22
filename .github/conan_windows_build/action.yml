@@ -69,12 +69,13 @@ runs:
         conan profile update settings.compiler.version=${{ inputs.conan-visual-version }} action_build
         conan profile show action_build
 
+        for /f "delims=" %%i in ('conan inspect --raw version conanfile.py') do set CONAN_PACKAGE_VERSION=%%i
         if "${{ inputs.conan-build-type }}"=="Analysis" (
           cd cmake
           set Analysis=TRUE
           ctest -VV -S CAnalysisBuild.cmake -D HDILIB_TOKEN:STRING=${{ inputs.hdilib-cdash-token }} -D IN_GITHUB_ACTIONS:BOOL=ON
         ) else (
-          conan create . HDILib/1.2.7@biovault/stable -pr:h action_build -pr:b default -s build_type=Release
+          conan create . HDILib/%CONAN_PACKAGE_VERSION%@biovault/stable -pr:h action_build -pr:b default -s build_type=Release
         )
 
       shell: cmd
