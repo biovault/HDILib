@@ -26,6 +26,7 @@ class HDILibConan(ConanFile):
     # Note : This should only be built with: shared=False, fPIC=True
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
+    requires = ("flann/1.9.2@lkeb/stable")
 
     # scm = {
     #    "type": "git",dir
@@ -41,20 +42,6 @@ class HDILibConan(ConanFile):
             cmakePath = Path(pypath.parents[0], "Scripts/cmake.exe")
             return cmakePath
         return "cmake"
-
-    # def system_requirements(self):
-    #    if tools.os_info.is_macos:
-    #        target = os.environ.get("MACOSX_DEPLOYMENT_TARGET", "10.13")
-    #        if version.parse(target) > version.parse("10.12"):
-    #            installer = tools.SystemPackageTool()
-    #            installer.install("libomp")
-
-    def requirements(self):
-        if self.settings.build_type == "None":
-            print("Skip root package requirements for build_type NONE")
-            return
-        #self.requires("flann/1.9.2")
-        self.requires("flann/1.9.2@lkeb/stable")
 
     def system_requirements(self):
         if os_info.is_macos:
