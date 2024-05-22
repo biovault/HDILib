@@ -12,7 +12,7 @@ required_conan_version = "==1.62.0"
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "1.2.6"
+    version = "latest"
     description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
