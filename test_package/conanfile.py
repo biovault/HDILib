@@ -35,7 +35,7 @@ class HDILibTestConan(ConanFile):
             print("Skip test_package requirements for build_type NONE")
             return
         else:
-            self.requires("flann/1.9.2")
+            self.requires("flann/1.9.2@lkeb/stable")
 
 
     def system_requirements(self):
