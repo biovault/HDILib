@@ -74,7 +74,7 @@ runs:
           set Analysis=TRUE
           ctest -VV -S CAnalysisBuild.cmake -D HDILIB_TOKEN:STRING=${{ inputs.hdilib-cdash-token }} -D IN_GITHUB_ACTIONS:BOOL=ON
         ) else (
-          conan create . HDILib/1.2.6@biovault/stable -pr:h action_build -pr:b default -s build_type=Release
+          conan create . HDILib/latest@biovault/stable -pr:h action_build -pr:b default -s build_type=Release
         )
 
       shell: cmd
