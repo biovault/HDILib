@@ -294,7 +294,7 @@ namespace hdi {
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._trees_construction_time);
 
-          for (unsigned_int_type i = 0; i < num_dps; ++i) {
+          for (size_t i = 0; i < num_dps; ++i) {
             scalar* vec = new scalar[num_dim];
             for (unsigned_int_type z = 0; z < num_dim; ++z) {
               vec[z] = high_dimensional_data[i * num_dim + z];

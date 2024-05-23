@@ -387,7 +387,7 @@ namespace hdi {
         {
           utils::ScopedTimer<scalar_type, utils::Seconds> timer(_statistics._init_knn_time);
 
-          for (unsigned_int_type i = 0; i < _num_dps; ++i) {
+          for (size_t i = 0; i < _num_dps; ++i) {
             scalar* vec = new scalar[_dimensionality];
             for (unsigned_int_type z = 0; z < _dimensionality; ++z) {
               vec[z] = _high_dimensional_data[i * _dimensionality + z];
