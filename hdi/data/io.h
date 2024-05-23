@@ -75,7 +75,7 @@ namespace hdi{
         }
       }
 
-      // saves sparse matrix of floats
+      // saves sparse matrix of floats, for backward compatibility, use saveSparseMatrix instead
       template <typename sparse_scalar_matrix_type, class output_stream_type>
       void saveSparseScalarMatrix(const sparse_scalar_matrix_type& matrix, output_stream_type& stream, utils::AbstractLog* log = nullptr){
         typedef float io_scalar_type;
@@ -98,7 +98,7 @@ namespace hdi{
         }
       }
 
-      // saves vector of floats
+      // saves vector of floats, for backward compatibility, use saveVector instead
       template <typename scalar_vector, class output_stream_type>
       void saveScalarVector(const scalar_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr) {
         typedef float io_scalar_type;
@@ -112,7 +112,7 @@ namespace hdi{
         }
       }
 
-      // saves vector of uint32_t
+      // saves vector of uint32_t, for backward compatibility, use saveVector instead
       template <typename uint_vector, class output_stream_type>
       void saveUIntVector(const uint_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr) {
         typedef float io_scalar_type;
@@ -126,7 +126,7 @@ namespace hdi{
         }
       }
 
-      // saves vector of int32_t
+      // saves vector of int32_t, for backward compatibility, use saveVector instead
       template <typename uint_vector, class output_stream_type>
       void saveIntVector(const uint_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr) {
         typedef float io_scalar_type;
@@ -141,7 +141,7 @@ namespace hdi{
         }
       }
 
-      // saves vector of vector of int32_t
+      // saves vector of vector of int32_t, for backward compatibility, use saveVector instead
       template <typename uint_vector_vector, class output_stream_type>
       void saveUIntVectorVector(const uint_vector_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr) {
         typedef float io_scalar_type;
@@ -220,7 +220,7 @@ namespace hdi{
         }
       }
 
-      // load sparse matrix of floats
+      // load sparse matrix of floats, for backward compatibility, use loadSparseMatrix instead
       template <typename sparse_scalar_matrix_type, class output_stream_type>
       void loadSparseScalarMatrix(sparse_scalar_matrix_type& matrix, output_stream_type& stream, utils::AbstractLog* log = nullptr){
         typedef float io_scalar_type;
@@ -245,7 +245,7 @@ namespace hdi{
         }
       }
 
-      // loads vector of floats
+      // loads vector of floats, for backward compatibility, use loadVector instead
       template <typename scalar_vector, class output_stream_type>
       void loadScalarVector(scalar_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr) {
         typedef float io_scalar_type;
@@ -261,7 +261,7 @@ namespace hdi{
         }
       }
 
-      // loads vector of uint32_t
+      // loads vector of uint32_t, for backward compatibility, use loadVector instead
       template <typename uint_vector, class output_stream_type>
       void loadUIntVector(uint_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr) {
         typedef float io_scalar_type;
@@ -277,7 +277,7 @@ namespace hdi{
         }
       }
 
-      // loads vector of int32_t
+      // loads vector of int32_t, for backward compatibility, use loadVector instead
       template <typename uint_vector, class output_stream_type>
       void loadIntVector(uint_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr) {
         typedef float io_scalar_type;
@@ -294,7 +294,7 @@ namespace hdi{
         }
       }
 
-      // loads vector of vector of int32_t
+      // loads vector of vector of int32_t, for backward compatibility, use loadVector instead
       template <typename uint_vector_vector, class output_stream_type>
       void loadUIntVectorVector(uint_vector_vector& vector, output_stream_type& stream, utils::AbstractLog* log = nullptr) {
         typedef float io_scalar_type;
