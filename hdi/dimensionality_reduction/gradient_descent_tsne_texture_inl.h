@@ -145,16 +145,19 @@ namespace hdi {
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
 
-      if constexpr (std::is_same_v<map_key_type, std::uint64_t>)
+      if constexpr (!std::is_same_v<map_key_type, std::uint32_t>)
       {
-        utils::secureLog(_logger, "GradientDescentTSNETexture: cannot use compute shader for 64bit indexed data, using raster shader instead.");
+        utils::secureLog(_logger, "GradientDescentTSNETexture: compute shader only works with uint32_t indexed data, using raster shader instead.");
         _gpgpu_type == RASTER;
-      }
-
-      if (_gpgpu_type == COMPUTE_SHADER)
-          _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
-      else// (_gpgpu_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      }
+      else
+      {
+        if (_gpgpu_type == COMPUTE_SHADER)
+          _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+        else// (_gpgpu_type == RASTER)
+          _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      }
 #else
       _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #endif
