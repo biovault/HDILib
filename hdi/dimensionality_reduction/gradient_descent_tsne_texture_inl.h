@@ -144,19 +144,18 @@ namespace hdi {
 #ifndef __APPLE__
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
-      if (_gpgpu_type == COMPUTE_SHADER)
+
+      if constexpr (std::is_same_v<map_key_type, std::uint64_t>)
       {
-        if constexpr (std::is_same_v<map_key_type, std::uint64_t>)
-        {
-          utils::secureLog(_logger, "Warning: using raster instead of shader compute for 64bit data!");
-          _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
-        }
-        else
-          _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+        utils::secureLog(_logger, "GradientDescentTSNETexture: cannot use compute shader for 64bit indexed data, using raster shader instead.");
+        _gpgpu_type == RASTER;
       }
-      else// (_tsne_type == RASTER)
+
+      if (_gpgpu_type == COMPUTE_SHADER)
+          _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      else// (_gpgpu_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
-  
+#else
       _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #endif
 
