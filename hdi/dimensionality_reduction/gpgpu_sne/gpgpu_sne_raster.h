@@ -44,7 +44,6 @@
 #include "hdi/dimensionality_reduction/tsne_parameters.h"
 #include "field_computation.h"
 
-#include <array>
 #include <cstdint>
 #include <type_traits>
 
@@ -73,7 +72,6 @@ namespace hdi {
         std::vector<int_type> indices;
       };
 
-
       struct Point2D {
         float x, y;
       };
@@ -96,14 +94,17 @@ namespace hdi {
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
-	  //!  Change the runtime configurable params
-	  void updateParams(TsneParameters params) {
-		  if (!_initialized) {
-			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
-		  }
-		  _params = params;
-	  };
-	  bool isInitialized() { return _initialized == true; }
+
+	    //!  Change the runtime configurable params
+	    void updateParams(TsneParameters params) {
+		    if (!_initialized) {
+			    throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
+		    }
+		    _params = params;
+	    };
+
+	    bool isInitialized() { return _initialized == true; }
+
     private:
       void initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix& linear_P);
 

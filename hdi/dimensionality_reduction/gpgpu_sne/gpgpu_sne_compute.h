@@ -54,6 +54,12 @@ namespace hdi {
     */
     class GpgpuSneCompute {
     public:
+
+      using unsigned_int_type = std::uint32_t;
+      using int_type = std::int32_t;
+      using embedding_type = hdi::data::Embedding<float>;
+      using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
+
       // Linearized sparse neighbourhood matrix
       struct LinearProbabilityMatrix
       {
@@ -75,11 +81,6 @@ namespace hdi {
         }
       };
 
-      using unsigned_int_type = std::uint32_t;
-      using int_type = std::int32_t;
-      using embedding_type = hdi::data::Embedding<float>;
-      using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
-
     public:
       GpgpuSneCompute();
 
@@ -89,13 +90,15 @@ namespace hdi {
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
-	  //!  Change the runtime configurable params
-	  void updateParams(TsneParameters params) { 
-		  if (!_initialized) {
-			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
-		  }
-		  _params = params; 
-	  };
+
+	    //!  Change the runtime configurable params
+	    void updateParams(TsneParameters params) { 
+		    if (!_initialized) {
+			    throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
+		    }
+		    _params = params; 
+	    };
+
       bool isInitialized() const { return _initialized == true; }
 
     private:
