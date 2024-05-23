@@ -33,6 +33,8 @@
 #ifndef TSNE_PARAMETERS_H
 #define TSNE_PARAMETERS_H
 
+#include <cstdint>
+
 namespace hdi {
   namespace dr {
     //! Parameters used for the initialization of the algorithm
@@ -55,7 +57,7 @@ namespace hdi {
 
       int _seed;
       float _rngRange;
-      int _embedding_dimensionality;
+      std::uint64_t _embedding_dimensionality;
 
       double _minimum_gain;
       double _eta;                                //! constant multiplicator of the gradient
@@ -63,8 +65,8 @@ namespace hdi {
       double _final_momentum;
       double _mom_switching_iter;                 //! momentum switching iteration
       double _exaggeration_factor;                //! exaggeration factor for the attractive forces. Note: it shouldn't be too high when few points are used
-      unsigned int _remove_exaggeration_iter;     //! iterations with complete exaggeration of the attractive forces
-      unsigned int _exponential_decay_iter;       //! iterations required to remove the exaggeration using an exponential decay
+      std::uint64_t _remove_exaggeration_iter;     //! iterations with complete exaggeration of the attractive forces
+      std::uint64_t _exponential_decay_iter;       //! iterations required to remove the exaggeration using an exponential decay
       bool _presetEmbedding;					            //! Used at initialization to use the input embedding positions 
     };
   }

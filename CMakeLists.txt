@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.15)
+cmake_minimum_required (VERSION 3.21)
 
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
@@ -10,7 +10,7 @@ option(ENABLE_AVX "Enable AVX support" OFF)
 option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC" OFF)
 option(ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 set(OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
-set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
+set(HDILib_VERSION "1.3.0" CACHE STRING "HDILib Library version")
 
 if (ENABLE_AVX)
     message("ENABLE_AVX is ON")
@@ -27,7 +27,7 @@ endif()
 # -----------------------------------------------------------------------------
 # CMake Options
 # -----------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable the INSTALL project for building by default in VS

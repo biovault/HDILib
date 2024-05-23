@@ -59,8 +59,8 @@ namespace hdi{
       AbstractPanelData(){}
       virtual ~AbstractPanelData(){}
 
-      virtual int numDataPoints()const = 0;
-      virtual int numDimensions()const = 0;
+      virtual size_t numDataPoints()const = 0;
+      virtual size_t numDimensions()const = 0;
       virtual const data_ptr_vector_type&  getDataPoints()const = 0;
       virtual const data_ptr_vector_type& getDimensions()const = 0;
 
@@ -69,7 +69,7 @@ namespace hdi{
       virtual flag_vector_type& getFlagsDataPoints() = 0;
       virtual flag_vector_type& getFlagsDimensions() = 0;
 
-      virtual double dataAt(unsigned int data_point, unsigned int dimension)const=0;
+      virtual double dataAt(size_t data_point, size_t dimension)const=0;
     };
 
   }

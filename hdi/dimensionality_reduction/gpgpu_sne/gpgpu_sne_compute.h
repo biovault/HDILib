@@ -42,10 +42,10 @@
 
 #include <array>
 #include <cstdint>
+#include <type_traits>
 
 namespace hdi {
   namespace dr {
-    struct LinearProbabilityMatrix;
 
     //! Computation class for texture-based t-SNE using compute shaders
     /*!
@@ -54,6 +54,20 @@ namespace hdi {
     */
     class GpgpuSneCompute {
     public:
+
+      using unsigned_int_type = std::uint32_t;
+      using int_type = std::int32_t;
+      using embedding_type = hdi::data::Embedding<float>;
+      using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
+
+      // Linearized sparse neighbourhood matrix
+      struct LinearProbabilityMatrix
+      {
+        std::vector<std::uint32_t> neighbours;
+        std::vector<float> probabilities;
+        std::vector<std::int32_t> indices;
+      };
+
       struct Point2D {
         float x, y;
       };
@@ -67,9 +81,6 @@ namespace hdi {
         }
       };
 
-      typedef hdi::data::Embedding<float> embedding_type;
-      typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
-
     public:
       GpgpuSneCompute();
 
@@ -79,61 +90,63 @@ namespace hdi {
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
-	  //!  Change the runtime configurable params
-	  void updateParams(TsneParameters params) { 
-		  if (!_initialized) {
-			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
-		  }
-		  _params = params; 
-	  };
-      bool isInitialized() { return _initialized == true; }
+
+	    //!  Change the runtime configurable params
+	    void updateParams(TsneParameters params) { 
+		    if (!_initialized) {
+			    throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
+		    }
+		    _params = params; 
+	    };
+
+      bool isInitialized() const { return _initialized == true; }
 
     private:
-      void initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P);
+      void initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix& linear_P);
 
       Bounds2D computeEmbeddingBounds(const embedding_type* embedding, float padding = 0);
 
       void startTimer();
       void stopTimer();
       double getElapsed();
-      void computeEmbeddingBounds1(unsigned int num_points, const float* points, float padding = 0, bool square = false);
+      void computeEmbeddingBounds1(unsigned_int_type num_points, const float* points, float padding = 0, bool square = false);
       void interpolateFields(float* sum_Q);
-      void computeGradients(unsigned int num_points, float sum_Q, double exaggeration);
-      void updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult);
-      void updateEmbedding(unsigned int num_points, float exaggeration, float iteration, float mult);
+      void computeGradients(unsigned_int_type num_points, float sum_Q, double exaggeration);
+      void updatePoints(unsigned_int_type num_points, float* points, embedding_type* embedding, float iteration, float mult);
+      void updateEmbedding(unsigned_int_type num_points, float exaggeration, float iteration, float mult);
 
     private:
       const unsigned int FIXED_FIELDS_SIZE = 40;
       const unsigned int MINIMUM_FIELDS_SIZE = 5;
       const float PIXEL_RATIO = 2;
 
-      bool _initialized;
-      bool _adaptive_resolution;
+      bool _initialized = false;
+      bool _adaptive_resolution = true;
 
-      float _resolutionScaling;
+      float _resolutionScaling = PIXEL_RATIO;
 
       // Shaders
-      ShaderProgram _interp_program;
-      ShaderProgram _forces_program;
-      ShaderProgram _update_program;
-      ShaderProgram _bounds_program;
-      ShaderProgram _center_and_scale_program;
+      ShaderProgram _interp_program = {};
+      ShaderProgram _forces_program = {};
+      ShaderProgram _update_program = {};
+      ShaderProgram _bounds_program = {};
+      ShaderProgram _center_and_scale_program = {};
 
       // SSBOs
-      std::array<GLuint, 10> _compute_buffers;
+      std::array<GLuint, 10> _compute_buffers = {};
 
-      GLuint _timerQuery[2];
+      GLuint _timerQuery[2] = {};
 
-      ComputeFieldComputation fieldComputation;
+      ComputeFieldComputation fieldComputation = {};
 
       // Embedding bounds
-      Bounds2D _bounds;
+      Bounds2D _bounds = {};
 
       // T-SNE parameters
-      TsneParameters _params;
+      TsneParameters _params = {};
 
       // Probability distribution function support 
-      float _function_support;
+      float _function_support = 0;
     };
   }
 }

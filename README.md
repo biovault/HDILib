@@ -1,4 +1,4 @@
-# HDILib: High Dimensional Inspector Library ![master ci status](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg)
+# HDILib: High Dimensional Inspector Library ![master ci status](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg) [![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)
 HDILib is a library for the scalable analysis of large and high-dimensional data.
 It contains scalable manifold-learning algorithms, visualizations and visual-analytics frameworks.
 HDILib is implemented in C++, OpenGL and JavaScript.
@@ -137,8 +137,7 @@ These variables provided by the toolchain file allow the CMake file to locate th
 #### Build bundle
 The conan build creates three versions of the package, Release, Debug and 
 
-### GitHub Actions status
-![master ci status](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg)
+### GitHub Actions status ![master ci status](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg)
 
 Currently the following build matrix is performed:
 
@@ -146,9 +145,4 @@ Currently the following build matrix is performed:
 | -------------------- | ------------ | --------- |
 | Windows              | x64          | MSVC 2019 |
 | Linux (ubuntu-22.04) | x86_64       | gcc 11    |
-| Macos (12)           | x86_64         | clang 13  |
-
-[![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)
-
-
-
+| Macos (12)           | x86_64       | clang 13  |

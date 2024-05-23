@@ -39,33 +39,22 @@
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
 #include "sptree.h"
-#include <random>
 
-#pragma warning( push )
-#pragma warning( disable : 4267)
-#pragma warning( push )
-#pragma warning( disable : 4291)
-#pragma warning( push )
-#pragma warning( disable : 4996)
-#pragma warning( push )
-#pragma warning( disable : 4018)
-#pragma warning( push )
-#pragma warning( disable : 4244)
-//#define FLANN_USE_CUDA
-#include "flann/flann.h"
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
+#include <cstring>
+#include <random>
 
 namespace hdi {
   namespace dr {
 
-    GradientDescentTSNETexture::GradientDescentTSNETexture() :
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::GradientDescentTSNETexture() :
       _initialized(false),
       _logger(nullptr),
-      _exaggeration_baseline(1)
+      _exaggeration_baseline(1),
+      _embedding(nullptr),
+      _embedding_container(),
+      _iteration(0),
+      _normalization_Q(0)
     {
 #ifndef __APPLE__
       _gpgpu_type = AUTO_DETECT;
@@ -73,13 +62,26 @@ namespace hdi {
     }
 
 #ifndef __APPLE__
-    void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::setType(GpgpuSneType tsne_type) {
       if (tsne_type == AUTO_DETECT)
       {
-        //resolve the optimal type to use based on the available OpenGL version
+        // resolve the optimal type to use based on the available OpenGL version
         if (GLAD_GL_VERSION_4_3)
         {
-          _gpgpu_type = COMPUTE_SHADER;
+          if (std::is_same_v<map_key_type, std::uint64_t>)
+          {
+            const GLubyte* glExtensions = glGetString(GL_EXTENSIONS);
+            if (std::strstr((const char*)glExtensions, "GL_ARB_gpu_shader_int64") == nullptr)
+            {
+              std::cout << "GL_ARB_gpu_shader_int64 extension not available, using rasterization fallback" << std::endl;
+              _gpgpu_type = RASTER;
+            }
+            else
+              _gpgpu_type = COMPUTE_SHADER;
+          }
+          else            
+            _gpgpu_type = COMPUTE_SHADER;
         }
         else if (GLAD_GL_VERSION_3_3)
         {
@@ -92,34 +94,37 @@ namespace hdi {
     }
 #endif
 
-    void GradientDescentTSNETexture::reset() {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::reset() {
       _initialized = false;
     }
 
-    void GradientDescentTSNETexture::clear() {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::clear() {
       _embedding->clear();
       _initialized = false;
     }
 
-    void GradientDescentTSNETexture::getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle) const {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::getEmbeddingPosition(scalar_vector_type& embedding_position, map_key_type handle) const {
       if (!_initialized) {
         throw std::logic_error("Algorithm must be initialized before ");
       }
       embedding_position.resize(_params._embedding_dimensionality);
-      for (int i = 0; i < _params._embedding_dimensionality; ++i) {
-        (*_embedding_container)[i] = (*_embedding_container)[handle*_params._embedding_dimensionality + i];
+      for (std::uint64_t i = 0; i < _params._embedding_dimensionality; ++i) {
+        (*_embedding_container)[i] = (*_embedding_container)[static_cast<std::uint64_t>(handle) * _params._embedding_dimensionality + i];
       }
     }
 
 
     /////////////////////////////////////////////////////////////////////////
 
-
-    void GradientDescentTSNETexture::initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params) {
       utils::secureLog(_logger, "Initializing tSNE...");
       {//Aux data
         _params = params;
-        unsigned int size = probabilities.size();
+        size_t size = probabilities.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -139,10 +144,20 @@ namespace hdi {
 #ifndef __APPLE__
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
-      if (_gpgpu_type == COMPUTE_SHADER)
-        _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
-      else// (_tsne_type == RASTER)
+
+      if constexpr (!std::is_same_v<map_key_type, std::uint32_t>)
+      {
+        utils::secureLog(_logger, "GradientDescentTSNETexture: compute shader only works with uint32_t indexed data, using raster shader instead.");
+        _gpgpu_type = RASTER;
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      }
+      else
+      {
+        if (_gpgpu_type == COMPUTE_SHADER)
+          _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+        else// (_gpgpu_type == RASTER)
+          _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      }
 #else
       _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #endif
@@ -153,11 +168,12 @@ namespace hdi {
       utils::secureLog(_logger, "Initialization complete!");
     }
 
-    void GradientDescentTSNETexture::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initializeWithJointProbabilityDistribution(const sparse_scalar_matrix_type& distribution, data::Embedding<scalar_type>* embedding, TsneParameters params) {
       utils::secureLog(_logger, "Initializing tSNE with a user-defined joint-probability distribution...");
       {//Aux data
         _params = params;
-        unsigned int size = distribution.size();
+        size_t size = distribution.size();
 
         _embedding = embedding;
         _embedding_container = &(embedding->getContainer());
@@ -177,7 +193,15 @@ namespace hdi {
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
-        _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      {
+        if constexpr (std::is_same_v<map_key_type, std::uint64_t>)
+        {
+          utils::secureLog(_logger, "Warning: using raster instead of shader compute for 64bit data!");
+          _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+        }
+        else
+          _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      }
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else
@@ -190,7 +214,8 @@ namespace hdi {
       utils::secureLog(_logger, "Initialization complete!");
     }
 
-    void GradientDescentTSNETexture::updateParams(TsneParameters params) {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::updateParams(TsneParameters params) {
       if (!_initialized) {
         throw std::runtime_error("GradientDescentTSNETexture must be initialized before updating the tsne parameters");
       }
@@ -203,11 +228,12 @@ namespace hdi {
 #endif
     }
 
-    void GradientDescentTSNETexture::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");
 
-      const int n = getNumberOfDataPoints();
-      for (int j = 0; j < n; ++j) {
+      const size_t n = getNumberOfDataPoints();
+      for (size_t j = 0; j < n; ++j) {
         for (auto& elem : probabilities[j]) {
           scalar_type v0 = elem.second;
           auto iter = probabilities[elem.first].find(j);
@@ -221,8 +247,8 @@ namespace hdi {
       }
     }
 
-
-    void GradientDescentTSNETexture::initializeEmbeddingPosition(int seed, double multiplier) {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::initializeEmbeddingPosition(int seed, double multiplier) {
       utils::secureLog(_logger, "Initializing the embedding...");
 
       if (seed < 0) {
@@ -232,7 +258,7 @@ namespace hdi {
         std::srand(seed);
       }
 
-      for (int i = 0; i < _embedding->numDataPoints(); ++i) {
+      for (std::uint64_t i = 0; i < _embedding->numDataPoints(); ++i) {
         double x(0.);
         double y(0.);
         double radius(0.);
@@ -250,7 +276,8 @@ namespace hdi {
       }
     }
 
-    void GradientDescentTSNETexture::doAnIteration(double mult) {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::doAnIteration(double mult) {
       if (!_initialized) {
         throw std::logic_error("Cannot compute a gradient descent iteration on unitialized data");
       }
@@ -265,7 +292,8 @@ namespace hdi {
       doAnIterationImpl(mult);
     }
 
-    double GradientDescentTSNETexture::exaggerationFactor() {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    double GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::exaggerationFactor() const {
       scalar_type exaggeration = _exaggeration_baseline;
 
       if (_iteration <= _params._remove_exaggeration_iter) {
@@ -281,7 +309,8 @@ namespace hdi {
       return exaggeration;
     }
 
-    void GradientDescentTSNETexture::doAnIterationImpl(double mult) {
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    void GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::doAnIterationImpl(double mult) {
       // Compute gradient of the KL function using a compute shader approach
 #ifndef __APPLE__
       if (_gpgpu_type == COMPUTE_SHADER)
@@ -294,15 +323,16 @@ namespace hdi {
       ++_iteration;
     }
 
-    double GradientDescentTSNETexture::computeKullbackLeiblerDivergence() {
-      const int n = _embedding->numDataPoints();
+    template <typename scalar, typename sparse_scalar_matrix, typename unsigned_integer, typename integer>
+    double GradientDescentTSNETexture<scalar, sparse_scalar_matrix, unsigned_integer, integer>::computeKullbackLeiblerDivergence() {
+      const std::uint64_t n = _embedding->numDataPoints();
 
       //std::vector<float> _Q(n * n);
       double sum_Q = 0;
-      for (int j = 0; j < n; ++j) {
+      for (std::uint64_t j = 0; j < n; ++j) {
         //_Q[j*n + j] = 0;
 
-        for (int i = j + 1; i < n; ++i) {
+        for (std::uint64_t i = j + 1; i < n; ++i) {
           const double euclidean_dist_sq(
             utils::euclideanDistanceSquared<float>(
               _embedding->getContainer().begin() + j * _params._embedding_dimensionality,
@@ -326,15 +356,15 @@ namespace hdi {
 
       double kl = 0;
 
-      for (int i = 0; i < n; ++i) {
+      for (::uint64_t i = 0; i < n; ++i) {
         for (const auto& pij : _P[i]) {
-          uint32_t j = pij.first;
+          auto j = pij.first;
 
           // Calculate Qij
           const double euclidean_dist_sq(
             utils::euclideanDistanceSquared<float>(
               _embedding->getContainer().begin() + j * _params._embedding_dimensionality,
-              _embedding->getContainer().begin() + (j + 1)*_params._embedding_dimensionality,
+              _embedding->getContainer().begin() + (j + 1ll)*_params._embedding_dimensionality,
               _embedding->getContainer().begin() + i * _params._embedding_dimensionality,
               _embedding->getContainer().begin() + (i + 1)*_params._embedding_dimensionality
               )

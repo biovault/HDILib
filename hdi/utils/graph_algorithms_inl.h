@@ -44,24 +44,24 @@
 namespace hdi{
   namespace utils{
 
-    template <class map_type>
-    void computeConnectedComponents(const std::vector<map_type>& weighted_graph, std::vector<unsigned int>& vertex_to_cluster, std::vector<unsigned int>& cluster_to_vertex, std::vector<unsigned int>& cluster_size, typename map_type::mapped_type thresh){
+    template <class map_type, typename unsigned_integer_type>
+    void computeConnectedComponents(const std::vector<map_type>& weighted_graph, std::vector<unsigned_integer_type>& vertex_to_cluster, std::vector<unsigned_integer_type>& cluster_to_vertex, std::vector<unsigned_integer_type>& cluster_size, typename map_type::mapped_type thresh){
       vertex_to_cluster.clear();
       cluster_size.clear();
       cluster_to_vertex.clear();
 
-      const unsigned int invalid = std::numeric_limits<unsigned int>::max();
+      const unsigned_integer_type invalid = std::numeric_limits<unsigned_integer_type>::max();
       vertex_to_cluster.resize(weighted_graph.size(),invalid);
-      const unsigned int n = weighted_graph.size();
-      unsigned int cluster_idx = 0;
+      const size_t n = weighted_graph.size();
+      unsigned_integer_type cluster_idx = 0;
 
-      for(unsigned int i = 0; i < n; ++i){
+      for(size_t i = 0; i < n; ++i){
         if(vertex_to_cluster[i] == invalid){
-          std::queue<unsigned int> queue;
+          std::queue<unsigned_integer_type> queue;
           queue.push(i);
           vertex_to_cluster[i] = cluster_idx;
           cluster_to_vertex.push_back(i);
-          unsigned int c_size = 0;
+          unsigned_integer_type c_size = 0;
           while(!queue.empty()){
             ++c_size;
             auto idx = queue.front();
@@ -83,12 +83,12 @@ namespace hdi{
     }
 
 
-    template <class map_type>
-    void extractSubGraph(const std::vector<map_type>& orig_transition_matrix, const std::vector<unsigned int>& selected_idxes, std::vector<map_type>& new_transition_matrix, std::vector<unsigned int>& new_idxes, typename map_type::mapped_type thresh){
+    template <class map_type, typename unsigned_integer_type>
+    void extractSubGraph(const std::vector<map_type>& orig_transition_matrix, const std::vector<unsigned_integer_type>& selected_idxes, std::vector<map_type>& new_transition_matrix, std::vector<unsigned_integer_type>& new_idxes, typename map_type::mapped_type thresh){
       new_transition_matrix.clear();
       new_idxes.clear();
-      std::map<unsigned int,unsigned int> map_selected_idxes;
-      std::map<unsigned int,unsigned int> map_non_selected_idxes;
+      std::map<unsigned_integer_type, unsigned_integer_type> map_selected_idxes;
+      std::map<unsigned_integer_type, unsigned_integer_type> map_non_selected_idxes;
       //The selected rows must be taken completely
       for(auto id: selected_idxes){
         map_selected_idxes[id] = new_idxes.size();
@@ -143,16 +143,16 @@ namespace hdi{
       }
     }
 
-    template <class sparse_scalar_matrix_type>
-    void removeEdgesToUnselectedVertices(sparse_scalar_matrix_type& adjacency_matrix, const std::vector<unsigned int>& valid_vertices){
+    template <class sparse_scalar_matrix_type, typename unsigned_integer_type>
+    void removeEdgesToUnselectedVertices(sparse_scalar_matrix_type& adjacency_matrix, const std::vector<unsigned_integer_type>& valid_vertices){
 
-      std::unordered_map<unsigned int,unsigned int> valid_set;
-      for(int i = 0; i < valid_vertices.size(); ++i){
+      std::unordered_map<unsigned_integer_type, unsigned_integer_type> valid_set;
+      for(size_t i = 0; i < valid_vertices.size(); ++i){
         valid_set[valid_vertices[i]] = i;
       }
 
       sparse_scalar_matrix_type new_map(adjacency_matrix.size());
-      for(int i = 0; i < adjacency_matrix.size(); ++i){
+      for(size_t i = 0; i < adjacency_matrix.size(); ++i){
         for (auto& elem: adjacency_matrix[i]){
           auto search_iter = valid_set.find(elem.first);
           if(search_iter != valid_set.end()){

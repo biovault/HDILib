@@ -75,14 +75,14 @@ namespace hdi{
       handle_type addDimension(std::shared_ptr<AbstractData> dimension);
 
       //!Return the number of data-points inserted
-      virtual int numDataPoints()const{return static_cast<int>(_data_points.size());}
+      virtual size_t numDataPoints()const{return _data_points.size();}
       //!Return the number of dimensions inserted
-      int numDimensions()const{return static_cast<int>(_dimensions.size());}
+      size_t numDimensions()const{return _dimensions.size();}
 
       //! Uninitialize the data and clear the memory
       void clear();
       //! Reserve memory for n data-points
-      void reserve(int n);
+      void reserve(size_t n);
       //! Remove data
       void removeData();
 
@@ -99,8 +99,7 @@ namespace hdi{
       flag_vector_type&    getFlagsDimensions(){return _flags_dimensions;}
       flag_vector_type&    getFlagsDataPoints(){return _flags_data_points;}
 
-      virtual double dataAt(unsigned int data_point, unsigned int dimension)const{return _data[data_point*numDimensions() + dimension];}
-
+      virtual double dataAt(size_t data_point, size_t dimension)const{return _data[data_point*numDimensions() + dimension];}
 
       void requestProperty(std::string name);
       bool hasProperty(std::string name)const;

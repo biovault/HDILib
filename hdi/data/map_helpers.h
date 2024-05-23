@@ -33,14 +33,16 @@
 #ifndef MAP_HELPERS_H
 #define MAP_HELPERS_H
 
-#include <utility>
-#include <vector>
-#include <cstddef>
-#include <cassert>
-#include <map>
-#include <unordered_map>
 #include "hdi/data/map_mem_eff.h"
 #include "hdi/utils/assert_by_exception.h"
+
+#include <cstddef>
+#include <cassert>
+#include <cstdint>
+#include <utility>
+#include <vector>
+#include <map>
+#include <unordered_map>
 
 namespace hdi{
   namespace data{
@@ -59,8 +61,6 @@ namespace hdi{
       static void invert(const std::vector<Map>& matrix, std::vector<Map>& inverse){throw std::logic_error("MapHelpers::invert: function not implemented");}
     };
 
-
-
     template <typename Key, typename T>
     class MapHelpers<Key,T,std::map<Key,T>>{
     public:
@@ -78,7 +78,7 @@ namespace hdi{
       }
       static void invert(const std::vector<std::map<Key,T>>& matrix, std::vector<std::map<Key,T>>& inverse){
         inverse.resize(matrix.size());
-        for(int j = 0; j < matrix.size(); ++j){
+        for(size_t j = 0; j < matrix.size(); ++j){
           for(auto& e: matrix[j]){
             inverse[e.first][j] = e.second;
           }
@@ -105,7 +105,7 @@ namespace hdi{
       }
       static void invert(const std::vector<std::unordered_map<Key,T>>& matrix, std::vector<std::unordered_map<Key,T>>& inverse){
         inverse.resize(matrix.size());
-        for(int j = 0; j < matrix.size(); ++j){
+        for(size_t j = 0; j < matrix.size(); ++j){
           for(auto& e: matrix[j]){
             inverse[e.first][j] = e.second;
           }
@@ -126,22 +126,22 @@ namespace hdi{
       }
       template <typename It>
       static void initialize(MapMemEff<Key,T>& map, It begin, It end, T thresh = 0){
-        map.initialize(begin,end, thresh);
+        map.initialize(begin, end, thresh);
       }
       static void invert(const std::vector<hdi::data::MapMemEff<Key,T>>& matrix, std::vector<hdi::data::MapMemEff<Key,T>>& inverse){
         inverse.resize(matrix.size());
-        std::vector<unsigned int> inverse_row_size(inverse.size());
-        for(int j = 0; j < matrix.size(); ++j){
-          for(auto& e: matrix[j]){
+        std::vector<std::uint64_t> inverse_row_size(inverse.size());
+        for(size_t j = 0; j < matrix.size(); ++j){
+          for(const auto& e: matrix[j]){
             ++inverse_row_size[e.first];
           }
         }
-        for(int j = 0; j < inverse.size(); ++j){
+        for(size_t j = 0; j < inverse.size(); ++j){
           inverse[j].memory().reserve(inverse_row_size[j]);
         }
-        for(int j = 0; j < matrix.size(); ++j){
-          for(auto& e: matrix[j]){
-            inverse[e.first].memory().push_back(std::make_pair(j,e.second));
+        for(size_t j = 0; j < matrix.size(); ++j){
+          for(const auto& e: matrix[j]){
+            inverse[e.first].memory().push_back(std::make_pair(static_cast<Key>(j),e.second));
           }
         }
       }

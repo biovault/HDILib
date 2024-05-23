@@ -122,11 +122,11 @@ namespace hdi{
     void multiply(const vector_type& a, const sparse_matrix_type& b, vector_type& c){
       assert(a.size() == b.size());
       c.resize(a.size());
-      const unsigned int n = a.size();
-      for(unsigned int i = 0; i < n; ++i){
+      const size_t n = a.size();
+      for(size_t i = 0; i < n; ++i){
         c[i] = 0;
       }
-      for(unsigned int i = 0; i < n; ++i){
+      for(size_t i = 0; i < n; ++i){
         if(a[i] == 0){
           continue;
         }
@@ -137,12 +137,12 @@ namespace hdi{
     }
 
     template <typename sparse_matrix_type, typename vector_type>
-    void computeStationaryDistribution(const sparse_matrix_type& fmc, vector_type* distribution, uint32_t iterations, typename vector_type::value_type eps){
-      const unsigned int n = fmc.size();
+    void computeStationaryDistribution(const sparse_matrix_type& fmc, vector_type* distribution, unsigned int iterations, typename vector_type::value_type eps){
+      const size_t n = fmc.size();
       assert(fmc.size() == distribution->size());
 
 
-      for(int i = 0; i < n; ++i){
+      for(size_t i = 0; i < n; ++i){
         double sum = 0;
         for(auto p: fmc[i]){
           sum += p.second;
@@ -151,7 +151,6 @@ namespace hdi{
           std::cout << "fmc test(" << i << "): " << sum <<std::endl;
       }
 
-
       vector_type temp_distr(n,0);
       vector_type* a(distribution);
       vector_type* c(&temp_distr);
@@ -159,7 +158,7 @@ namespace hdi{
         multiply(*a,fmc,*c);
         std::swap(a,c);
         double sum = 0;
-        for(unsigned int i = 0; i < n; ++i){
+        for(size_t i = 0; i < n; ++i){
           if((*a)[i] < eps){
             (*a)[i] = 0;
           }

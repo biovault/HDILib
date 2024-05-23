@@ -1,17 +1,20 @@
 #ifndef __APPLE__
 
-#include "gpgpu_sne_compute.h"
 #include "compute_shaders.glsl"
+#include "gpgpu_sne_compute.h"
 
-#include <vector>
-#include <limits>
-#include <iostream>
+#include "hdi/utils/glad/glad.h"
+
 #include <cmath> // for sqrt
+#include <cstring>
+#include <iostream>
+#include <limits>
+#include <vector>
 
 namespace hdi {
   namespace dr {
-    typedef GpgpuSneCompute::Bounds2D Bounds2D;
-    typedef GpgpuSneCompute::Point2D Point2D;
+
+    //using Point2D = struct GpgpuSneCompute::Point2D;
 
     enum BufferType
     {
@@ -27,32 +30,20 @@ namespace hdi {
       BOUNDS
     };
 
-    // Linearized sparse neighbourhood matrix
-    struct LinearProbabilityMatrix
+    GpgpuSneCompute::GpgpuSneCompute()
     {
-      std::vector<uint32_t> neighbours;
-      std::vector<float> probabilities;
-      std::vector<int> indices;
-    };
-
-    GpgpuSneCompute::GpgpuSneCompute() :
-      _initialized(false),
-      _adaptive_resolution(true),
-      _resolutionScaling(PIXEL_RATIO)
-    {
-
     }
 
-    Bounds2D GpgpuSneCompute::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
+    GpgpuSneCompute::Bounds2D GpgpuSneCompute::computeEmbeddingBounds(const embedding_type* embedding, float padding) {
       const float* const points = embedding->getContainer().data();
 
-      Bounds2D bounds;
+      Bounds2D bounds = {};
       bounds.min.x = std::numeric_limits<float>::max();
       bounds.max.x = -std::numeric_limits<float>::max();
       bounds.min.y = std::numeric_limits<float>::max();
       bounds.max.y = -std::numeric_limits<float>::max();
 
-      for (int i = 0; i < embedding->numDataPoints(); ++i) {
+      for (std::uint64_t i = 0; i < embedding->numDataPoints(); ++i) {
         float x = points[i * 2 + 0];
         float y = points[i * 2 + 1];
 
@@ -81,14 +72,14 @@ namespace hdi {
     void GpgpuSneCompute::initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P) {
       _params = params;
 
-      unsigned int num_points = embedding->numDataPoints();
+      const std::uint32_t num_points = static_cast<std::uint32_t>(embedding->numDataPoints());
 
       // Linearize sparse probability matrix
       LinearProbabilityMatrix linear_P;
-      unsigned int num_pnts = embedding->numDataPoints();
-      for (int i = 0; i < num_pnts; ++i) {
+
+      for (std::uint64_t i = 0; i < num_points; ++i) {
         linear_P.indices.push_back(linear_P.neighbours.size());
-        int size = 0;
+        int_type size = 0;
         for (const auto& pij : P[i]) {
           linear_P.neighbours.push_back(pij.first);
           linear_P.probabilities.push_back(pij.second);
@@ -115,7 +106,8 @@ namespace hdi {
       fieldComputation.clean();
     }
 
-    void GpgpuSneCompute::initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P) {
+    void GpgpuSneCompute::initializeOpenGL(unsigned_int_type num_points, const LinearProbabilityMatrix& linear_P) {
+
       glClearColor(0, 0, 0, 0);
 
       fieldComputation.init(num_points);
@@ -158,7 +150,7 @@ namespace hdi {
       glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * sizeof(Point2D), nullptr, GL_STREAM_DRAW);
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[INTERP_FIELDS]);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * 4 * sizeof(float), nullptr, GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, num_points * 4ll * sizeof(float), nullptr, GL_STATIC_DRAW);
 
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[SUM_Q]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float), nullptr, GL_STREAM_READ);
@@ -168,11 +160,11 @@ namespace hdi {
 
       // Upload sparse probability matrix
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[NEIGHBOUR]);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.neighbours.size() * sizeof(uint32_t), linear_P.neighbours.data(), GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.neighbours.size() * sizeof(unsigned_int_type), linear_P.neighbours.data(), GL_STATIC_DRAW);
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[PROBABILITIES]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.probabilities.size() * sizeof(float), linear_P.probabilities.data(), GL_STATIC_DRAW);
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[INDEX]);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.indices.size() * sizeof(int), linear_P.indices.data(), GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, linear_P.indices.size() * sizeof(int_type), linear_P.indices.data(), GL_STATIC_DRAW);
 
       // Initialize buffer with 0s
       std::vector<float> zeroes(num_points * 2, 0);
@@ -262,7 +254,7 @@ namespace hdi {
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, embedding->numDataPoints() * sizeof(Point2D), points);
     }
 
-    void GpgpuSneCompute::computeEmbeddingBounds1(unsigned int num_points, const float* points, float padding, bool square)
+    void GpgpuSneCompute::computeEmbeddingBounds1(unsigned_int_type num_points, const float* points, float padding, bool square)
     {
       // Compute bounds
       _bounds_program.bind();
@@ -305,7 +297,7 @@ namespace hdi {
       glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(float), sum_Q);
     }
 
-    void GpgpuSneCompute::computeGradients(unsigned int num_points, float sum_Q, double exaggeration)
+    void GpgpuSneCompute::computeGradients(unsigned_int_type num_points, float sum_Q, double exaggeration)
     {
       _forces_program.bind();
 
@@ -327,7 +319,7 @@ namespace hdi {
       glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
     }
 
-    void GpgpuSneCompute::updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult)
+    void GpgpuSneCompute::updatePoints(unsigned_int_type num_points, float* points, embedding_type* embedding, float iteration, float mult)
     {
       _update_program.bind();
 
@@ -352,7 +344,7 @@ namespace hdi {
       glDispatchCompute(grid_size, grid_size, 1);
     }
 
-    void GpgpuSneCompute::updateEmbedding(unsigned int num_points, float exaggeration, float iteration, float mult) {
+    void GpgpuSneCompute::updateEmbedding(unsigned_int_type num_points, float exaggeration, float iteration, float mult) {
       _center_and_scale_program.bind();
 
       _center_and_scale_program.uniform1ui("num_points", num_points);
@@ -376,8 +368,9 @@ namespace hdi {
       unsigned int grid_size = sqrt(num_workgroups) + 1;
       glDispatchCompute(grid_size, grid_size, 1);
     }
-  }
-}
+
+  } // dr
+} // hdi
 
 
 #endif // __APPLE__

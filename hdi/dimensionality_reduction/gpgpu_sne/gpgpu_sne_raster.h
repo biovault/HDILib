@@ -44,20 +44,34 @@
 #include "hdi/dimensionality_reduction/tsne_parameters.h"
 #include "field_computation.h"
 
-#include <array>
 #include <cstdint>
+#include <type_traits>
 
 namespace hdi {
   namespace dr {
-    struct LinearProbabilityMatrix;
 
     //! Computation class for texture-based t-SNE using rasterization
     /*!
     Computation class for texture-based t-SNE using rasterization
     \author Julian Thijssen
     */
+    template <typename unsigned_integer = std::uint32_t>
     class GpgpuSneRaster {
     public:
+
+      using unsigned_int_type = unsigned_integer;
+      using int_type = typename std::conditional<std::is_same<unsigned_integer, std::uint32_t>::value == true, std::int32_t, std::int64_t>::type;
+      using embedding_type = hdi::data::Embedding<float>;
+      using sparse_scalar_matrix_type = std::vector<hdi::data::MapMemEff<unsigned_int_type, float>>;
+
+      // Linearized sparse neighbourhood matrix
+      struct LinearProbabilityMatrix
+      {
+        std::vector<unsigned_int_type> neighbours;
+        std::vector<float> probabilities;
+        std::vector<int_type> indices;
+      };
+
       struct Point2D {
         float x, y;
       };
@@ -71,9 +85,6 @@ namespace hdi {
         }
       };
 
-      typedef hdi::data::Embedding<float> embedding_type;
-      typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
-
     public:
       GpgpuSneRaster();
 
@@ -83,22 +94,24 @@ namespace hdi {
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
-	  //!  Change the runtime configurable params
-	  void updateParams(TsneParameters params) {
-		  if (!_initialized) {
-			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
-		  }
-		  _params = params;
-	  };
-	  bool isInitialized() { return _initialized == true; }
+
+	    //!  Change the runtime configurable params
+	    void updateParams(TsneParameters params) {
+		    if (!_initialized) {
+			    throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
+		    }
+		    _params = params;
+	    };
+
+	    bool isInitialized() { return _initialized == true; }
+
     private:
-      void initializeOpenGL(const unsigned int num_points, const LinearProbabilityMatrix& linear_P);
+      void initializeOpenGL(const unsigned_int_type num_points, const LinearProbabilityMatrix& linear_P);
 
       Bounds2D computeEmbeddingBounds(const embedding_type* embedding, float padding = 0);
 
-      void interpolateFields(unsigned int num_points, unsigned int width, unsigned int height);
-      void computeGradients(embedding_type* embedding, unsigned int num_points, double exaggeration);
-      void updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult);
+      void interpolateFields(unsigned_int_type num_points, unsigned int width, unsigned int height);
+      void computeGradients(embedding_type* embedding, unsigned_int_type num_points, double exaggeration);
       void updateEmbedding(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
     private:
@@ -106,42 +119,42 @@ namespace hdi {
       const unsigned int MINIMUM_FIELDS_SIZE = 5;
       const float PIXEL_RATIO = 2;
 
-      bool _initialized;
-      bool _adaptive_resolution;
+      bool _initialized = false;
+      bool _adaptive_resolution = true;
 
-      float _resolutionScaling;
+      float _resolutionScaling = PIXEL_RATIO;
 
-      GLuint _dummy_fbo;
-      GLuint _dummy_tex;
+      GLuint _dummy_fbo = {};
+      GLuint _dummy_tex = {};
 
       // Shaders
-      ShaderProgram _interp_program;
+      ShaderProgram _interp_program = {};
 
       // Buffers
-      GLuint _dummy_vao;
-      GLuint _position_buffer;
+      GLuint _dummy_vao = {};
+      GLuint _position_buffer = {};
 
-      std::vector<double> _positive_forces;
-      std::vector<double> _negative_forces;
+      std::vector<double> _positive_forces = {};
+      std::vector<double> _negative_forces = {};
 
       // Gradient descent
-      std::vector<double> _gradient;
-      std::vector<double> _previous_gradient;
-      std::vector<double> _gain;
+      std::vector<double> _gradient = {};
+      std::vector<double> _previous_gradient = {};
+      std::vector<double> _gain = {};
 
-      std::vector<float> _interpolated_fields;
-      sparse_scalar_matrix_type _P;
+      std::vector<float> _interpolated_fields = {};
+      sparse_scalar_matrix_type _P = {};
 
-      RasterFieldComputation fieldComputation;
+      RasterFieldComputation fieldComputation = {};
 
       // Embedding bounds
-      Bounds2D _bounds;
+      Bounds2D _bounds = {};
 
       // T-SNE parameters
-      TsneParameters _params;
+      TsneParameters _params = {};
 
       // Probability distribution function support 
-      float _function_support;
+      float _function_support = 0;
     };
   }
 }

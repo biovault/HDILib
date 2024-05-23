@@ -90,33 +90,33 @@ namespace hdi{
 
     private:
       class Cell {
-        unsigned int _emb_dimension;
+        std::uint64_t _emb_dimension;
         hp_scalar_type* corner;
         hp_scalar_type* width;
 
       public:
-        Cell(unsigned int emb_dimension);
-        Cell(unsigned int emb_dimension, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+        Cell(std::uint64_t emb_dimension);
+        Cell(std::uint64_t emb_dimension, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
         ~Cell();
 
-        hp_scalar_type getCorner(unsigned int d);
-        hp_scalar_type getWidth(unsigned int d);
-        void setCorner(unsigned int d, hp_scalar_type val);
-        void setWidth(unsigned int d, hp_scalar_type val);
+        hp_scalar_type getCorner(std::uint64_t d);
+        hp_scalar_type getWidth(std::uint64_t d);
+        void setCorner(std::uint64_t d, hp_scalar_type val);
+        void setWidth(std::uint64_t d, hp_scalar_type val);
         bool containsPoint(scalar_type point[]);
       };
 
       // Fixed constants
-      static const unsigned int QT_NODE_CAPACITY = 1;
+      static const std::uint64_t QT_NODE_CAPACITY = 1;
 
       // A buffer we use when doing force computations
       //hp_scalar_type* buff;
 
       // Properties of this node in the tree
       WeightedSPTree* parent;
-      unsigned int _emb_dimension;
+      std::uint64_t _emb_dimension;
       bool is_leaf;
-      unsigned int size;
+      std::uint64_t size;
       hp_scalar_type cum_size;
 
       // Axis-aligned bounding box stored as a center with half-_emb_dimensions to represent the boundaries of this quad tree
@@ -126,39 +126,39 @@ namespace hdi{
       scalar_type* _emb_positions;
       const scalar_type* _weights;
       hp_scalar_type* _center_of_mass;
-      unsigned int index[QT_NODE_CAPACITY];
+      std::uint64_t index[QT_NODE_CAPACITY];
 
       // Children
       WeightedSPTree** children;
-      unsigned int no_children;
+      std::uint64_t no_children;
 
     public:
-      WeightedSPTree(unsigned int D, scalar_type* inp_data, const scalar_type* weights, unsigned int N);
+      WeightedSPTree(std::uint64_t D, scalar_type* inp_data, const scalar_type* weights, std::uint64_t N);
 
     private:
-      WeightedSPTree(unsigned int D, scalar_type* inp_data, const scalar_type* weights, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
-      WeightedSPTree(unsigned int D, scalar_type* inp_data, const scalar_type* weights, unsigned int N, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
-      WeightedSPTree(WeightedSPTree* inp_parent, unsigned int D, scalar_type* inp_data, const scalar_type* weights, unsigned int N, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
-      WeightedSPTree(WeightedSPTree* inp_parent, unsigned int D, scalar_type* inp_data, const scalar_type* weights, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      WeightedSPTree(std::uint64_t D, scalar_type* inp_data, const scalar_type* weights, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      WeightedSPTree(std::uint64_t D, scalar_type* inp_data, const scalar_type* weights, std::uint64_t N, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      WeightedSPTree(WeightedSPTree* inp_parent, std::uint64_t D, scalar_type* inp_data, const scalar_type* weights, std::uint64_t N, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      WeightedSPTree(WeightedSPTree* inp_parent, std::uint64_t D, scalar_type* inp_data, const scalar_type* weights, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
 
     public:
       ~WeightedSPTree();
       void setData(scalar_type* inp_data, const scalar_type* weights);
       WeightedSPTree* getParent();
-      bool insert(unsigned int new_index);
+      bool insert(std::uint64_t new_index);
       void subdivide();
       bool isCorrect();
-      void getAllIndices(unsigned int* indices);
-      unsigned int getDepth();
-      void computeNonEdgeForces(unsigned int point_index, hp_scalar_type theta, hp_scalar_type neg_f[], hp_scalar_type& sum_Q)const;
+      void getAllIndices(std::uint64_t* indices);
+      std::uint64_t getDepth();
+      void computeNonEdgeForces(std::uint64_t point_index, hp_scalar_type theta, hp_scalar_type neg_f[], hp_scalar_type& sum_Q)const;
       template <class sparse_scalar_matrix_type>
       void computeEdgeForces(const sparse_scalar_matrix_type& matrix, hp_scalar_type multiplier, hp_scalar_type* pos_f)const;
       void print();
 
     private:
-      void init(WeightedSPTree* inp_parent, unsigned int D, scalar_type* inp_data, const scalar_type* weights, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
-      void fill(unsigned int N);
-      unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
+      void init(WeightedSPTree* inp_parent, std::uint64_t D, scalar_type* inp_data, const scalar_type* weights, hp_scalar_type* inp_corner, hp_scalar_type* inp_width);
+      void fill(std::uint64_t N);
+      std::uint64_t getAllIndices(std::uint64_t* indices, std::uint64_t loc);
     };
 
 /////////////////////////////////////////////////////////////////
@@ -177,23 +177,23 @@ namespace hdi{
       for(int j = 0; j < n; ++j){
 #endif //__USE_GCD__
         std::vector<hp_scalar_type> buff(_emb_dimension,0);
-        unsigned int ind1, ind2;
+        std::uint64_t ind1, ind2;
         hp_scalar_type q_ij_1;
         ind1 = j * _emb_dimension;
         for(auto elem: sparse_matrix[j]) {
           // Compute pairwise distance and Q-value
           q_ij_1 = 1.0;
           ind2 = elem.first * _emb_dimension;
-          for(unsigned int d = 0; d < _emb_dimension; d++)
+          for(std::uint64_t d = 0; d < _emb_dimension; d++)
             buff[d] = _emb_positions[ind1 + d] - _emb_positions[ind2 + d]; //buff contains (yi-yj) per each _emb_dimension
-          for(unsigned int d = 0; d < _emb_dimension; d++)
+          for(std::uint64_t d = 0; d < _emb_dimension; d++)
             q_ij_1 += buff[d] * buff[d];
 
           hp_scalar_type p_ij = elem.second;
           hp_scalar_type res = hp_scalar_type(p_ij) * multiplier / q_ij_1 / n;
 
           // Sum positive force
-          for(unsigned int d = 0; d < _emb_dimension; d++)
+          for(std::uint64_t d = 0; d < _emb_dimension; d++)
             pos_f[ind1 + d] += res * buff[d] * multiplier; //(p_ij*q_j*mult) * (yi-yj)
         }
       }

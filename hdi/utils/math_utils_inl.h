@@ -50,7 +50,7 @@ namespace hdi{
       assert(a.size() == b.size());
       assert(a.size() != 0);
       double res(0);
-      for(int i = 0; i < a.size(); ++i){
+      for(size_t i = 0; i < a.size(); ++i){
         double diff(a[i] - b[i]);
         res += diff*diff;
       }
@@ -62,7 +62,7 @@ namespace hdi{
       assert(a.size() == b.size());
       assert(a.size() != 0);
       double res(0);
-      for(int i = 0; i < a.size(); ++i){
+      for(size_t i = 0; i < a.size(); ++i){
         double diff(a[i] - b[i]);
         res += diff*diff;
       }
@@ -125,14 +125,14 @@ namespace hdi{
 
     template <typename vector_type, typename sparse_matrix_type>
     void computeHeterogeneity(const sparse_matrix_type& matrix, vector_type& res){
-      auto n = matrix.size();
+      const size_t n = matrix.size();
       res.resize(n);
 #ifdef __USE_GCD__
       std::cout << "GCD dispatch, mat_utils_onl 131.\n";
       dispatch_apply(matrix.size(), dispatch_get_global_queue(0, 0), ^(size_t i) {
 #else
       #pragma omp parallel for
-      for(int i = 0; i < matrix.size(); ++i){
+      for(std::int64_t i = 0; i < matrix.size(); ++i){
 #endif //__USE_GCD__
         vector_type distr(n,0);
         distr[i] = n;
@@ -149,7 +149,7 @@ namespace hdi{
     template <typename Vector>
     double computeGaussianDistribution(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distribution_begin, typename Vector::iterator distribution_end, double sigma){
       assert(sigma > 0);
-      const int size(static_cast<int>(std::distance(distances_begin, distances_end)));
+      const std::ptrdiff_t size = std::distance(distances_begin, distances_end);
       if(size != std::distance(distribution_begin, distribution_end) || size == 0){
         throw std::logic_error("Invalid containers");
       }
@@ -157,7 +157,7 @@ namespace hdi{
       auto distribution_iter = distribution_begin;
       double mult(-1. / (2 * sigma * sigma));
       double sum(0);
-      for(int idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
+      for(std::ptrdiff_t idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
         *distribution_iter = std::exp((*distance_iter) * (*distance_iter) * mult);
         sum += *distribution_iter;
       }
@@ -170,7 +170,7 @@ namespace hdi{
 
     template <typename Vector>
     double computeGaussianDistributionWithFixedPerplexity(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distribution_begin, typename Vector::iterator distribution_end, double perplexity, int max_iterations, double tol, int ignore){
-      const int size(static_cast<int>(std::distance(distances_begin, distances_end)));
+      const std::ptrdiff_t size = std::distance(distances_begin, distances_end);
       if(size != std::distance(distribution_begin, distribution_end) || size == 0){
         throw std::logic_error("Invalid containers");
       }
@@ -184,7 +184,7 @@ namespace hdi{
       const double double_max = std::numeric_limits<double>::max();
 
       // Iterate until we found a good perplexity
-      int iter = 0; 
+      std::int64_t iter = 0; 
       double sum_distribution = std::numeric_limits<double>::min();
       while(!found && iter < max_iterations) {
         // Compute Gaussian kernel row
@@ -210,7 +210,7 @@ namespace hdi{
         {
           auto distance_iter = distances_begin;
           auto distribution_iter = distribution_begin;
-          for(int idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
+          for(std::ptrdiff_t idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
             if(idx == ignore)
               continue;
             H += beta * ((*distance_iter) * (*distribution_iter));
@@ -258,7 +258,7 @@ namespace hdi{
 
     template <typename Vector>
     double computeGaussianDistributionWithFixedWeight(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distribution_begin, typename Vector::iterator distribution_end, double weight, int max_iterations, double tol, int ignore){
-      const int size(static_cast<int>(std::distance(distances_begin, distances_end)));
+      const std::ptrdiff_t size = std::distance(distances_begin, distances_end);
       if(size != std::distance(distribution_begin, distribution_end) || size == 0){
         throw std::logic_error("Invalid containers");
       }
@@ -271,7 +271,7 @@ namespace hdi{
       const double double_max = std::numeric_limits<double>::max();
 
       // Iterate until we found a good perplexity
-      int iter = 0; 
+      std::int64_t iter = 0; 
       double sum_distribution = std::numeric_limits<double>::min();
       while(!found && iter < max_iterations) {
         // Compute Gaussian kernel row
@@ -279,7 +279,7 @@ namespace hdi{
         {
           auto distance_iter = distances_begin;
           auto distribution_iter = distribution_begin;
-          for(int idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
+          for(std::ptrdiff_t idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
             if(idx == ignore)
               continue;
             //double v = exp(-beta * (*distance_iter));
@@ -332,7 +332,7 @@ namespace hdi{
     double computeGaussianFunction(typename Vector::const_iterator distances_begin, typename Vector::const_iterator distances_end, typename Vector::iterator distribution_begin, typename Vector::iterator distribution_end, double sigma, double alpha){
       assert(sigma > 0);
       assert(alpha > 0);
-      const int size(static_cast<int>(std::distance(distances_begin, distances_end)));
+      const std::ptrdiff_t size = std::distance(distances_begin, distances_end);
       if(size != std::distance(distribution_begin, distribution_end) || size == 0){
         throw std::logic_error("Invalid containers");
       }
@@ -340,7 +340,7 @@ namespace hdi{
       auto distribution_iter = distribution_begin;
       double beta(-1. / (2 * sigma * sigma));
       double sum(0);
-      for(int idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
+      for(std::ptrdiff_t idx = 0; distance_iter != distances_end; ++distance_iter, ++distribution_iter, ++idx){
         *distribution_iter = alpha*std::exp((*distance_iter) * (*distance_iter) * beta);
         sum += *distribution_iter;
       }
