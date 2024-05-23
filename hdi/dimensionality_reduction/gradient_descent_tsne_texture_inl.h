@@ -148,7 +148,7 @@ namespace hdi {
       if constexpr (!std::is_same_v<map_key_type, std::uint32_t>)
       {
         utils::secureLog(_logger, "GradientDescentTSNETexture: compute shader only works with uint32_t indexed data, using raster shader instead.");
-        _gpgpu_type == RASTER;
+        _gpgpu_type = RASTER;
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
       }
       else
