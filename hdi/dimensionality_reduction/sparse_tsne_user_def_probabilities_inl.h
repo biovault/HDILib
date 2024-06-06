@@ -279,7 +279,7 @@ namespace hdi{
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
       #pragma omp parallel for
-      for(int64_t j = 0; j < n; ++j){
+      for(int64_t j = 0; j < static_cast<int64_t>(n); ++j){
 #endif //__USE_GCD__
         _Q[j*n + j] = 0;
         for(int64_t i = j+1; i < n; ++i){
