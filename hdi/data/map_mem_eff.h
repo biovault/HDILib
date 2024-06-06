@@ -90,9 +90,9 @@ namespace hdi{
 
     template <class Key, class T>
     typename MapMemEff<Key,T>::mapped_type& MapMemEff<Key,T>::operator[](const key_type& k){
-      int l = 0;
-      int r = _memory.size()-1;
-      int m = 0;
+      int64_t l = 0;
+      int64_t r = _memory.size()-1;
+      int64_t m = 0;
 
       if(size()==0){
         _memory.push_back(std::make_pair(k,mapped_type(0)));
@@ -101,7 +101,7 @@ namespace hdi{
 
       bool found(false);
       while(l<=r){
-        m = (l+r)*0.5;
+        m = static_cast<int64_t>((l+r)*0.5);
         if(_memory[m].first == k){
           found = true;
           break;
@@ -127,9 +127,9 @@ namespace hdi{
 
     template <class Key, class T>
     typename MapMemEff<Key,T>::const_iterator MapMemEff<Key,T>::find(const key_type& k)const {
-      int l = 0;
-      int r = _memory.size()-1;
-      int m = 0;
+      int64_t l = 0;
+      int64_t r = _memory.size()-1;
+      int64_t m = 0;
 
       if(size()==0){
         return end();
@@ -137,7 +137,7 @@ namespace hdi{
 
       bool found(false);
       while(l<=r){
-        m = (l+r)*0.5;
+        m = static_cast<int64_t>((l+r)*0.5);
         if(_memory[m].first == k){
           found = true;
           break;
