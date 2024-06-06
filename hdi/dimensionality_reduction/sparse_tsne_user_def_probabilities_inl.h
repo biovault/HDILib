@@ -170,9 +170,9 @@ namespace hdi{
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeHighDimensionalDistribution(const sparse_scalar_matrix& probabilities){
       utils::secureLog(_logger,"Computing high-dimensional joint probability distribution...");
 
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
       //Can be improved by using the simmetry of the matrix (half the memory) //TODO
-      for(int j = 0; j < n; ++j){
+      for(size_t j = 0; j < n; ++j){
         for(auto& elem: probabilities[j]){
           scalar_type v0 = elem.second;
           auto iter = probabilities[elem.first].find(j);
@@ -273,16 +273,16 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeLowDimensionalDistribution(){
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
 #ifdef __USE_GCD__
       //std::cout << "GCD dispatch, sparse_tsne_user_def_probabilities 285.\n";
       dispatch_apply(n, dispatch_get_global_queue(0, 0), ^(size_t j) {
 #else
       #pragma omp parallel for
-      for(int j = 0; j < n; ++j){
+      for(int64_t j = 0; j < n; ++j){
 #endif //__USE_GCD__
         _Q[j*n + j] = 0;
-        for(int i = j+1; i < n; ++i){
+        for(int64_t i = j+1; i < n; ++i){
           const double euclidean_dist_sq(
               utils::euclideanDistanceSquared<scalar_type>(
                 (*_embedding_container).begin()+j*_params._embedding_dimensionality,
@@ -308,19 +308,19 @@ namespace hdi{
 
     template <typename scalar, typename sparse_scalar_matrix>
     void SparseTSNEUserDefProbabilities<scalar, sparse_scalar_matrix>::computeExactGradient(double exaggeration){
-      const int n = getNumberOfDataPoints();
+      const size_t n = getNumberOfDataPoints();
       const int dim = _params._embedding_dimensionality;
 
-      for(int i = 0; i < n; ++i){
+      for(size_t i = 0; i < n; ++i){
         for(int d = 0; d < dim; ++d){
           _gradient[i * dim + d] = 0;
         }
       }
 
-      for(int i = 0; i < n; ++i){
-        for(int j = 0; j < n; ++j){
+      for(size_t i = 0; i < n; ++i){
+        for(size_t j = 0; j < n; ++j){
           for(int d = 0; d < dim; ++d){
-            const int idx = i*n + j;
+            const size_t idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
             const double negative(_Q[idx] * _Q[idx] / _normalization_Q * distance);
             _gradient[i * dim + d] += static_cast<scalar_type>(-4*negative);
@@ -329,7 +329,7 @@ namespace hdi{
         for(auto& elem: _P[i]){
           for(int d = 0; d < dim; ++d){
             const int j = elem.first;
-            const int idx = i*n + j;
+            const size_t idx = i*n + j;
             const double distance((*_embedding_container)[i * dim + d] - (*_embedding_container)[j * dim + d]);
             double p_ij = elem.second/n;
 
@@ -358,7 +358,7 @@ namespace hdi{
 //      dispatch_apply(getNumberOfDataPoints(), dispatch_get_global_queue(0, 0), ^(size_t n) {
 //#else
       #pragma omp parallel for
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(int64_t n = 0; n < getNumberOfDataPoints(); n++){
 //#endif //__USE_GCD__
         sptree.computeNonEdgeForcesOMP(n, _theta, negative_forces.data() + n * _params._embedding_dimensionality, sum_Q_subvalues[n]);
       }
@@ -367,11 +367,11 @@ namespace hdi{
 //#endif
 
       sum_Q = 0;
-      for(int n = 0; n < getNumberOfDataPoints(); n++){
+      for(size_t n = 0; n < getNumberOfDataPoints(); n++){
         sum_Q += sum_Q_subvalues[n];
       }
 
-      for(int i = 0; i < _gradient.size(); i++){
+      for(size_t i = 0; i < _gradient.size(); i++){
         _gradient[i] = positive_forces[i] - (negative_forces[i] / sum_Q);
       }
 

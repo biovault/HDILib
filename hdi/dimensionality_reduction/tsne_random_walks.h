@@ -115,7 +115,7 @@ namespace hdi{
       void getEmbeddingPosition(scalar_vector_type& embedding_position, data_handle_type handle)const;
 
       //! Get the number of data points
-      unsigned int getNumberOfDataPoints(){  return _num_dps;  }
+      size_t getNumberOfDataPoints(){  return _num_dps;  }
       //! Get the number of landmarks
       unsigned int getNumberOfLandmarks()const{return _params._number_of_landmarks;}
       //! Get all the data points

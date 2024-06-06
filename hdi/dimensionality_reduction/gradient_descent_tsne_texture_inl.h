@@ -206,8 +206,8 @@ namespace hdi {
     void GradientDescentTSNETexture::computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities) {
       utils::secureLog(_logger, "Computing high-dimensional joint probability distribution...");
 
-      const int n = getNumberOfDataPoints();
-      for (int j = 0; j < n; ++j) {
+      const size_t n = getNumberOfDataPoints();
+      for (size_t j = 0; j < n; ++j) {
         for (auto& elem : probabilities[j]) {
           scalar_type v0 = elem.second;
           auto iter = probabilities[elem.first].find(j);
