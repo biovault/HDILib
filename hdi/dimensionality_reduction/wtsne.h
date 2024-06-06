@@ -138,7 +138,7 @@ namespace hdi{
       scalar_vector_type _gradient; //! Current gradient
       scalar_vector_type _previous_gradient; //! Previous gradient
       scalar_vector_type _gain; //! Gain
-      scalar_type _theta; //! value of theta used in the Barnes-Hut approximation. If a value of 1 is provided the exact tSNE computation is used.
+      double _theta; //! value of theta used in the Barnes-Hut approximation. If a value of 1 is provided the exact tSNE computation is used.
 
       TsneParameters _params;
       unsigned int _iteration;
