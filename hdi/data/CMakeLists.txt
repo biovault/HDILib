@@ -6,7 +6,7 @@ file(GLOB SourceFiles *.cpp)
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
-target_include_directories(${PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}")
+target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 
 target_link_libraries(${PROJECT} PRIVATE ${OPENGL_LIBRARIES})
 
