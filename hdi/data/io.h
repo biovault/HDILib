@@ -35,6 +35,10 @@
 
 
 namespace hdi{
+  namespace utils{
+    class AbstractLog;
+  }
+
   namespace data{
     namespace IO{
 
