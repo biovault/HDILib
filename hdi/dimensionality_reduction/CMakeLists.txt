@@ -91,11 +91,11 @@ if(NOT DEFINED ENV{CI})
     endif()
     
     if(DEFINED VCPKG_INSTALLED_DIR)
-        install(DIRECTORY "${VCPKG_INSTALLED_DIR}/x64-windows-static/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
+        install(DIRECTORY "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
         install(CODE "foreach(LZ4_HEADER lz4.h lz4file.h lz4frame.h lz4frame_static.h lz4hc.h)
                 execute_process(
                     COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                        \"${VCPKG_INSTALLED_DIR}/x64-windows-static/include/\${LZ4_HEADER}\" 
+                        \"${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/\${LZ4_HEADER}\" 
                         \"${CMAKE_INSTALL_PREFIX}/include/\${LZ4_HEADER}\"
                 )
             endforeach()"
