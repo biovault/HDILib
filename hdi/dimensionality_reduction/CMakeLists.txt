@@ -7,7 +7,7 @@ file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
-target_include_directories(${PROJECT} PRIVATE "${CMAKE_SOURCE_DIR}")
+target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 
 get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
 target_include_directories(${PROJECT} PRIVATE ${HNSWLIB_INCLUDE_DIR})
