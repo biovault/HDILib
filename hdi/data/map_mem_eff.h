@@ -115,13 +115,13 @@ namespace hdi{
 
       assert(m>=0);
       if(!found){
-        assert(m<=_memory.size());
+        assert(static_cast<size_t>(m)<_memory.size());
         if(_memory[m].first < k){
           m++;
         }
         _memory.insert(_memory.begin()+m,std::make_pair(k,mapped_type(0)));
       }
-      assert(m<_memory.size());
+      assert(static_cast<size_t>(m)<_memory.size());
       return _memory[m].second;
     }
 
@@ -151,7 +151,7 @@ namespace hdi{
 
       assert(m>=0);
       if(!found){
-        assert(m<=_memory.size());
+        assert(static_cast<size_t>(m)<_memory.size());
         return end();
       }
 
