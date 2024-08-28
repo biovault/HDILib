@@ -30,17 +30,19 @@ set_optimization_level(${PROJECT} ${OPTIMIZATION_LEVEL})
 check_and_set_AVX(${PROJECT} ${ENABLE_AVX})
 
 ########### INSTALL ##############
-install(TARGETS ${PROJECT}
-    EXPORT ${PROJECT}Targets
-    LIBRARY DESTINATION lib/$<CONFIGURATION>>
-    ARCHIVE DESTINATION lib/$<CONFIGURATION>
-    PUBLIC_HEADER DESTINATION include/hdi/data
-    COMPONENT hdidata
-)
+if(${HDILib_INSTALL})
+    install(TARGETS ${PROJECT}
+        EXPORT ${PROJECT}Targets
+        LIBRARY DESTINATION lib/$<CONFIGURATION>>
+        ARCHIVE DESTINATION lib/$<CONFIGURATION>
+        PUBLIC_HEADER DESTINATION include/hdi/data
+        COMPONENT hdidata
+    )
 
-install(EXPORT ${PROJECT}Targets
-        FILE ${PROJECT}Targets.cmake
-        NAMESPACE HDI::
-        DESTINATION lib/cmake/HDILib
-        COMPONENT HDIDATA_TARGET
-)
+    install(EXPORT ${PROJECT}Targets
+            FILE ${PROJECT}Targets.cmake
+            NAMESPACE HDI::
+            DESTINATION lib/cmake/HDILib
+            COMPONENT HDIDATA_TARGET
+    )
+endif()

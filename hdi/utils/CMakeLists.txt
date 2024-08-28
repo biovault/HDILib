@@ -32,30 +32,33 @@ if (UNIX)
 endif (UNIX)
 
 ########### INSTALL ##############
-install(TARGETS ${PROJECT}
-    EXPORT ${PROJECT}Targets
-    LIBRARY DESTINATION lib/$<CONFIGURATION>
-    ARCHIVE DESTINATION lib/$<CONFIGURATION>
-    COMPONENT hdiutils
-)
+if(${HDILib_INSTALL})
+    install(TARGETS ${PROJECT}
+        EXPORT ${PROJECT}Targets
+        LIBRARY DESTINATION lib/$<CONFIGURATION>
+        ARCHIVE DESTINATION lib/$<CONFIGURATION>
+        COMPONENT hdiutils
+    )
 
-# Preserve the header hierarchy by explicit install
-# the CMake PUBLIC_HEADER target property flattens it if used.
-install(CODE "foreach(HEADER ${HeaderFiles})
-        message(STATUS \"Installing: \${HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/utils\")
-        execute_process(
-            COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                \"${CMAKE_CURRENT_SOURCE_DIR}/\${HEADER}\" 
-                \"${CMAKE_INSTALL_PREFIX}/include/hdi/utils/\${HEADER}\"
-        )
+    # Preserve the header hierarchy by explicit install
+    # the CMake PUBLIC_HEADER target property flattens it if used.
+    install(CODE "foreach(HEADER ${HeaderFiles})
+            message(STATUS \"Installing: \${HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/utils\")
+            execute_process(
+                COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                    \"${CMAKE_CURRENT_SOURCE_DIR}/\${HEADER}\" 
+                    \"${CMAKE_INSTALL_PREFIX}/include/hdi/utils/\${HEADER}\"
+            )
 
-    endforeach()"
-    COMPONENT PUBLIC_HEADERS
-)
+        endforeach()"
+        COMPONENT PUBLIC_HEADERS
+    )
 
-install(EXPORT ${PROJECT}Targets
-        FILE ${PROJECT}Targets.cmake
-        NAMESPACE HDI::
-        DESTINATION lib/cmake/HDILib
-        COMPONENT HDIUTILS_TARGET
-)
+    install(EXPORT ${PROJECT}Targets
+            FILE ${PROJECT}Targets.cmake
+            NAMESPACE HDI::
+            DESTINATION lib/cmake/HDILib
+            COMPONENT HDIUTILS_TARGET
+    )
+endif()
+

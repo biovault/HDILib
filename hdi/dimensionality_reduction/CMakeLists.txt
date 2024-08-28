@@ -57,68 +57,68 @@ if(UNIX)
 endif(UNIX)
 
 ########### INSTALL ##############
-#set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+if(${HDILib_INSTALL})
+    install(TARGETS ${PROJECT}
+        EXPORT ${PROJECT}Targets
+        LIBRARY DESTINATION lib/$<CONFIGURATION>
+        ARCHIVE DESTINATION lib/$<CONFIGURATION>
+        COMPONENT hdidimensionalityreduction
+    )
 
-install(TARGETS ${PROJECT}
-    EXPORT ${PROJECT}Targets
-    LIBRARY DESTINATION lib/$<CONFIGURATION>
-    ARCHIVE DESTINATION lib/$<CONFIGURATION>
-    COMPONENT hdidimensionalityreduction
-)
+    # Preserve the header hierarchy by explicit install
+    # the CMake PUBLIC_HEADER target property flattens it if used.
+    install(CODE "foreach(DR_HEADER ${HeaderFiles})
+            message(STATUS \"Installing: \${DR_HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
+            execute_process(
+                COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                    \"${CMAKE_CURRENT_SOURCE_DIR}/\${DR_HEADER}\" 
+                    \"${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction/\${DR_HEADER}\"
+            )
 
-# Preserve the header hierarchy by explicit install
-# the CMake PUBLIC_HEADER target property flattens it if used.
-install(CODE "foreach(DR_HEADER ${HeaderFiles})
-        message(STATUS \"Installing: \${DR_HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
-        execute_process(
-            COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                \"${CMAKE_CURRENT_SOURCE_DIR}/\${DR_HEADER}\" 
-                \"${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction/\${DR_HEADER}\"
-        )
+        endforeach()"
+        COMPONENT PUBLIC_HEADERS
+    )
 
-    endforeach()"
-    COMPONENT PUBLIC_HEADERS
-)
+    # Install dependency headers
+    if(NOT DEFINED ENV{CI})
+        if(DEFINED flann_INCLUDE_DIR)
+            install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+        endif()
 
-# Install dependency headers
-if(NOT DEFINED ENV{CI})
-    if(DEFINED flann_INCLUDE_DIR)
-        install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+        if(DEFINED lz4_INCLUDE_DIR)
+            install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
+        endif()
+        
+        if(DEFINED VCPKG_INSTALLED_DIR)
+            install(DIRECTORY "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
+            install(CODE "foreach(LZ4_HEADER lz4.h lz4file.h lz4frame.h lz4frame_static.h lz4hc.h)
+                    execute_process(
+                        COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                            \"${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/\${LZ4_HEADER}\" 
+                            \"${CMAKE_INSTALL_PREFIX}/include/\${LZ4_HEADER}\"
+                    )
+                endforeach()"
+                COMPONENT ANNOY_HEADERS
+            )
+        endif()
     endif()
 
-    if(DEFINED lz4_INCLUDE_DIR)
-        install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
-    endif()
-    
-    if(DEFINED VCPKG_INSTALLED_DIR)
-        install(DIRECTORY "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
-        install(CODE "foreach(LZ4_HEADER lz4.h lz4file.h lz4frame.h lz4frame_static.h lz4hc.h)
-                execute_process(
-                    COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                        \"${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/\${LZ4_HEADER}\" 
-                        \"${CMAKE_INSTALL_PREFIX}/include/\${LZ4_HEADER}\"
-                )
-            endforeach()"
-            COMPONENT ANNOY_HEADERS
-        )
-    endif()
+    install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
+    install(CODE "foreach(ANNOY_HEADER annoylib.h kissrandom.h mman.h)
+            execute_process(
+                COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
+                    \"${ANNOY_INCLUDE_DIR}/\${ANNOY_HEADER}\" 
+                    \"${CMAKE_INSTALL_PREFIX}/include/\${ANNOY_HEADER}\"
+            )
+        endforeach()"
+        COMPONENT ANNOY_HEADERS
+    )
+
+    # Install cmake targets file
+    install(EXPORT ${PROJECT}Targets
+            FILE ${PROJECT}Targets.cmake
+            NAMESPACE HDI::
+            DESTINATION lib/cmake/HDILib
+            COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
+    )
 endif()
-
-install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
-install(CODE "foreach(ANNOY_HEADER annoylib.h kissrandom.h mman.h)
-        execute_process(
-            COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                \"${ANNOY_INCLUDE_DIR}/\${ANNOY_HEADER}\" 
-                \"${CMAKE_INSTALL_PREFIX}/include/\${ANNOY_HEADER}\"
-        )
-    endforeach()"
-    COMPONENT ANNOY_HEADERS
-)
-
-# Install cmake targets file
-install(EXPORT ${PROJECT}Targets
-        FILE ${PROJECT}Targets.cmake
-        NAMESPACE HDI::
-        DESTINATION lib/cmake/HDILib
-        COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
-)
