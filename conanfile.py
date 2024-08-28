@@ -88,10 +88,11 @@ class HDILibConan(ConanFile):
             )
         else:
             tc.variables["CMAKE_INSTALL_PREFIX"] = "${CMAKE_BINARY_DIR}"
-        tc.variables["ENABLE_CODE_ANALYSIS"] = "ON"
         tc.variables["CMAKE_VERBOSE_MAKEFILE"] = "ON"
         if os.getenv("Analysis", None) is None:
-            tc.variables["ENABLE_CODE_ANALYSIS"] = "OFF"
+            tc.variables["HDILib_ENABLE_CODE_ANALYSIS"] = "OFF"
+        else:
+            tc.variables["HDILib_ENABLE_CODE_ANALYSIS"] = "ON"
         tc.variables[
             "CMAKE_MSVC_RUNTIME_LIBRARY"
         ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
