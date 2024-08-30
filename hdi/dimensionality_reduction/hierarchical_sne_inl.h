@@ -1586,7 +1586,7 @@ namespace hdi {
       std::vector<std::unordered_map<unsigned_int_type, scalar_type>> influence;
       hsne.getInfluenceOnDataPoint(pnt_id, influence);
 
-      res = std::tuple<unsigned_int_type, int_type, scalar_type>(_cluster_tree.size() - 1, -1, 1);
+      res = std::tuple<unsigned_int_type, int_type, scalar_type>(static_cast<unsigned_int_type>(_cluster_tree.size() - 1), -1, 1.0f);
       std::vector<unsigned_int_type> clusters_to_analyze(_cluster_tree[_cluster_tree.size() - 1].size());
       std::iota(clusters_to_analyze.begin(), clusters_to_analyze.end(), 0);
 
