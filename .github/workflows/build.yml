@@ -42,6 +42,13 @@ jobs:
             build-runtime: MD
             build-config: Release
 
+          - name: Windows-msvc2022
+            os: windows-2022
+            compiler: msvc-2022
+            build-cversion: 17
+            build-runtime: MD
+            build-config: Release
+
           - name: Linux_gcc10
             os: ubuntu-20.04
             build-compiler: gcc
@@ -76,6 +83,15 @@ jobs:
             build-config: Release
             build-os: Macos
             build-xcode-version: 14.3
+            build-libcxx: libc++
+
+          - name: Macos_xcode15
+            os: macos-14
+            build-compiler: apple-clang
+            build-cversion: 15
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 15.4
             build-libcxx: libc++
 
     steps:
