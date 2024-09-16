@@ -106,9 +106,9 @@ jobs:
           sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
 
       - name: Setup python version
-        uses: actions/setup-python@v1
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Setup gcc version
         if: startsWith(matrix.build-compiler, 'gcc')
