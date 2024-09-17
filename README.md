@@ -61,9 +61,9 @@ Flann can be built from the source but we recommend vcpkg to install it, especia
 
 On Windows with vcpkg
 ```bash
-.\vcpkg install flann:x64-windows-static
+.\vcpkg install flann:x64-windows-static-md
 ```
-When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and VCPKG_TARGET_TRIPLET `x64-windows-static`
+When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and use the same VCPKG_TARGET_TRIPLET as for installing flann, here `x64-windows-static-md`.
 
 On Linux with e.g.
 ```bash
