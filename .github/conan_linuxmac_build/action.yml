@@ -23,6 +23,9 @@ inputs:
   conan-build-os:
     description: "Linux or Macos"
     required: true
+  build-arch:
+    description: "either x86_64 or armv8 (for macos)"
+    required: true
   conan-user:
     description: "pass secrets.LKEB_ARTIFACTORY_USER"
     required: true
@@ -67,9 +70,7 @@ runs:
 
         conan profile new action_build
         conan profile update settings.os=${{ inputs.conan-build-os }} action_build
-        conan profile update settings.os_build=${{ inputs.conan-build-os }} action_build
-        conan profile update settings.arch=x86_64 action_build
-        conan profile update settings.arch_build=x86_64 action_build
+        conan profile update settings.arch=${{ inputs.build-arch }} action_build
         conan profile update settings.compiler=${{ inputs.conan-compiler }} action_build
         conan profile update settings.compiler.version=${{ inputs.conan-compiler-version }} action_build
         conan profile update settings.compiler.libcxx=${{ inputs.conan-libcxx-version}} action_build

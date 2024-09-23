@@ -41,6 +41,7 @@ jobs:
             build-cversion: 16
             build-runtime: MD
             build-config: Release
+            build-arch: x86_64
 
           - name: Windows-msvc2022
             os: windows-2022
@@ -48,6 +49,7 @@ jobs:
             build-cversion: 17
             build-runtime: MD
             build-config: Release
+            build-arch: x86_64
 
           - name: Linux_gcc10
             os: ubuntu-20.04
@@ -56,6 +58,7 @@ jobs:
             build-config: Release
             build-os: Linux
             build-libcxx: libstdc++11
+            build-arch: x86_64
 
           - name: Linux_gcc11
             os: ubuntu-22.04
@@ -66,6 +69,7 @@ jobs:
             build-config: Release
             build-os: Linux
             build-libcxx: libstdc++11
+            build-arch: x86_64
 
           - name: Macos_xcode13.4
             os: macos-12
@@ -75,6 +79,7 @@ jobs:
             build-os: Macos
             build-xcode-version: 13.4
             build-libcxx: libc++
+            build-arch: x86_64
 
           - name: Macos_xcode14.3
             os: macos-13
@@ -84,6 +89,7 @@ jobs:
             build-os: Macos
             build-xcode-version: 14.3
             build-libcxx: libc++
+            build-arch: x86_64
 
           - name: Macos_xcode15
             os: macos-14
@@ -93,6 +99,7 @@ jobs:
             build-os: Macos
             build-xcode-version: 15.4
             build-libcxx: libc++
+            build-arch: armv8
 
     steps:
       - name: Checkout the source
@@ -123,6 +130,7 @@ jobs:
         with:
           conan-visual-version: ${{matrix.build-cversion}}
           conan-build-type: ${{matrix.build-config}}
+          build-arch: ${{matrix.build-arch}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
           hdilib-cdash-token: ${{secrets.HDILIB_TOKEN}}
@@ -136,5 +144,6 @@ jobs:
           conan-libcxx-version: ${{matrix.build-libcxx}}
           conan-build-type: ${{matrix.build-config}}
           conan-build-os: ${{matrix.build-os}}
+          build-arch: ${{matrix.build-arch}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
