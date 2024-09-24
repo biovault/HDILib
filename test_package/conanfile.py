@@ -81,5 +81,15 @@ class HDILibTestConan(ConanFile):
                 )
                 examplePath = Path("./", str(self.build_folder), "bin", "example.exe")
                 self.run(f"{str(examplePath)}")
+            elif platform.system() == "Darwin":
+                shutil.copy(
+                    Path(
+                        self.deps_cpp_info["flann"].rootpath,
+                        "lib",
+                        "Release",
+                        "libflann_cpp.1.9.dylib",
+                    ),
+                    Path("./"),
+                )
             else:
                 self.run(".%sexample" % os.sep)
