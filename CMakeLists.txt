@@ -42,7 +42,7 @@ endif(MSVC)
 
 # Disallow in-source builds. 
 # Build in sub dir e.g. source/build* is still allowed!
-if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT $ENV{CI})
+if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT ${IN_CONAN_BUILD})
    message(FATAL_ERROR "In-source builds are not allowed!\n"
     "Make sure to remove CMakeCache.txt and CMakeFiles/ "
     "from the source directory!")
@@ -73,7 +73,7 @@ message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
-find_package(lz4)
+find_package(lz4 REQUIRED)
 find_package(flann REQUIRED)
 find_package(OpenMP)
 

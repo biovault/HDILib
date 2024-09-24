@@ -17,16 +17,15 @@ get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../exte
 target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
-# Need lz4 include because of the flann serialization dependency
-target_include_directories(${PROJECT} PRIVATE ${lz4_INCLUDE_DIR})
-
-if(DEFINED ENV{CI})
-    message (STATUS "Flann include: " ${flann_INCLUDE_DIR})
-    message (STATUS "lz4 include: " ${lz4_INCLUDE_DIR})
-    target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR} ${lz4_INCLUDE_DIR})
+if(${IN_CONAN_BUILD})
+    message (STATUS "Flann include: " ${flann_ROOT})
+    message (STATUS "lz4 include: " ${lz4_ROOT})
+    target_link_libraries(${PROJECT} PRIVATE flann::flann_cpp lz4::lz4)
 else()
     message (STATUS "Flann path: " ${flann_DIR})
-    
+    # Need lz4 include because of the flann serialization dependency
+    target_include_directories(${PROJECT} PRIVATE ${lz4_INCLUDE_DIR})
+
     if(TARGET flann::flann_cpp_s)
         set(FLANN_TARGET flann::flann_cpp_s)
     elseif(TARGET flann::flann)
@@ -84,7 +83,7 @@ if(${HDILib_INSTALL})
     )
 
     # Install dependency headers
-    if(NOT DEFINED ENV{CI})
+    if(NOT DEFINED IN_CONAN_BUILD)
         if(DEFINED flann_INCLUDE_DIR)
             install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
         endif()

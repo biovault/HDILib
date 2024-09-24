@@ -3,12 +3,14 @@ import platform
 from pathlib import Path
 from conans import ConanFile, tools
 from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps
+import shutil
 
-required_conan_version = "==1.64.0"
+required_conan_version = "~=1.64.0"
 
 # This is a "hello world" type test that checks that the conan package can be consumed
 # i.e. that that cmake support works, consumption of HDILib headers (compiler) and lib (linker) works
 # and nothing else. It is is not a full unit or regression test for HDILib.
+
 
 class HDILibTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
@@ -16,14 +18,22 @@ class HDILibTestConan(ConanFile):
 
     def generate(self):
 
-        deps = CMakeDeps(self)
-        deps.generate()
+        # deps = CMakeDeps(self)
+        # deps.generate()
 
         if os.getenv("Analysis", None) is not None:
             return
         tc = CMakeToolchain(self)
         tc.variables["HDILib_ROOT"] = Path(
             self.deps_cpp_info["HDILib"].rootpath
+        ).as_posix()
+        # Use the cmake export in the flann package
+        tc.variables["flann_ROOT"] = Path(
+            self.deps_cpp_info["flann"].rootpath, "lib", "cmake"
+        ).as_posix()
+        # Use the cmake export in the lz4 package
+        tc.variables["lz4_ROOT"] = Path(
+            self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
         ).as_posix()
         tc.generate()
 
@@ -36,7 +46,6 @@ class HDILibTestConan(ConanFile):
             return
         else:
             self.requires("flann/1.9.2@lkeb/stable")
-
 
     def system_requirements(self):
         if os.getenv("Analysis", None) is not None:
@@ -64,6 +73,12 @@ class HDILibTestConan(ConanFile):
         if not tools.cross_building(self.settings):
             os.chdir("bin")
             if platform.system() == "Windows":
+                shutil.copy(
+                    Path(
+                        self.deps_cpp_info["lz4"].rootpath, "bin", "Release", "lz4.dll"
+                    ),
+                    Path("./", str(self.build_folder), "bin"),
+                )
                 examplePath = Path("./", str(self.build_folder), "bin", "example.exe")
                 self.run(f"{str(examplePath)}")
             else:

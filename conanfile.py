@@ -8,7 +8,8 @@ import sys
 from packaging import version
 from pathlib import Path
 
-required_conan_version = "==1.64.0"
+required_conan_version = "~=1.64.0"
+
 
 class HDILibConan(ConanFile):
     name = "HDILib"
@@ -26,7 +27,7 @@ class HDILibConan(ConanFile):
     # Note : This should only be built with: shared=False, fPIC=True
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
-    requires = ("flann/1.9.2@lkeb/stable")
+    requires = "flann/1.9.2@lkeb/stable"
 
     # scm = {
     #    "type": "git",dir
@@ -46,7 +47,7 @@ class HDILibConan(ConanFile):
     def system_requirements(self):
         if os_info.is_macos:
             installer = SystemPackageTool()
-            installer.install('libomp')
+            installer.install("libomp")
 
     def configure(self):
         if self.settings.os == "Windows":
@@ -61,11 +62,8 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Linux":
             generator = "Ninja Multi-Config"
 
-        cmake = CMakeDeps(self)
-        cmake.generate()
-
         # A toolchain file can be used to modify CMake variables
-        tc = CMakeToolchain(self)
+        tc = CMakeToolchain(self, generator=generator)
         if self.settings.os == "Windows":
             tc.variables["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
         tc.variables["HDILib_VERSION"] = self.version
@@ -80,9 +78,18 @@ class HDILibConan(ConanFile):
             tc.variables["HDILib_ENABLE_CODE_ANALYSIS"] = "OFF"
         else:
             tc.variables["HDILib_ENABLE_CODE_ANALYSIS"] = "ON"
-        tc.variables[
-            "CMAKE_MSVC_RUNTIME_LIBRARY"
-        ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+        tc.variables["CMAKE_MSVC_RUNTIME_LIBRARY"] = (
+            "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+        )
+        # Use the cmake export in the flann package
+        tc.variables["flann_ROOT"] = Path(
+            self.deps_cpp_info["flann"].rootpath, "lib", "cmake"
+        ).as_posix()
+        # Use the cmake export in the lz4 package
+        tc.variables["lz4_ROOT"] = Path(
+            self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
+        ).as_posix()
+        tc.variables["IN_CONAN_BUILD"] = "TRUE"
         print("Call toolchain generate")
         tc.generate()
 
