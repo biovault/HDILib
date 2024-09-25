@@ -17,24 +17,17 @@ get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../exte
 target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
-if(${IN_CONAN_BUILD})
-    message (STATUS "Flann include: " ${flann_ROOT})
-    message (STATUS "lz4 include: " ${lz4_ROOT})
-    target_link_libraries(${PROJECT} PRIVATE flann::flann_cpp lz4::lz4)
+if(TARGET flann::flann_cpp_s)
+    set(FLANN_TARGET flann::flann_cpp_s)
+elseif(TARGET flann::flann)
+    set(FLANN_TARGET flann::flann)
 else()
-    message (STATUS "Flann path: " ${flann_DIR})
-    # Need lz4 include because of the flann serialization dependency
-    target_include_directories(${PROJECT} PRIVATE ${lz4_INCLUDE_DIR})
-
-    if(TARGET flann::flann_cpp_s)
-        set(FLANN_TARGET flann::flann_cpp_s)
-    elseif(TARGET flann::flann)
-        set(FLANN_TARGET flann::flann)
-    endif()
-    
-    message (STATUS "Flann link library: " ${FLANN_TARGET})
-    target_link_libraries(${PROJECT} PRIVATE ${FLANN_TARGET})
+    message(FATAL_ERROR "No Flann target found.")
 endif()
+
+message (STATUS "Flann link library: " ${FLANN_TARGET})
+target_link_libraries(${PROJECT} PRIVATE ${FLANN_TARGET})
+target_link_libraries(${PROJECT} PRIVATE lz4::lz4)
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
@@ -86,23 +79,11 @@ if(${HDILib_INSTALL})
     if(NOT DEFINED IN_CONAN_BUILD)
         if(DEFINED flann_INCLUDE_DIR)
             install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
-        endif()
-
-        if(DEFINED lz4_INCLUDE_DIR)
-            install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
-        endif()
-        
-        if(DEFINED VCPKG_INSTALLED_DIR)
-            install(DIRECTORY "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
-            install(CODE "foreach(LZ4_HEADER lz4.h lz4file.h lz4frame.h lz4frame_static.h lz4hc.h)
-                    execute_process(
-                        COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                            \"${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/\${LZ4_HEADER}\" 
-                            \"${CMAKE_INSTALL_PREFIX}/include/\${LZ4_HEADER}\"
-                    )
-                endforeach()"
-                COMPONENT ANNOY_HEADERS
-            )
+        else()
+            get_target_property(FLANN_INCLUDE_DIR ${FLANN_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+            if(FLANN_INCLUDE_DIR)
+                install(DIRECTORY "${FLANN_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+            endif()
         endif()
     endif()
 
