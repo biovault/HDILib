@@ -78,11 +78,11 @@ find_package(flann CONFIG REQUIRED)
 find_package(OpenMP)
 
 if(${flann_FOUND})
-    message (STATUS "Found flanm version ${flann_VERSION}")
+    message (STATUS "Found flann version ${flann_VERSION}")
 endif()
 
 if(${lz4_FOUND})
-    message (STATUS "Found flanm version ${lz4_VERSION}")
+    message (STATUS "Found lz4 version ${lz4_VERSION}")
 endif()
 
 if(OpenMP_CXX_FOUND)
