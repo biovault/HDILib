@@ -50,7 +50,7 @@ git clone --recurse-submodules https://github.com/biovault/HDILib.git
 
 ### Requirements
 
-HDILib depends on [FLANN](https://github.com/mariusmuja/flann) (version >= 1.9.1). FLANN itselft depends on [LZ4](https://github.com/lz4/lz4). Be sure to install LZ4 version >= 1.10.
+HDILib depends on [FLANN](https://github.com/mariusmuja/flann) (version >= 1.9.1). FLANN itself depends on [LZ4](https://github.com/lz4/lz4). Be sure to install LZ4 version >= 1.10.
 
 Flann can be built from the source but we recommend vcpkg to install it, especially on Windows.
 
