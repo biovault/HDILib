@@ -8,6 +8,9 @@ inputs:
   conan-build-type:
     description: "Empty or Analysis"
     required: false
+  build-arch:
+    description: "either x86_64 or armv8 (for macos)"
+    required: true
   conan-user:
     description: "pass secrets.LKEB_ARTIFACTORY_USER"
     required: true
@@ -24,7 +27,7 @@ runs:
     - name: Install conan & build configuration
       run: |
         pip install wheel
-        pip install conan==1.62.0
+        pip install conan==1.64.0
         pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
         pip install packaging
@@ -62,19 +65,18 @@ runs:
         conan user -r %CONAN_LKEB_ARTIFACTORY% -p ${{ inputs.conan-password }} ${{ inputs.conan-user }}
         conan profile new action_build
         conan profile update settings.os=Windows action_build
-        conan profile update settings.os_build=Windows action_build
-        conan profile update settings.arch=x86_64 action_build
-        conan profile update settings.arch_build=x86_64 action_build
+        conan profile update settings.arch=${{ inputs.build-arch }} action_build
         conan profile update settings.compiler="Visual Studio" action_build
         conan profile update settings.compiler.version=${{ inputs.conan-visual-version }} action_build
         conan profile show action_build
 
+        for /f "delims=" %%i in ('conan inspect --raw version conanfile.py') do set CONAN_PACKAGE_VERSION=%%i
         if "${{ inputs.conan-build-type }}"=="Analysis" (
           cd cmake
           set Analysis=TRUE
           ctest -VV -S CAnalysisBuild.cmake -D HDILIB_TOKEN:STRING=${{ inputs.hdilib-cdash-token }} -D IN_GITHUB_ACTIONS:BOOL=ON
         ) else (
-          conan create . HDILib/latest@biovault/stable -pr:h action_build -pr:b default -s build_type=Release
+          conan create . HDILib/%CONAN_PACKAGE_VERSION%@biovault/stable -pr:h action_build -pr:b default -s build_type=Release
         )
 
       shell: cmd

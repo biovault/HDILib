@@ -50,10 +50,7 @@ git clone --recurse-submodules https://github.com/biovault/HDILib.git
 
 ### Requirements
 
-HDILib depends on [flann]((https://github.com/mariusmuja/flann)):
-
-1. Windows build requires: flann >1.8.5
-2. Ubuntu/Mac builds require: flann 1.8.4
+HDILib depends on [FLANN]((https://github.com/mariusmuja/flann)) (version >= 1.9.1). FLANN itselft depends on [LZ4](https://github.com/lz4/lz4). Be sure to install LZ4 version >= 1.10.
 
 Flann can be built from the source but we recommend vcpkg to install it, especially on Windows.
 
@@ -63,14 +60,13 @@ On Windows with vcpkg
 ```bash
 .\vcpkg install flann:x64-windows-static-md
 ```
-When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and use the same VCPKG_TARGET_TRIPLET as for installing flann, here `x64-windows-static-md`.
+When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and use the same VCPKG_TARGET_TRIPLET as for installing flann, here `x64-windows-static-md`. vcpkg will automatically install LZ4 with Flann.
 
-On Linux with e.g.
+You may also use system-specific package managers, e.g. on Linux with
 ```bash
 sudo apt-get -y install libflann-dev liblz4-dev
 ```
-
-On Mac OS with
+and Mac OS with
 ```
 brew install flann lz4
 ```

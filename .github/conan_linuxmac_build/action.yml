@@ -23,6 +23,9 @@ inputs:
   conan-build-os:
     description: "Linux or Macos"
     required: true
+  build-arch:
+    description: "either x86_64 or armv8 (for macos)"
+    required: true
   conan-user:
     description: "pass secrets.LKEB_ARTIFACTORY_USER"
     required: true
@@ -36,7 +39,7 @@ runs:
     - name: Install conan & build configuration
       run: |
         pip install wheel
-        pip install conan==1.62.0
+        pip install conan==1.64.0
         pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then sudo apt-get install -y ninja-build; fi
@@ -67,16 +70,25 @@ runs:
 
         conan profile new action_build
         conan profile update settings.os=${{ inputs.conan-build-os }} action_build
-        conan profile update settings.os_build=${{ inputs.conan-build-os }} action_build
-        conan profile update settings.arch=x86_64 action_build
-        conan profile update settings.arch_build=x86_64 action_build
+        conan profile update settings.arch=${{ inputs.build-arch }} action_build
         conan profile update settings.compiler=${{ inputs.conan-compiler }} action_build
         conan profile update settings.compiler.version=${{ inputs.conan-compiler-version }} action_build
         conan profile update settings.compiler.libcxx=${{ inputs.conan-libcxx-version}} action_build
         conan profile show action_build
+
+        if [[ ${{ inputs.conan-build-os }} == "Macos" ]] && [[ ${{ inputs.conan-compiler-version }} == "14" ]]; then
+          conan profile new compatibility
+          conan profile update settings.lz4/1.9.2:compiler.version=13.0 compatibility
+        fi
+
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
         export HOMEBREW_NO_AUTO_UPDATE=1
-        conan create . HDILib/latest@biovault/stable -pr:h action_build -pr:b default -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+        export CONAN_PACKAGE_VERSION=`conan inspect --raw version conanfile.py`
+        if [[ ${{ inputs.conan-build-os }} == "Macos" ]] && [[ ${{ inputs.conan-compiler-version }} == "14" ]]; then
+          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/stable -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+        else
+          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/stable -pr:h action_build -pr:b action_build -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+        fi
 
       shell: bash
       env:

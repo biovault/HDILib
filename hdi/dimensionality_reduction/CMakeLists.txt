@@ -17,25 +17,39 @@ get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../exte
 target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
 message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
 
-# Need lz4 include because of the flann serialization dependency
-target_include_directories(${PROJECT} PRIVATE ${lz4_INCLUDE_DIR})
-
-if(DEFINED ENV{CI})
-    message (STATUS "Flann include: " ${flann_INCLUDE_DIR})
-    message (STATUS "lz4 include: " ${lz4_INCLUDE_DIR})
-    target_include_directories(${PROJECT} PRIVATE ${flann_INCLUDE_DIR} ${lz4_INCLUDE_DIR})
-else()
-    message (STATUS "Flann path: " ${flann_DIR})
-    
+# prefer static linking
+if(NOT FLANN_TARGET)
     if(TARGET flann::flann_cpp_s)
         set(FLANN_TARGET flann::flann_cpp_s)
+    elseif(TARGET flann::flann_cpp)
+        set(FLANN_TARGET flann::flann_cpp)
+    elseif(TARGET flann::flann_s)
+        set(FLANN_TARGET flann::flann_s)
     elseif(TARGET flann::flann)
         set(FLANN_TARGET flann::flann)
+    else()
+        message(FATAL_ERROR "No Flann target found.")
     endif()
-    
-    message (STATUS "Flann link library: " ${FLANN_TARGET})
-    target_link_libraries(${PROJECT} PRIVATE ${FLANN_TARGET})
 endif()
+
+if(NOT LZ4_TARGET)
+    if(TARGET LZ4::lz4_static)
+        set(LZ4_TARGET LZ4::lz4_static)
+    elseif(TARGET LZ4::lz4_shared)
+        set(LZ4_TARGET LZ4::lz4_shared)
+    elseif(TARGET lz4::lz4)
+        set(LZ4_TARGET lz4::lz4)
+    elseif(TARGET LZ4::LZ4)
+        set(LZ4_TARGET LZ4::LZ4)
+    else()
+        message(FATAL_ERROR "No LZ4 target found.")
+    endif()
+endif()
+
+message (STATUS "Flann link library: " ${FLANN_TARGET})
+target_link_libraries(${PROJECT} PRIVATE ${FLANN_TARGET})
+message (STATUS "Linking lz4 library " ${LZ4_TARGET})
+target_link_libraries(${PROJECT} PRIVATE ${LZ4_TARGET})
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
@@ -84,26 +98,12 @@ if(${HDILib_INSTALL})
     )
 
     # Install dependency headers
-    if(NOT DEFINED ENV{CI})
-        if(DEFINED flann_INCLUDE_DIR)
-            install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
-        endif()
-
-        if(DEFINED lz4_INCLUDE_DIR)
-            install(DIRECTORY "${lz4_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT LZ4_HEADERS)
-        endif()
-        
-        if(DEFINED VCPKG_INSTALLED_DIR)
-            install(DIRECTORY "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/flann/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann/" COMPONENT FLANN_HEADERS)
-            install(CODE "foreach(LZ4_HEADER lz4.h lz4file.h lz4frame.h lz4frame_static.h lz4hc.h)
-                    execute_process(
-                        COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                            \"${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/include/\${LZ4_HEADER}\" 
-                            \"${CMAKE_INSTALL_PREFIX}/include/\${LZ4_HEADER}\"
-                    )
-                endforeach()"
-                COMPONENT ANNOY_HEADERS
-            )
+    if(DEFINED flann_INCLUDE_DIR)
+        install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+    else()
+        get_target_property(FLANN_INCLUDE_DIR ${FLANN_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
+        if(FLANN_INCLUDE_DIR)
+            install(DIRECTORY "${FLANN_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
         endif()
     endif()
 

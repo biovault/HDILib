@@ -1,0 +1,13 @@
+{
+  "name": "hdilib",
+  "version": "0.0.1",
+  "dependencies": [
+    "flann",
+    "lz4"
+  ],
+  "builtin-baseline":"d07689ef165f033de5c0710e4f67c193a85373e1",
+  "overrides": [
+    { "name": "flann", "version": "2019-04-07#7"},
+    { "name": "lz4", "version": "1.10.0#0"}
+  ]
+}
