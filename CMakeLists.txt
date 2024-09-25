@@ -73,9 +73,17 @@ message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
-find_package(lz4 REQUIRED)
-find_package(flann REQUIRED)
+find_package(lz4 CONFIG REQUIRED)
+find_package(flann CONFIG REQUIRED)
 find_package(OpenMP)
+
+if(${flann_FOUND})
+    message (STATUS "Found flanm version ${flann_VERSION}")
+endif()
+
+if(${lz4_FOUND})
+    message (STATUS "Found flanm version ${lz4_VERSION}")
+endif()
 
 if(OpenMP_CXX_FOUND)
     message (STATUS "OpenMP found")
