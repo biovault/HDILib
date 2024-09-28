@@ -14,11 +14,11 @@ set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targe
 set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
 
 if (HDILib_ENABLE_AVX)
-    message("ENABLE_AVX is ON")
+    message(STATUS "ENABLE_AVX is ON")
 endif()
 
 if (HDILib_ENABLE_CODE_ANALYSIS AND WIN32)
-    message("Code Analysis ENABLED")
+    message(STATUS "Code Analysis ENABLED")
 endif()
 
 if (HDILib_ENABLE_PID)
