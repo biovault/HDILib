@@ -64,11 +64,11 @@ When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH
 
 You may also use system-specific package managers, e.g. on Linux with
 ```bash
-sudo apt-get -y install libflann-dev liblz4-dev
+sudo apt-get -y install libflann-dev liblz4-dev pkg-config
 ```
 and Mac OS with
 ```
-brew install flann lz4
+brew install flann lz4 pkg-config
 ```
 
 ### Generate the build files
