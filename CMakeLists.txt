@@ -98,7 +98,7 @@ endif()
 if(NOT ${flann_FOUND})
     message (FATAL_ERROR "flann NOT found")
 endif()
-message (STATUS "Found flann version ${flann_VERSION} and ${flann_INCLUDE_DIR} and ${flann_DIR}")
+message (STATUS "Found flann version ${flann_VERSION}")
 
 find_package(OpenMP)
 

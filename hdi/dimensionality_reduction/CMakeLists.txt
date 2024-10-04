@@ -100,16 +100,15 @@ if(${HDILib_INSTALL})
     # Install dependency headers
     if(NOT flann_INCLUDE_DIR)
         get_target_property(flann_INCLUDE_DIR ${FLANN_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-        if(flann_INCLUDE_DIR)
-            if(flann_INCLUDE_DIR STREQUAL "/usr/include")
-                set(flann_INCLUDE_DIR "${flann_INCLUDE_DIR}/flann")
-            endif()
-        endif()
     endif()
 
     if(flann_INCLUDE_DIR)
+        if(NOT flann_INCLUDE_DIR MATCHES "flann$")
+            set(flann_INCLUDE_DIR "${flann_INCLUDE_DIR}/flann")
+        endif()
+
         message(STATUS "Using flann includes at: ${flann_INCLUDE_DIR}")
-        install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include" COMPONENT FLANN_HEADERS)
+        install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann" COMPONENT FLANN_HEADERS)
     endif()
 
     install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
