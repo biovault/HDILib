@@ -26,8 +26,7 @@ if(HDILib_ENABLE_CODE_ANALYSIS)
     endif()
 endif()
 
-set_optimization_level(${PROJECT} ${HDILib_OPTIMIZATION_LEVEL})
-check_and_set_AVX(${PROJECT} ${HDILib_ENABLE_AVX})
+hdi_check_and_set_AVX(${PROJECT} ${HDILib_ENABLE_AVX})
 
 ########### INSTALL ##############
 if(${HDILib_INSTALL})
