@@ -66,6 +66,7 @@ if(HDILib_ENABLE_CODE_ANALYSIS)
 endif()
 
 hdi_check_and_set_AVX(${PROJECT} ${HDILib_ENABLE_AVX})
+hdi_set_optimization_level(${PROJECT} ${HDILib_OPTIMIZATION_LEVEL})
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
