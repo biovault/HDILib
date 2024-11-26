@@ -71,6 +71,17 @@ jobs:
             build-libcxx: libstdc++11
             build-arch: x86_64
 
+          - name: Linux_gcc13
+            os: ubuntu-24.04
+            build-cc: gcc
+            build-cxx: g++
+            build-compiler: gcc
+            build-cversion: 13
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++11
+            build-arch: x86_64
+
           - name: Macos_xcode13.4
             os: macos-12
             build-compiler: apple-clang
