@@ -71,16 +71,6 @@ jobs:
             build-libcxx: libstdc++11
             build-arch: x86_64
 
-          - name: Macos_xcode13.4
-            os: macos-12
-            build-compiler: apple-clang
-            build-cversion: 13
-            build-config: Release
-            build-os: Macos
-            build-xcode-version: 13.4
-            build-libcxx: libc++
-            build-arch: x86_64
-
           - name: Macos_xcode14.3
             os: macos-13
             build-compiler: apple-clang
@@ -101,9 +91,19 @@ jobs:
             build-libcxx: libc++
             build-arch: armv8
 
+          - name: Macos_xcode16
+            os: macos-15
+            build-compiler: apple-clang
+            build-cversion: 16
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 16.2
+            build-libcxx: libc++
+            build-arch: armv8
+
     steps:
       - name: Checkout the source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -113,7 +113,7 @@ jobs:
           sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
 
       - name: Setup python version
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
