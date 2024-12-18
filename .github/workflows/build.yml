@@ -97,7 +97,7 @@ jobs:
             build-cversion: 16
             build-config: Release
             build-os: Macos
-            build-xcode-version: 16.2
+            build-xcode-version: 16
             build-libcxx: libc++
             build-arch: armv8
 
