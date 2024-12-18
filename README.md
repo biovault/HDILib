@@ -77,7 +77,7 @@ brew install flann lz4 pkg-config
 This will produce a HDILib.sln file for VisualStudio. 
 Open the .sln in VisualStudio and build ALL_BUILD for Release or Debug matching the CMAKE_BUILD_TYPE.
 ```cmd
-cmake -S . -B build -G "Visual Studio 16 2019" -A "x64" -DCMAKE_TOOLCHAIN_FILE=.\build\conan_toolchain.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCMAKE_INSTALL_PREFIX=install
+cmake -S . -B build -G "Visual Studio 16 2019" -A "x64" -DCMAKE_TOOLCHAIN_FILE=.\build\conan_toolchain.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DCMAKE_INSTALL_PREFIX=install
 ```
 
 **Linux**
