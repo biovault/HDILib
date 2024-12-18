@@ -5,7 +5,7 @@ from conans import ConanFile, tools
 from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps
 import shutil
 
-required_conan_version = "~=1.64.0"
+required_conan_version = "~=1.66.0"
 
 # This is a "hello world" type test that checks that the conan package can be consumed
 # i.e. that that cmake support works, consumption of HDILib headers (compiler) and lib (linker) works
