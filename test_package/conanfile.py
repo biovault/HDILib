@@ -3,7 +3,9 @@ import platform
 from pathlib import Path
 from conans import ConanFile, tools
 from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps
+from conans.tools import os_info
 import shutil
+import subprocess
 
 required_conan_version = "~=1.66.0"
 

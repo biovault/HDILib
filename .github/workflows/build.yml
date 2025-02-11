@@ -119,13 +119,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Setup gcc version
-        if: startsWith(matrix.build-compiler, 'gcc')
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: ${{matrix.build-cversion}}
-          platform: x64
-
       - name: Windows build
         if: startsWith(runner.os, 'Windows')
         uses: ./.github/conan_windows_build
@@ -137,7 +130,7 @@ jobs:
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
           hdilib-cdash-token: ${{secrets.HDILIB_TOKEN}}
 
-      - name: Linux Mac build
+      - name: Linux build
         if: startsWith(runner.os, 'ubuntu')
         uses: ./.github/conan_linuxmac_build
         with:
@@ -150,7 +143,7 @@ jobs:
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
-      - name: Linux Mac build
+      - name: Mac build
         if: startsWith(runner.os, 'macOS')
         uses: ./.github/conan_linuxmac_build
         with:
