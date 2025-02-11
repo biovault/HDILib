@@ -120,7 +120,7 @@ jobs:
           python-version: "3.11"
 
       - name: Windows build
-        if: startsWith(runner.os, 'Windows')
+        if: startsWith(matrix.os, 'Windows')
         uses: ./.github/conan_windows_build
         with:
           conan-visual-version: ${{matrix.build-cversion}}
@@ -131,7 +131,7 @@ jobs:
           hdilib-cdash-token: ${{secrets.HDILIB_TOKEN}}
 
       - name: Linux build
-        if: startsWith(runner.os, 'ubuntu')
+        if: startsWith(matrix.os, 'ubuntu')
         uses: ./.github/conan_linuxmac_build
         with:
           conan-compiler: ${{matrix.build-compiler}}
@@ -144,7 +144,7 @@ jobs:
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
       - name: Mac build
-        if: startsWith(runner.os, 'macOS')
+        if: startsWith(matrix.os, 'macOS')
         uses: ./.github/conan_linuxmac_build
         with:
           conan-compiler: ${{matrix.build-compiler}}
