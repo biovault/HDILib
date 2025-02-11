@@ -57,7 +57,6 @@ runs:
       run: |
         for /f "delims=" %%i in ('where cmake') do set CONAN_CMAKE_PROGRAM="%%i"
         set CONAN_USER_HOME=%cd%\_conan
-        set VS160COMNTOOLS="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools"
 
         echo Add LKEB artifactory as remote at URL: %CONAN_UPLOAD%
         conan remote add %CONAN_LKEB_ARTIFACTORY% %CONAN_UPLOAD%
