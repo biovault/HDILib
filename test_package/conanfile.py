@@ -35,6 +35,12 @@ class HDILibTestConan(ConanFile):
         tc.variables["lz4_ROOT"] = Path(
             self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
         ).as_posix()
+
+        if os_info.is_macos:
+            proc = subprocess.run("brew --prefix libomp", shell=True, capture_output=True)
+            omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
+            tc.variables["OpenMP_ROOT"] = omp_prefix_path
+
         tc.generate()
 
     def requirements(self):
