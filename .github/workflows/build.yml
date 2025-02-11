@@ -93,6 +93,16 @@ jobs:
             build-libcxx: libc++
             build-arch: armv8
 
+          - name: Macos_xcode16
+            os: macos-15
+            build-compiler: apple-clang
+            build-cversion: 16
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 16.2
+            build-libcxx: libc++
+            build-arch: armv8
+
     steps:
       - name: Checkout the source
         uses: actions/checkout@v4
