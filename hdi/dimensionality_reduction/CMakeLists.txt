@@ -9,14 +9,6 @@ add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 
-get_filename_component(HNSWLIB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/hnsw" REALPATH)
-target_include_directories(${PROJECT} PRIVATE ${HNSWLIB_INCLUDE_DIR})
-message (STATUS "HNSWLIB: " ${HNSWLIB_INCLUDE_DIR})
-
-get_filename_component(ANNOY_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../external/annoy/src" REALPATH)
-target_include_directories(${PROJECT} PRIVATE ${ANNOY_INCLUDE_DIR})
-message (STATUS "Annoy: " ${ANNOY_INCLUDE_DIR})
-
 # prefer static linking
 if(NOT FLANN_TARGET)
     if(TARGET flann::flann_cpp_s)
@@ -50,6 +42,9 @@ message (STATUS "Flann link library: " ${FLANN_TARGET})
 target_link_libraries(${PROJECT} PRIVATE ${FLANN_TARGET})
 message (STATUS "Linking lz4 library " ${LZ4_TARGET})
 target_link_libraries(${PROJECT} PRIVATE ${LZ4_TARGET})
+
+target_link_libraries(${PROJECT} PRIVATE hnswlib::hnswlib)
+target_link_libraries(${PROJECT} PRIVATE Annoy::Annoy)
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
@@ -95,31 +90,6 @@ if(${HDILib_INSTALL})
 
         endforeach()"
         COMPONENT PUBLIC_HEADERS
-    )
-
-    # Install dependency headers
-    if(NOT flann_INCLUDE_DIR)
-        get_target_property(flann_INCLUDE_DIR ${FLANN_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
-    endif()
-
-    if(flann_INCLUDE_DIR)
-        if(NOT flann_INCLUDE_DIR MATCHES "flann$")
-            set(flann_INCLUDE_DIR "${flann_INCLUDE_DIR}/flann")
-        endif()
-
-        message(STATUS "Using flann includes at: ${flann_INCLUDE_DIR}")
-        install(DIRECTORY "${flann_INCLUDE_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/flann" COMPONENT FLANN_HEADERS)
-    endif()
-
-    install(DIRECTORY "${HNSWLIB_INCLUDE_DIR}/hnswlib/" DESTINATION "${CMAKE_INSTALL_PREFIX}/include/hnswlib" COMPONENT HNSW_HEADERS)
-    install(CODE "foreach(ANNOY_HEADER annoylib.h kissrandom.h mman.h)
-            execute_process(
-                COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
-                    \"${ANNOY_INCLUDE_DIR}/\${ANNOY_HEADER}\" 
-                    \"${CMAKE_INSTALL_PREFIX}/include/\${ANNOY_HEADER}\"
-            )
-        endforeach()"
-        COMPONENT ANNOY_HEADERS
     )
 
     # Install cmake targets file

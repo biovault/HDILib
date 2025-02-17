@@ -181,8 +181,8 @@ namespace hdi{
       scalar_vector_type _rw_probabilities;
       std::vector<int> _knns;
 
-      scalar_vector_type _P; //! Conditional probalility distribution in the High-dimensional space
-      scalar_vector_type _Q; //! Conditional probalility distribution in the Low-dimensional space
+      scalar_vector_type _P; //! Conditional probability distribution in the High-dimensional space
+      scalar_vector_type _Q; //! Conditional probability distribution in the Low-dimensional space
       scalar_type _normalization_Q; //! Normalization factor of Q - Z in the original paper
 
       // Gradient descent

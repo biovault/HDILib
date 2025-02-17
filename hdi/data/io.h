@@ -33,6 +33,7 @@
 #ifndef IO_H
 #define IO_H
 
+#include <cstdint>
 
 namespace hdi{
   namespace utils{
@@ -149,17 +150,17 @@ namespace hdi{
         typedef uint32_t io_unsigned_int_type;
 
         //number of rows first
-        io_unsigned_int_type num_rows;
+        io_unsigned_int_type num_rows = 0;
         stream.read(reinterpret_cast<char*>(&num_rows),sizeof(io_unsigned_int_type));
         matrix.clear();
         matrix.resize(num_rows);
         for(io_unsigned_int_type j = 0; j < num_rows; ++j){
           //number of elements in the current row
-          io_unsigned_int_type num_elems;
+          io_unsigned_int_type num_elems = 0;
           stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
           for(io_unsigned_int_type i = 0; i < num_elems; ++i){
-            io_unsigned_int_type id;
-            io_scalar_type v;
+            io_unsigned_int_type id = 0;
+            io_scalar_type v = 0;
             stream.read(reinterpret_cast<char*>(&id),sizeof(io_unsigned_int_type));
             stream.read(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
             matrix[j][id] = v;
@@ -172,11 +173,11 @@ namespace hdi{
         typedef float io_scalar_type;
         typedef uint32_t io_unsigned_int_type;
 
-        io_unsigned_int_type num_elems;
+        io_unsigned_int_type num_elems = 0;
         stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
         vector.reserve(num_elems);
         for(io_unsigned_int_type i  = 0; i < num_elems; ++i){
-          io_scalar_type v;
+          io_scalar_type v = 0;
           stream.read(reinterpret_cast<char*>(&v),sizeof(io_scalar_type));
           vector.push_back(v);
         }
@@ -186,11 +187,11 @@ namespace hdi{
         typedef float io_scalar_type;
         typedef uint32_t io_unsigned_int_type;
 
-        io_unsigned_int_type num_elems;
+        io_unsigned_int_type num_elems = 0;
         stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
         vector.reserve(num_elems);
         for(io_unsigned_int_type i  = 0; i < num_elems; ++i){
-          io_unsigned_int_type v;
+          io_unsigned_int_type v = 0;
           stream.read(reinterpret_cast<char*>(&v),sizeof(io_unsigned_int_type));
           vector.push_back(v);
         }
@@ -201,11 +202,11 @@ namespace hdi{
         typedef uint32_t io_unsigned_int_type;
         typedef int32_t io_int_type;
 
-        io_unsigned_int_type num_elems;
+        io_unsigned_int_type num_elems = 0;
         stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
         vector.reserve(num_elems);
         for(io_unsigned_int_type i  = 0; i < num_elems; ++i){
-          io_int_type v;
+          io_int_type v = 0;
           stream.read(reinterpret_cast<char*>(&v),sizeof(io_int_type));
           vector.push_back(v);
         }
@@ -216,15 +217,15 @@ namespace hdi{
         typedef float io_scalar_type;
         typedef uint32_t io_unsigned_int_type;
 
-        io_unsigned_int_type num_elems;
+        io_unsigned_int_type num_elems = 0;
         stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
         vector.resize(num_elems);
         for(io_unsigned_int_type i  = 0; i < num_elems; ++i){
-          io_unsigned_int_type num_elems_inner;
+          io_unsigned_int_type num_elems_inner = 0;
           stream.read(reinterpret_cast<char*>(&num_elems_inner),sizeof(io_unsigned_int_type));
           vector[i].reserve(num_elems_inner);
           for(io_unsigned_int_type j  = 0; j < num_elems_inner; ++j){
-            io_unsigned_int_type v;
+            io_unsigned_int_type v = 0;
             stream.read(reinterpret_cast<char*>(&v),sizeof(io_unsigned_int_type));
             vector[i].push_back(v);
           }
@@ -236,18 +237,18 @@ namespace hdi{
         typedef float io_scalar_type;
         typedef uint32_t io_unsigned_int_type;
 
-        io_unsigned_int_type num_elems;
+        io_unsigned_int_type num_elems = 0;
         stream.read(reinterpret_cast<char*>(&num_elems),sizeof(io_unsigned_int_type));
         vector.resize(num_elems);
         for(io_unsigned_int_type i  = 0; i < num_elems; ++i){
-          io_unsigned_int_type num_elems_inner;
+          io_unsigned_int_type num_elems_inner = 0;
           stream.read(reinterpret_cast<char*>(&num_elems_inner),sizeof(io_unsigned_int_type));
           vector[i].resize(num_elems_inner);
           for(io_unsigned_int_type j  = 0; j < num_elems_inner; ++j){
-            io_unsigned_int_type num_elems_roaring;
+            io_unsigned_int_type num_elems_roaring = 0;
             stream.read(reinterpret_cast<char*>(&num_elems_roaring),sizeof(io_unsigned_int_type));
             for(io_unsigned_int_type k  = 0; k < num_elems_roaring; ++k){
-              io_unsigned_int_type v;
+              io_unsigned_int_type v = 0;
               stream.read(reinterpret_cast<char*>(&v),sizeof(io_unsigned_int_type));
               vector[i][j].add(v);
             }

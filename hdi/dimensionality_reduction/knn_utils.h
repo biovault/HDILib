@@ -39,6 +39,8 @@
 #include <mutex>
 #include <atomic>
 
+#include "hdi/utils/abstract_log.h"
+
 namespace hdi{
   namespace dr{
   
@@ -59,19 +61,41 @@ namespace hdi{
       KNN_METRIC_DOT = 5
     };
 
-	//! Returns the number of supported KNN libraries. 
-	//! This function should be considered deprecated and kept for backward comppatibility. New code should use the supported_knn_libraries function.
-    int HierarchicalSNE_NrOfKnnAlgorithms();
+	  //! Returns the number of supported KNN libraries. 
+	  //! This function should be considered deprecated and kept for backward compatibility. New code should use the supported_knn_libraries function.
+    constexpr int HierarchicalSNE_NrOfKnnAlgorithms()
+    {
+      return 3;
+    }
 
     //! Returns both the name/label and index of the supported KNN libraries since this can depend on compiler support. 
-	//! This function is especially useful for building user-interfaces where the user can select which KNN library to use for a specific task (e.g. t-SNE or HSNE). 
-	//! Alternatively it can be used to offer a look-up table to translate the currently set KNN Library index back to human readable text.
+	  //! This function is especially useful for building user-interfaces where the user can select which KNN library to use for a specific task (e.g. t-SNE or HSNE). 
+	  //! Alternatively it can be used to offer a look-up table to translate the currently set KNN Library index back to human readable text.
     std::map<std::string, int> supported_knn_libraries();
 
     //! Returns the name/label and index of distance metrics supported by a specific KNN library.
-	//! This function is especially useful for building user-interfaces where the user can select both a KNN library and a distance metric since not every KNN library supports the same distance metric. 
-	//! Alternatively it can be used to offer a look-up table to translate the currently set KNN distance metric index back to human readable text.
+	  //! This function is especially useful for building user-interfaces where the user can select both a KNN library and a distance metric since not every KNN library supports the same distance metric. 
+	  //! Alternatively it can be used to offer a look-up table to translate the currently set KNN distance metric index back to human readable text.
     std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib);
+
+    struct KnnParameters {
+      float       _perplexity = 30.f;                 //! Perplexity value in evert distribution.
+      int         _perplexity_multiplier = 3;         //! Multiplied by the perplexity gives the number of nearest neighbors used
+      int         _num_trees = 4;                     //! Number of trees used int the AKNN
+      int         _num_checks = 1024;                 //! Number of checks used int the AKNN
+      knn_library _aknn_algorithm = KNN_FLANN;
+      knn_distance_metric _aknn_metric = KNN_METRIC_EUCLIDEAN;
+      double      _aknn_algorithmP1 = 16;
+      double      _aknn_algorithmP2 = 200;
+    };
+
+    struct KnnStatistics {
+      float       _trees_construction_time = 0.f;
+      float       _aknn_time = 0.f;
+    };
+
+    void computeApproximateNearestNeighbors(float* high_dimensional_data, unsigned int num_dim, unsigned int num_dps, const KnnParameters& knnParameters, std::vector<float>& distances_squared, std::vector<int>& indices, KnnStatistics& knnStatistics, utils::AbstractLog* _logger = nullptr);
+
   }
 }
 

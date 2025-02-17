@@ -48,8 +48,6 @@
 namespace hdi {
   namespace dr {
 
-    int HierarchicalSNE_NrOfKnnAlgorithms();
-
     //! Hierarchical Stochastic Neighbor Embedding algorithm
     /*!
       Algorithm for the generation of a hierarchical representation of the data as presented in the Hierarchical Stochastic Neighbor Embedding paper
