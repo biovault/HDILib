@@ -117,18 +117,22 @@ FetchContent_Declare(
   hnswlib
   GIT_REPOSITORY https://github.com/nmslib/hnswlib
   GIT_TAG v0.8.0
+  EXCLUDE_FROM_ALL
 )
-
-FetchContent_MakeAvailable(hnswlib)
 
 message (STATUS "Fetching annoy...")
 FetchContent_Declare(
   annoy
   GIT_REPOSITORY https://github.com/spotify/annoy
   GIT_TAG v1.17.2
+  EXCLUDE_FROM_ALL
 )
 
-FetchContent_MakeAvailable(annoy)
+# we only inlcude, so this is not necessary
+# FetchContent_MakeAvailable(
+    # annoy
+    # hnswlib
+# )
 
 # -----------------------------------------------------------------------------
 # Projects

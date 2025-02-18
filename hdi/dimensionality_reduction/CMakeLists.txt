@@ -8,6 +8,8 @@ file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
+target_include_directories(${PROJECT} PRIVATE "${hnswlib_SOURCE_DIR}")
+target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}/src")
 
 # prefer static linking
 if(NOT FLANN_TARGET)
@@ -42,9 +44,6 @@ message (STATUS "Flann link library: " ${FLANN_TARGET})
 target_link_libraries(${PROJECT} PRIVATE ${FLANN_TARGET})
 message (STATUS "Linking lz4 library " ${LZ4_TARGET})
 target_link_libraries(${PROJECT} PRIVATE ${LZ4_TARGET})
-
-target_link_libraries(${PROJECT} PRIVATE hnswlib::hnswlib)
-target_link_libraries(${PROJECT} PRIVATE Annoy::Annoy)
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
