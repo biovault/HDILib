@@ -123,6 +123,10 @@ class HDILibConan(ConanFile):
             cmake_release.build(build_type="Release")
             cmake_release.install(build_type="Release")
 
+            cmake_release = self._configure_cmake()
+            cmake_release.build(build_type="RelWithDebInfo")
+            cmake_release.install(build_type="RelWithDebInfo")
+
     def package_id(self):
         # The package contains both Debug and Release build types
         del self.info.settings.build_type
@@ -141,3 +145,4 @@ class HDILibConan(ConanFile):
         # (*.pdb) if building the Visual Studio version
         if self.settings.compiler == "Visual Studio":
             self.copy("*.pdb", dst="lib/Debug", keep_path=False)
+            self.copy("*.pdb", dst="lib/RelWithDebInfo", keep_path=False)
