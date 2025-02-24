@@ -3,9 +3,11 @@ import platform
 from pathlib import Path
 from conans import ConanFile, tools
 from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps
+from conans.tools import os_info
 import shutil
+import subprocess
 
-required_conan_version = "~=1.64.0"
+required_conan_version = "~=1.66.0"
 
 # This is a "hello world" type test that checks that the conan package can be consumed
 # i.e. that that cmake support works, consumption of HDILib headers (compiler) and lib (linker) works
@@ -35,6 +37,12 @@ class HDILibTestConan(ConanFile):
         tc.variables["lz4_ROOT"] = Path(
             self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
         ).as_posix()
+
+        if os_info.is_macos:
+            proc = subprocess.run("brew --prefix libomp", shell=True, capture_output=True)
+            omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
+            tc.variables["OpenMP_ROOT"] = omp_prefix_path
+
         tc.generate()
 
     def requirements(self):

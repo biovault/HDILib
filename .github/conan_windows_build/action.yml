@@ -3,7 +3,7 @@ description: "Encapsulate cmake composite run steps that are common for Windows,
 # reference https://docs.github.com/en/free-pro-team@latest/actions/creating-actions/creating-a-composite-run-steps-action
 inputs:
   conan-visual-version:
-    description: "MSVC version: 15, 16 represent msvc-2017 or msvc-2019"
+    description:"MSVC version: 16, 17 represent msvc-2019 and msvc-2022"
     required: true
   conan-build-type:
     description: "Empty or Analysis"
@@ -26,10 +26,7 @@ runs:
   steps:
     - name: Install conan & build configuration
       run: |
-        pip install wheel
-        pip install conan==1.64.0
-        pip install "markupsafe<2.1"
-        pip install -Iv cmake>=3.17
+        pip install conan~=1.66.0
         pip install packaging
 
         REM Fish the package name from the conanfile.py
@@ -57,7 +54,6 @@ runs:
       run: |
         for /f "delims=" %%i in ('where cmake') do set CONAN_CMAKE_PROGRAM="%%i"
         set CONAN_USER_HOME=%cd%\_conan
-        set VS160COMNTOOLS="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools"
 
         echo Add LKEB artifactory as remote at URL: %CONAN_UPLOAD%
         conan remote add %CONAN_LKEB_ARTIFACTORY% %CONAN_UPLOAD%
