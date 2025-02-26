@@ -45,7 +45,7 @@ Reference to cite when you use HDI in a research paper:
 ### GIT Cloning 
 With the latest git versions you shoule use the following command:
 ```bash
-git clone --recurse-submodules https://github.com/biovault/HDILib.git
+git clone https://github.com/biovault/HDILib.git
 ```
 
 ### Requirements
