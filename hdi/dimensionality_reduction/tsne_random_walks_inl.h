@@ -35,32 +35,16 @@
 #define TSNE_RANDOM_WALKS_INL
 
 #include "hdi/dimensionality_reduction/tsne_random_walks.h"
+#include "hdi/dimensionality_reduction/knn_utils.h"
 #include "hdi/utils/math_utils.h"
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
+
 #include <random>
 
 #ifdef __USE_GCD__
 #include <dispatch/dispatch.h>
 #endif
-
-#pragma warning( push )
-#pragma warning( disable : 4267)
-#pragma warning( push )
-#pragma warning( disable : 4291)
-#pragma warning( push )
-#pragma warning( disable : 4996)
-#pragma warning( push )
-#pragma warning( disable : 4018)
-#pragma warning( push )
-#pragma warning( disable : 4244)
-//#define FLANN_USE_CUDA
-#include "flann/flann.h"
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
-#pragma warning( pop )
 
 namespace hdi{
   namespace dr{
@@ -197,24 +181,22 @@ namespace hdi{
     void TSNERandomWalks<scalar_type>::computeNeighborhoodGraph(){
       utils::ScopedTimer<scalar_type, utils::Milliseconds> timer(_statistics._neighborhood_graph_time);
       utils::secureLog(_logger,"Computing the neighborhood graph...");
-      flann::Matrix<scalar_type> dataset  (_high_dimensional_data,_num_dps,_dimensionality);
-      flann::Matrix<scalar_type> query  (_high_dimensional_data,_num_dps,_dimensionality);
-      
-      flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeIndexParams(4)); //TEMP
-      //flann::Index<flann::L2<scalar_type> > index(dataset, flann::KDTreeCuda3dIndexParams()); //TEMP
-      index.buildIndex();
 
       unsigned int nn = _params._num_neighbors + 1;
 
-      _knns.resize(_num_dps*nn);
-      _rw_probabilities.resize(_num_dps*nn);
+      // Approximate Nearest Neighbors Search
+      {
+        KnnParameters knnParams;
+        KnnStatistics knnStatistics;
 
-      flann::Matrix<int> indices_mat(_knns.data(), query.rows, nn);
-      flann::Matrix<scalar_type> dists_mat(_rw_probabilities.data(), query.rows, nn);
+        knnParams._perplexity = nn / 3.;
+        knnParams._perplexity_multiplier = 3.;
+        knnParams._aknn_algorithm = knn_library::KNN_FLANN;
 
-      flann::SearchParams params(1024); //TEMP
-      params.cores = 8;
-      index.knnSearch(query, indices_mat, dists_mat, nn, params);
+        computeApproximateNearestNeighbors(_high_dimensional_data, _dimensionality, _num_dps, knnParams, _rw_probabilities, _knns, knnStatistics, _logger);
+
+        _statistics._neighborhood_graph_time = knnStatistics._trees_construction_time + knnStatistics._aknn_time;
+      }
 
       for(int d = 0; d < _num_dps; ++d){
         {

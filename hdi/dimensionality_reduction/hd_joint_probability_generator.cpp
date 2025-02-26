@@ -34,18 +34,6 @@
 
 namespace hdi{
   namespace dr{
-	  int HDJointProbabilityGenerator_NrOfKnnAlgorithms()
-	  {
-          int numSupported = 1;
-#ifdef HNSWLIB_SUPPORTED
-          numSupported++;
-#endif
-        
-#ifdef __USE_ANNOY__
-          numSupported++;
-#endif
-          return numSupported;
-	  }
     template class HDJointProbabilityGenerator<float>;
   }
 }

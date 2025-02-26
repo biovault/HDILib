@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.15)
+cmake_minimum_required (VERSION 3.22)
 
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
@@ -11,7 +11,7 @@ option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC"
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
-set(HDILib_VERSION "undefined" CACHE STRING "HDILib Library version")
+set(HDILib_VERSION "1.2.10" CACHE STRING "HDILib Library version")
 
 if (HDILib_ENABLE_AVX)
     message(STATUS "ENABLE_AVX is ON")
@@ -24,6 +24,9 @@ endif()
 if (HDILib_ENABLE_PID)
     message(STATUS "Position independent code compilation ON")
 endif()
+
+message(STATUS "Building: HDILib ${HDILib_VERSION}")
+message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 
 # -----------------------------------------------------------------------------
 # CMake Options
@@ -49,8 +52,7 @@ if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}" AND NOT ${IN_CONAN_B
 endif()
 
 #The cmake make sub directory contains the i.a. ConanSetup.cmake 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-  "${PROJECT_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
 # Test hardware avx capabilities
 include(CMakeSetOptimizationAndAVX)
@@ -68,7 +70,7 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.12" CACHE STRING "Minimum OS X deployment version")
 endif()
 
-message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+include(FetchContent)
 
 # -----------------------------------------------------------------------------
 # Dependencies
@@ -109,6 +111,30 @@ elseif(CMAKE_GENERATOR STREQUAL Xcode)
 else()
     message(WARNING, "OpenMP not found!")
 endif()
+
+message (STATUS "Fetching hnswlib...")
+FetchContent_Declare(
+  hnswlib
+  GIT_REPOSITORY https://github.com/nmslib/hnswlib
+  GIT_TAG v0.8.0
+  EXCLUDE_FROM_ALL
+)
+
+FetchContent_MakeAvailable(hnswlib)
+
+message(STATUS "hnswlib at ${hnswlib_SOURCE_DIR}")
+
+message (STATUS "Fetching annoy...")
+FetchContent_Declare(
+  annoy
+  GIT_REPOSITORY https://github.com/spotify/annoy
+  GIT_TAG v1.17.2
+  EXCLUDE_FROM_ALL
+)
+
+FetchContent_MakeAvailable(annoy)
+
+message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 
 # -----------------------------------------------------------------------------
 # Projects

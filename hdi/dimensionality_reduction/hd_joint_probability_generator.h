@@ -33,21 +33,17 @@
 #ifndef HD_JOINT_PROBABILITY_GENERATOR_H
 #define HD_JOINT_PROBABILITY_GENERATOR_H
 
-#include <vector>
-#include <stdint.h>
+#include "hdi/data/map_mem_eff.h"
+#include "hdi/dimensionality_reduction/knn_utils.h"
 #include "hdi/utils/assert_by_exception.h"
 #include "hdi/utils/abstract_log.h"
-#include "hdi/dimensionality_reduction/knn_utils.h"
-#include <map>
-#include <unordered_map>
+
+#include <vector>
+#include <stdint.h>
 #include <random>
-#include <unordered_set>
-#include "hdi/data/map_mem_eff.h"
 
 namespace hdi{
   namespace dr{
-
-    int HDJointProbabilityGenerator_NrOfKnnAlgorithms();
 
     //! Generator for a joint probability distribution that describes similarities in the high dimensional data
     /*!
@@ -93,9 +89,8 @@ namespace hdi{
 
       public:
         scalar_type _total_time;
-        scalar_type _trees_construction_time;
-        scalar_type _aknn_time;
         scalar_type _distribution_time;
+        KnnStatistics _knnStatistics;
       };
 
     public:

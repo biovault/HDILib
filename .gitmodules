@@ -1,6 +1,0 @@
-[submodule "external/hnsw"]
-	path = external/hnsw
-	url = https://github.com/nmslib/hnswlib.git
-[submodule "external/annoy"]
-	path = external/annoy
-	url = https://github.com/spotify/annoy.git
