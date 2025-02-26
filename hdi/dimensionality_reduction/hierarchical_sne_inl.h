@@ -44,11 +44,12 @@
 #include "hdi/utils/memory_utils.h"
 #include "hdi/utils/scoped_timers.h"
 
-#include <random>
+#include <algorithm>
 #include <chrono>
+#include <numeric>
+#include <random>
 #include <unordered_set>
 #include <unordered_map>
-#include <numeric>
 
 #if defined(_OPENMP)
 #include <omp.h>
