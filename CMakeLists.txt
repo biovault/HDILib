@@ -120,6 +120,8 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 
+FetchContent_MakeAvailable(hnswlib)
+
 message(STATUS "hnswlib at ${hnswlib_SOURCE_DIR}")
 
 message (STATUS "Fetching annoy...")
@@ -130,13 +132,9 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 
-message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
+FetchContent_MakeAvailable(annoy)
 
-# we only inlcude, so this is not necessary
-# FetchContent_MakeAvailable(
-    # annoy
-    # hnswlib
-# )
+message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 
 # -----------------------------------------------------------------------------
 # Projects
