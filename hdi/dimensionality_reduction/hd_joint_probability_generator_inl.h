@@ -39,8 +39,10 @@
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
 #include "hdi/dimensionality_reduction/knn_utils.h"
-#include <random>
+
+#include <algorithm>
 #include <numeric>
+#include <random>
 
 #ifdef _OPENMP
 #include "omp.h"
