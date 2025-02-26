@@ -120,6 +120,8 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 
+message(STATUS "hnswlib at ${hnswlib_SOURCE_DIR}")
+
 message (STATUS "Fetching annoy...")
 FetchContent_Declare(
   annoy
@@ -127,6 +129,8 @@ FetchContent_Declare(
   GIT_TAG v1.17.2
   EXCLUDE_FROM_ALL
 )
+
+message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 
 # we only inlcude, so this is not necessary
 # FetchContent_MakeAvailable(

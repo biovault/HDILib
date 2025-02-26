@@ -5,12 +5,12 @@
 #include "hdi/utils/scoped_timers.h"
 
 #pragma warning(disable:4477)
-#include "annoylib.h"
-#include "kissrandom.h"
+#include <annoylib.h>
+#include <kissrandom.h>
 #pragma warning(default:4477)
-#include "flann/flann.h"
-#include "hnswlib/hnswlib.h"
-#include "hnswlib/space_l2.h"
+#include <flann/flann.h>
+#include <hnswlib/hnswlib.h>
+#include <hnswlib/space_l2.h>
 
 #include <stdexcept>
 
