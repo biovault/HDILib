@@ -40,7 +40,6 @@
 #include "hdi/utils/scoped_timers.h"
 #include "hdi/dimensionality_reduction/knn_utils.h"
 
-#include <algorithm>
 #include <numeric>
 #include <random>
 
