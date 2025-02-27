@@ -257,7 +257,7 @@ namespace hdi {
         knnParams._aknn_algorithmP1 = _params._aknn_algorithmP1;
         knnParams._aknn_algorithmP2 = _params._aknn_algorithmP2;
 
-        computeApproximateNearestNeighbors(distance_based_probabilities.data(), _dimensionality, _num_dps, knnParams, distance_based_probabilities, neighborhood_graph, knnStatistics, _logger);
+        computeApproximateNearestNeighbors(_high_dimensional_data, _dimensionality, _num_dps, knnParams, distance_based_probabilities, neighborhood_graph, knnStatistics, _logger);
       }
 
       {
