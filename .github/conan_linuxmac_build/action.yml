@@ -45,6 +45,10 @@ runs:
           sudo apt-get install -y ninja-build; 
         fi
 
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-compiler-version }} == "10" ]]; then
+          apt install gcc-10 g++-10 libstdc++-10-dev
+        fi
+
         export CONAN_CMAKE_PROGRAM=`which cmake`
         echo CMake version:
         cmake --version
