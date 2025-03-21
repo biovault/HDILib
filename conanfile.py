@@ -96,10 +96,10 @@ class HDILibConan(ConanFile):
             self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
         ).as_posix()
         tc.variables["IN_CONAN_BUILD"] = "TRUE"
-        if self.settings.os == "Linux":
-            tc.variables["CMAKE_C_STANDARD"] = "17"
-            tc.variables["CMAKE_C_STANDARD_REQUIRED"] = "ON"
-            tc.variables["CMAKE_C_EXTENSIONS"] = "OFF"
+        # if self.settings.os == "Linux":
+        #    tc.variables["CMAKE_C_STANDARD"] = "17"
+        #    tc.variables["CMAKE_C_STANDARD_REQUIRED"] = "ON"
+        #    tc.variables["CMAKE_C_EXTENSIONS"] = "OFF"
         if os_info.is_macos:
             proc = subprocess.run(
                 "brew --prefix libomp", shell=True, capture_output=True
