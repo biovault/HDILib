@@ -98,6 +98,7 @@ class HDILibConan(ConanFile):
         tc.variables["IN_CONAN_BUILD"] = "TRUE"
         if self.settings.os == "Linux":
             tc.variables["CMAKE_C_STANDARD"] = "17"
+            tc.variables["CMAKE_C_STANDARD_REQUIRED"] = "ON"
         if os_info.is_macos:
             proc = subprocess.run(
                 "brew --prefix libomp", shell=True, capture_output=True
