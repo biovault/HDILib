@@ -15,11 +15,16 @@ required_conan_version = "~=1.66.0"
 class HDILibConan(ConanFile):
     name = "HDILib"
     version = "1.2.10"
-    description = "HDILib is a library for the scalable analysis of large and high-dimensional data. "
+    description = (
+        "HDILib is a library for the scalable analysis of large and high-dimensional"
+        " data. "
+    )
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
     author = "B. van Lew <b.van_lew@lumc.nl>"  # conanfile author
-    license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+    license = (  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+        "MIT"
+    )
     default_user = "lkeb"
     default_channel = "stable"
 
@@ -91,9 +96,12 @@ class HDILibConan(ConanFile):
             self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
         ).as_posix()
         tc.variables["IN_CONAN_BUILD"] = "TRUE"
-
+        if self.settings.os == "Linux":
+            tc.variables["CMAKE_C_STANDARD"] = "17"
         if os_info.is_macos:
-            proc = subprocess.run("brew --prefix libomp", shell=True, capture_output=True)
+            proc = subprocess.run(
+                "brew --prefix libomp", shell=True, capture_output=True
+            )
             omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
             tc.variables["OpenMP_ROOT"] = omp_prefix_path
 
@@ -108,7 +116,8 @@ class HDILibConan(ConanFile):
 
     def build(self):
         print(
-            f"Build folder {self.build_folder} \n Package folder {self.package_folder}\n Source folder {self.source_folder}"
+            f"Build folder {self.build_folder} \n Package folder"
+            f" {self.package_folder}\n Source folder {self.source_folder}"
         )
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
