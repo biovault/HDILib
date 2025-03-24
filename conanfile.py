@@ -99,8 +99,8 @@ class HDILibConan(ConanFile):
 
         # Restrict the C standard to 17 to avoid the issues with
         # isoc23 when consuming this in manylinux for nptsne building
-        if self.settings.os == "Linux":
-            tc.variables["CMAKE_C_FLAGS"] = "${CMAKE_C_FLAGS} -m64 -std=c17"
+        if self.settings.os == "Linux" and self.settings.compiler.version == "14":
+            tc.variables["CMAKE_C_FLAGS"] = "${CMAKE_C_FLAGS} -m64 -std=c99"
         # if self.settings.os == "Linux":
         #    tc.variables["CMAKE_C_STANDARD"] = "17"
         #    tc.variables["CMAKE_C_STANDARD_REQUIRED"] = "ON"
