@@ -96,6 +96,11 @@ class HDILibConan(ConanFile):
             self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
         ).as_posix()
         tc.variables["IN_CONAN_BUILD"] = "TRUE"
+
+        # Restrict the C standard to 17 to avoid the issues with
+        # isoc23 when consuming this in manylinux for nptsne building
+        if self.settings.os == "Linux":
+            tc.variables["CMAKE_C_FLAGS"] = "${CMAKE_C_FLAGS} -m64 -std=c17"
         # if self.settings.os == "Linux":
         #    tc.variables["CMAKE_C_STANDARD"] = "17"
         #    tc.variables["CMAKE_C_STANDARD_REQUIRED"] = "ON"
