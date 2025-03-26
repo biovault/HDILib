@@ -21,7 +21,10 @@ if(HDILib_ENABLE_PID)
 endif()
 
 # For compatibility with cibuildwheel consumer
-set_target_properties(${PROJECT} PROPERTIES C_STANDARD 99)
+target_compile_options(${target} PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-std=c99>   # For GCC and Clang
+    $<$<CXX_COMPILER_ID:MSVC>:/std:c99>        # For MSVC
+)
 
 if(HDILib_ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
