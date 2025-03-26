@@ -20,6 +20,9 @@ if(HDILib_ENABLE_PID)
     set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
+# For compatibility with cibuildwheel consumer
+set_target_properties(${PROJECT} PROPERTIES C_STANDARD 99)
+
 if(HDILib_ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         target_compile_options(${PROJECT} PRIVATE /analyze)
