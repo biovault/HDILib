@@ -21,7 +21,7 @@ if(HDILib_ENABLE_PID)
 endif()
 
 # For compatibility with cibuildwheel consumer
-target_compile_options(${target} PRIVATE
+target_compile_options(${PROJECT} PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang>:-std=c99>   # For GCC and Clang
     $<$<CXX_COMPILER_ID:MSVC>:/std:c99>        # For MSVC
 )
