@@ -20,7 +20,6 @@
 */
 
 #define _ISOC99_SOURCE
-#define __USE_ISOC99
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
