@@ -11,6 +11,10 @@ target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${hnswlib_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}/src")
 
+if(LINUX) 
+    target_include_directories(${PROJECT} PRIVATE /usr/include/x86_64-linux-gnu/)
+endif()
+
 # prefer static linking
 if(NOT FLANN_TARGET)
     if(TARGET flann::flann_cpp_s)
@@ -52,12 +56,6 @@ endif()
 if(HDILib_ENABLE_PID)
     set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-
-# For compatibility with cibuildwheel consumer
-target_compile_options(${PROJECT} PRIVATE
-    $<$<CXX_COMPILER_ID:GNU,Clang>:-std=c99>   # For GCC and Clang
-    $<$<CXX_COMPILER_ID:MSVC>:/std:c99>        # For MSVC
-)
 
 if(HDILib_ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
