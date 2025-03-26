@@ -8,11 +8,6 @@ add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 
-if(LINUX) 
-    target_include_directories(${PROJECT} PRIVATE /usr/include/x86_64-linux-gnu/)
-endif()
-
-
 #set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 if(OpenMP_CXX_FOUND)

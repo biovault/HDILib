@@ -102,12 +102,9 @@ class HDILibConan(ConanFile):
         if self.settings.os == "Linux" and self.settings.compiler.version == "14":
 
             tc.variables["CMAKE_C_FLAGS"] = (
-                "${CMAKE_C_FLAGS} -m64 -std=c99  -U_ISOC23_SOURCE -D_ISOC99_SOURCE"
-                " -D__GNU_SOURCE"
+                "${CMAKE_C_FLAGS} -m64 -std=c99 -D_ISOC99_SOURCE"
             )
-            tc.variables["CMAKE_CXX_FLAGS"] = (
-                "${CMAKE_CXX_FLAGS} -U_ISOC23_SOURCE -D_ISOC99_SOURCE -D__GNU_SOURCE"
-            )
+            tc.variables["CMAKE_CXX_FLAGS"] = "${CMAKE_CXX_FLAGS} -D_ISOC99_SOURCE"
         # if self.settings.os == "Linux":
         #    tc.variables["CMAKE_C_STANDARD"] = "17"
         #    tc.variables["CMAKE_C_STANDARD_REQUIRED"] = "ON"
