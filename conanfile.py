@@ -103,9 +103,10 @@ class HDILibConan(ConanFile):
 
             tc.variables["CMAKE_C_FLAGS"] = (
                 "${CMAKE_C_FLAGS} -m64 -std=c99  -U_ISOC23_SOURCE -D_ISOC99_SOURCE"
+                " -D__GNU_SOURCE"
             )
             tc.variables["CMAKE_CXX_FLAGS"] = (
-                "${CMAKE_CXX_FLAGS} -U_ISOC23_SOURCE -D_ISOC99_SOURCE"
+                "${CMAKE_CXX_FLAGS} -U_ISOC23_SOURCE -D_ISOC99_SOURCE -D__GNU_SOURCE"
             )
         # if self.settings.os == "Linux":
         #    tc.variables["CMAKE_C_STANDARD"] = "17"
