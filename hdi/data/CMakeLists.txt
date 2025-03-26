@@ -8,10 +8,6 @@ add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 
-if(LINUX) 
-    target_include_directories(${PROJECT} PRIVATE /usr/include/x86_64-linux-gnu/)
-endif()
-
 target_link_libraries(${PROJECT} PRIVATE ${OPENGL_LIBRARIES})
 
 set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
