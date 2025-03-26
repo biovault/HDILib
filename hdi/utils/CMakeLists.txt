@@ -14,6 +14,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+target_compile_definitions(${PROJECT} PRIVATE _ISOC99_SOURCE _GNU_SOURCE)
+
 if(HDILib_ENABLE_PID)
     set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
