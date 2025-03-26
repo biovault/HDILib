@@ -51,7 +51,7 @@ runs:
           sudo update-alternatives --set gcc /usr/bin/gcc-10
         fi
 
-        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
           echo Install Glibc Headers
           sudo apt update && sudo apt install -y libc6-dev
           echo stdio.h location
