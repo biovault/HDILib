@@ -19,6 +19,7 @@
         https://glad.dav1d.de/#profile=compatibility&language=c&specification=gl&loader=on&api=gl%3D4.3
 */
 
+#define __USE_ISOC99
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
