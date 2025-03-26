@@ -51,13 +51,6 @@ runs:
           sudo update-alternatives --set gcc /usr/bin/gcc-10
         fi
 
-        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
-          echo Install Glibc Headers
-          sudo apt update && sudo apt install -y libc6-dev
-          echo stdio.h location
-          echo '#include <stdio.h>' | g++ -E -v -xc - 2>&1 | grep "stdio.h"
-        fi
-
         export CONAN_CMAKE_PROGRAM=`which cmake`
         echo CMake version:
         cmake --version
