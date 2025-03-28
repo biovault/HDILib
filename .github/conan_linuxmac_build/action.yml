@@ -55,7 +55,6 @@ runs:
           sudo update-alternatives --set gcc /usr/bin/gcc-10
         fi
 
-        https://ftp.gnu.org/gnu/libc/glibc-2.28.tar.gz
         export CONAN_CMAKE_PROGRAM=`which cmake`
         echo CMake version:
         cmake --version

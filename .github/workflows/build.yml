@@ -200,10 +200,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup python version
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+#      - name: Setup python version
+#        uses: actions/setup-python@v5
+#        with:
+#          python-version: "3.11"
 
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
