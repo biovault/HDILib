@@ -205,18 +205,6 @@ jobs:
           python3 --version
           python3 -m ensurepip --upgrade
           pip3 --version
-
-      - name: Install Python in the container
-        run: |
-          # Install Python 3.11 inside the container
-          curl -sSL https://www.python.org/ftp/python/3.11.11/Python-3.11.11.tgz -o Python.tgz
-          tar -xzf Python.tgz
-          cd Python-3.11.11
-          ./configure --enable-optimizations
-          make -j$(nproc)
-          make altinstall
-          ln -s /usr/local/bin/python3.11 /usr/bin/python3
-          ln -s /usr/local/bin/pip3.11 /usr/bin/pip3
   
       - name: Verify Python installation
         run: |
