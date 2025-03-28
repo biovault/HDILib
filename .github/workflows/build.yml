@@ -177,3 +177,43 @@ jobs:
           build-arch: ${{matrix.build-arch}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+
+  Python-ManyLinux-2-28-Build:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28
+    strategy:
+      matrix:
+        include: 
+          - name: python manylinux_2_28
+            build-cc: gcc
+            build-cxx: g++
+            build-compiler: gcc
+            build-cversion: 14
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++11
+            build-arch: x86_64      
+    
+    steps:
+      - name: Checkout the source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Linux build
+        uses: ./.github/conan_linuxmac_build
+        with:
+          conan-compiler: ${{matrix.build-compiler}}
+          conan-compiler-version: ${{matrix.build-cversion}}
+          conan-libcxx-version: ${{matrix.build-libcxx}}
+          conan-build-type: ${{matrix.build-config}}
+          conan-build-os: ${{matrix.build-os}}
+          conan-channel: python
+          build-arch: ${{matrix.build-arch}}
+          conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
+          conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}

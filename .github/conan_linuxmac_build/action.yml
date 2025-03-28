@@ -23,6 +23,10 @@ inputs:
   conan-build-os:
     description: "Linux or Macos"
     required: true
+  conan-channel:
+    description: "The reference channel one of [stable python]"
+    default: "stable" # Default value for input2
+    required: false
   build-arch:
     description: "either x86_64 or armv8 (for macos)"
     required: true
@@ -51,6 +55,7 @@ runs:
           sudo update-alternatives --set gcc /usr/bin/gcc-10
         fi
 
+        https://ftp.gnu.org/gnu/libc/glibc-2.28.tar.gz
         export CONAN_CMAKE_PROGRAM=`which cmake`
         echo CMake version:
         cmake --version
@@ -91,9 +96,9 @@ runs:
         export HOMEBREW_NO_AUTO_UPDATE=1
         export CONAN_PACKAGE_VERSION=`conan inspect --raw version conanfile.py`
         if [[ ${{ inputs.conan-build-os }} == "Macos" ]] && [[ ${{ inputs.conan-compiler-version }} == "14" ]]; then
-          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/stable -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/${{ inputs.conan-channel }} -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
         else
-          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/stable -pr:h action_build -pr:b action_build -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/${{ inputs.conan-channel }} -pr:h action_build -pr:b action_build -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
         fi
 
       shell: bash
