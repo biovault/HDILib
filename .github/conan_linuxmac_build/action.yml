@@ -42,10 +42,8 @@ runs:
   steps:
     - name: Install conan & build configuration
       run: |
-        alias python=python3
-        alias pip=pip3
-        pip install conan~=1.66.0
-        pip install packaging
+        pip3 install conan~=1.66.0
+        pip3 install packaging
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then 
           sudo apt-get install -y ninja-build; 
