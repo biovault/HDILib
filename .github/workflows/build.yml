@@ -200,10 +200,22 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Setup python version
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Install Python in the container
+        run: |
+          # Install Python 3.11 inside the container
+          curl -sSL https://www.python.org/ftp/python/3.11.11/Python-3.11.11.tgz -o Python.tgz
+          tar -xzf Python.tgz
+          cd Python-3.11.11
+          ./configure --enable-optimizations
+          make -j$(nproc)
+          make altinstall
+          ln -s /usr/local/bin/python3.11 /usr/bin/python3
+          ln -s /usr/local/bin/pip3.11 /usr/bin/pip3
+  
+      - name: Verify Python installation
+        run: |
+          python3 --version
+          pip3 --version
 
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
