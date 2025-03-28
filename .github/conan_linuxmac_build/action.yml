@@ -48,7 +48,7 @@ runs:
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
           if [[ ${{ inputs.conan-channel }} == "python" ]]; then 
             dnf install -y ninja-build;
-            dnf install -y libomp-devel
+            yum install -y libomp;
           else
             sudo apt-get install -y ninja-build;
           fi
