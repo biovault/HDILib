@@ -172,7 +172,7 @@ jobs:
 
   Python-ManyLinux-2-28-Build:
     runs-on: ubuntu-latest
-    container: quay.io/pypa/manylinux_2_28_x86_64
+    container: quay.io/pypa/manylinux_2_28
     strategy:
       matrix:
         include: 
@@ -185,23 +185,18 @@ jobs:
             build-os: Linux
             build-libcxx: libstdc++11
             build-arch: x86_64      
-
+    
     steps:
       - name: Checkout the source
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Verify default Python installation
-        run: |
-          python3 --version
-          python3 -m ensurepip --upgrade
-          pip3 --version
-  
-      - name: Verify Python installation
-        run: |
-          python3 --version
-          pip3 --version
+      - name: Setup python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
         with:
@@ -214,4 +209,3 @@ jobs:
           build-arch: ${{matrix.build-arch}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
-  
