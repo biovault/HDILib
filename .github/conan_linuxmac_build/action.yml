@@ -47,7 +47,7 @@ runs:
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
           if [[ ${{ inputs.conan-channel }} == "python" ]]; then 
-            apt-get install -y ninja-build;
+            dnf install -y ninja-build;
           else
             sudo apt-get install -y ninja-build;
           fi
