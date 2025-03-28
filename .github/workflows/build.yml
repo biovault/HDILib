@@ -200,6 +200,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Verify default Python installation
+        run: |
+          python3 --version
+          pip3 --version
+
       - name: Install Python in the container
         run: |
           # Install Python 3.11 inside the container
