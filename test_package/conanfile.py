@@ -39,7 +39,9 @@ class HDILibTestConan(ConanFile):
         ).as_posix()
 
         if os_info.is_macos:
-            proc = subprocess.run("brew --prefix libomp", shell=True, capture_output=True)
+            proc = subprocess.run(
+                "brew --prefix libomp", shell=True, capture_output=True
+            )
             omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
             tc.variables["OpenMP_ROOT"] = omp_prefix_path
 
@@ -60,7 +62,7 @@ class HDILibTestConan(ConanFile):
             return
         if tools.os_info.is_linux:
             installer = tools.SystemPackageTool()
-            installer.install("libomp5")
+            # installer.install("libomp5")
             installer.install("libomp-dev")
 
     def build(self):
