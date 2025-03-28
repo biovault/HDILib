@@ -63,7 +63,7 @@ class HDILibTestConan(ConanFile):
         if tools.os_info.is_linux:
             installer = tools.SystemPackageTool()
             # installer.install("libomp5")
-            installer.install("libomp-dev")
+            # installer.install("libomp-dev")
 
     def build(self):
         if os.getenv("Analysis", None) is not None:
