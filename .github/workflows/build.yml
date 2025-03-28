@@ -203,6 +203,7 @@ jobs:
       - name: Verify default Python installation
         run: |
           python3 --version
+          python3 -m ensurepip --upgrade
           pip3 --version
 
       - name: Install Python in the container
