@@ -105,6 +105,16 @@ jobs:
             build-libcxx: libc++
             build-arch: x86_64
 
+          - name: Macos_xcode14.3
+            os: macos-14
+            build-compiler: apple-clang
+            build-cversion: 14
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 14.3
+            build-libcxx: libc++
+            build-arch: armv8
+
           - name: Macos_xcode15
             os: macos-14
             build-compiler: apple-clang
