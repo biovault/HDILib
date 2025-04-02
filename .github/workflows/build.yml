@@ -111,7 +111,7 @@ jobs:
             build-cversion: 14
             build-config: Release
             build-os: Macos
-            build-xcode-version: 14.3
+            build-xcode-version: 15.0.1
             build-libcxx: libc++
             build-arch: armv8
 
