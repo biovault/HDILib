@@ -51,6 +51,14 @@ jobs:
             build-config: Release
             build-arch: x86_64
 
+          - name: Windows-msvc2025
+            os: windows-2025
+            compiler: msvc-2022
+            build-cversion: 17
+            build-runtime: MD
+            build-config: Release
+            build-arch: x86_64
+
           - name: Linux_gcc11
             os: ubuntu-22.04
             build-cc: gcc
@@ -93,13 +101,23 @@ jobs:
             build-libcxx: libc++
             build-arch: armv8
 
-          - name: Macos_xcode16
+          - name: Macos_xcode16_clang16
             os: macos-15
             build-compiler: apple-clang
             build-cversion: 16
             build-config: Release
             build-os: Macos
             build-xcode-version: 16.2
+            build-libcxx: libc++
+            build-arch: armv8
+
+          - name: Macos_xcode16_clang17
+            os: macos-15
+            build-compiler: apple-clang
+            build-cversion: 17
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 16.3
             build-libcxx: libc++
             build-arch: armv8
 
