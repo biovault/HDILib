@@ -161,7 +161,7 @@ const char* compute_forces_source = GLSL(430,
     barrier();
     if (lid < 1) {
       sum_positive = sum_positive_red[0] + sum_positive_red[1];
-      KL[0] = sum_kl_divergence[0] + sum_kl_divergence[1];
+      KLdivergence[0] = sum_kl_divergence[0] + sum_kl_divergence[1];
 
       // Computing repulsive forces - https://arxiv.org/pdf/1805.10817 Eq 14
       vec2 sum_negative = Fields[i].yz * inv_sum_Q;
