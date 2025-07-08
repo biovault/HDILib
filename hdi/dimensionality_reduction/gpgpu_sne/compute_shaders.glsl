@@ -137,7 +137,7 @@ const char* compute_forces_source = GLSL(430,
       // Calculate the attractive force  - https://arxiv.org/pdf/1805.10817 Eq 12
       positive_force += norm_prob * qij * dist;
       // Make this optional
-      kl_divergence += (Probabilities[index + j] * log(norm_prob/(v * inv_sum_Q)));
+      kl_divergence += (Probabilities[index + j] * log(norm_prob/(qij * inv_sum_Q)));
     }
 
     // Reduce add sum_positive_red to a single value
