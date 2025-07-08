@@ -24,7 +24,8 @@ namespace hdi {
       GRADIENTS,
       PREV_GRADIENTS,
       GAIN,
-      BOUNDS
+      BOUNDS,
+      KLDIV
     };
 
     // Linearized sparse neighbourhood matrix
@@ -38,7 +39,8 @@ namespace hdi {
     GpgpuSneCompute::GpgpuSneCompute() :
       _initialized(false),
       _adaptive_resolution(true),
-      _resolutionScaling(PIXEL_RATIO)
+      _resolutionScaling(PIXEL_RATIO),
+      kl_divergence(-1.0f) // Initialize KL divergence to -1.0f
     {
 
     }
@@ -187,6 +189,9 @@ namespace hdi {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[BOUNDS]);
       glBufferData(GL_SHADER_STORAGE_BUFFER, 2 * sizeof(Point2D), ones.data(), GL_STREAM_READ);
 
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[KLDIV]);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float), nullptr, GL_STREAM_READ);
+
       glGenQueries(2, _timerQuery);
     }
 
@@ -250,6 +255,7 @@ namespace hdi {
         return;
       }
 
+      float kl_div = 0;
       // Compute the gradients of the KL-function
       computeGradients(num_points, sum_Q, exaggeration);
 
@@ -319,12 +325,16 @@ namespace hdi {
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _compute_buffers[INDEX]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, _compute_buffers[INTERP_FIELDS]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, _compute_buffers[GRADIENTS]);
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, _compute_buffers[KLDIV]);
 
       // Compute the gradients of the KL function
       unsigned int grid_size = sqrt(num_points) + 1;
       glDispatchCompute(grid_size, grid_size, 1);
 
       glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+      // Copy KLDIV back to CPU
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, _compute_buffers[KLDIV]);
+      glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(float), &kl_divergence);
     }
 
     void GpgpuSneCompute::updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult)

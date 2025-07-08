@@ -141,6 +141,7 @@ namespace hdi {
 
     public: //TODO remove
       sparse_scalar_matrix_type _P; //! Conditional probalility distribution in the High-dimensional space
+      float kl_divergence; //! Kullback-Leibler divergence - only computed in the compute shader version otherwise defaults to -1.0f
 
     private:
       data::Embedding<scalar_type>* _embedding; //! embedding
