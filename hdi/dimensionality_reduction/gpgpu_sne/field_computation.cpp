@@ -66,6 +66,10 @@ const char* raster_fsrc = GLSL(330,
   }
 );
 
+/* Kernel Density Estimation style fields computation
+see https://arxiv.org/pdf/1805.10817 Eq 15 & 16
+
+*/
 const char* gpgpu_compute_fields_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
   layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
@@ -91,6 +95,7 @@ const char* gpgpu_compute_fields_source = GLSL(430,
 
     uint lid = gl_LocalInvocationIndex.x;
 
+    // Bounds can be calculated to allow adaptive scaling
     vec2 min_bounds = Bounds[0];
     vec2 max_bounds = Bounds[1];
     vec2 range = max_bounds - min_bounds;
@@ -100,6 +105,9 @@ const char* gpgpu_compute_fields_source = GLSL(430,
 
     vec4 value = vec4(0);
 
+    // Stride over the point positions by the group size
+    // calculating field (vector and scalar) contribution
+    // at this pixel position based on the point distance.
     for (uint i = lid; i < num_points; i += groupSize)
     {
       // Distance between pixel and kernel center in domain units
@@ -113,8 +121,12 @@ const char* gpgpu_compute_fields_source = GLSL(430,
       float tstud = 1.0 / (1.0 + eucl_sqrd);
       float tstud2 = tstud*tstud;
 
+      // The vec3 contains the scalar and the vector fields (Eq 15 & 16)
+      // summed over all points for the current pixel values
       value.xyz += vec3(tstud, tstud2*t.x, tstud2*t.y);
     }
+    // Initialize the reduction array with the values from the last thread
+    // then reduce the static and vector values in parallel for this pixel 
     if (lid >= hgSize) {
       reduction_array[lid - hgSize] = value.xyz;
     }

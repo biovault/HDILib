@@ -76,6 +76,7 @@ namespace hdi {
       void initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P);
       void clean();
 
+      // a single iteration of the tSNE algorithm involving field computation, forces computation and embedding update
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }

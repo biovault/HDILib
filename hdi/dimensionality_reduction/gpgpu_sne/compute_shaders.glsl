@@ -1,5 +1,9 @@
 #define GLSL(version, shader)  "#version " #version "\n" #shader
 
+// Sample the static field texture for all the points.
+// and sum the value to product the normalization factor Z-hat
+// see https://arxiv.org/pdf/1805.10817 Eq 13
+// This is subsequently used to calculate the repulsive forces Eq 14.
 const char* interp_fields_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
   layout(std430, binding = 1) buffer Val { vec4 Values[]; };
@@ -27,12 +31,18 @@ const char* interp_fields_source = GLSL(430,
       // Position of point in range 0 to 1
       vec2 point = (Positions[i] - min_bounds) * inv_range;
 
-      // Bilinearly sample the input texture
+      // Bilinearly sample the input texture 
+      // using GPU native texture operation
+      // see https://arxiv.org/pdf/1805.10817 5.1.2 
       vec4 v = texture(fields, point);
+      // SumQ (Z-hat) is the sum of the (static field -1)
+      // that is used as the normalization factor for 
+      // the repulsive forces.
       sum_Q += max(v.x - 1, 0.0);
       Values[i] = v;
     }
 
+ 
     // Reduce add sum_Q to a single value
     //uint reduction_size = 64;
     if (lid >= 64) {
@@ -69,6 +79,9 @@ const char* interp_fields_source = GLSL(430,
   }
 );
 
+// Calculate the forces acting on a point i
+// this is the modified (by the exaggeration factor on the attractive force)
+// sum of the attractive forces (Eq 12) and the repulsive forces (Eq 14) 
 const char* compute_forces_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
   layout(std430, binding = 1) buffer Neigh { uint Neighbours[]; };
@@ -84,7 +97,7 @@ const char* compute_forces_source = GLSL(430,
   //layout(rg32f) uniform image2D point_tex;
   uniform uint num_points;
   uniform float exaggeration;
-  uniform float sum_Q;
+  uniform float sum_Q; // Z-hat from the previous interpolation step
 
   void main() {
     uint i = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
@@ -114,10 +127,10 @@ const char* compute_forces_source = GLSL(430,
       // Calculate 2D distance between the two points
       vec2 dist = point_i - point_j;
 
-      // Similarity measure of the two points
+      // Similarity measure of the two points - https://arxiv.org/pdf/1805.10817 Eq 5
       float qij = 1 / (1 + dist.x*dist.x + dist.y*dist.y);
 
-      // Calculate the attractive force
+      // Calculate the attractive force  - https://arxiv.org/pdf/1805.10817 Eq 12
       positive_force += Probabilities[index + j] * qij * dist * inv_num_points;
     }
 
@@ -140,7 +153,7 @@ const char* compute_forces_source = GLSL(430,
     if (lid < 1) {
       sum_positive = sum_positive_red[0] + sum_positive_red[1];
 
-      // Computing repulsive forces
+      // Computing repulsive forces - https://arxiv.org/pdf/1805.10817 Eq 14
       vec2 sum_negative = Fields[i].yz * inv_sum_Q;
 
       Gradients[i] = 4 * (exaggeration * sum_positive - sum_negative);
@@ -148,6 +161,8 @@ const char* compute_forces_source = GLSL(430,
   }
 );
 
+// Update the positions of the embedding points based on the gradients
+// This is the point update step - https://arxiv.org/pdf/1805.10817 5.1.3
 const char* update_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos{ float Positions[]; };
   layout(std430, binding = 1) buffer GradientLayout { float Gradients[]; };
@@ -189,6 +204,17 @@ const char* update_source = GLSL(430,
   }
 );
 
+/*
+bounds_source GLSL compute shader is designed to find the bounding box of a set of 2D points with added padding.
+
+  The shader uses shared memory to perform a parallel reduction to find the min and max bounds.
+
+   Parameters
+    Positions[] : The input array of 2D coordinates.
+    Bounds[] : The output array that will contain the minimum and maximum bounds of the points.
+    num_points : The number of points in the Positions array  
+    padding : The padding factor to be added to the bounds.
+*/
 const char* bounds_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
   layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
@@ -207,6 +233,7 @@ const char* bounds_source = GLSL(430,
     vec2 minBound = vec2(1e38);//1.0 / 0.0); // inf
     vec2 maxBound = vec2(-1e38);//-1.0 / 0.0); // -inf
 
+    // Find min and max bounds by striding (by groupSize) across the positions in each thread.
     for (uint i = lid; i < num_points; i += groupSize)
     {
       vec2 pos = Positions[i];
@@ -216,10 +243,13 @@ const char* bounds_source = GLSL(430,
     }
 
     // Reduce bounds
+    // Initialize the reduction arrays from the top 64 thread min and max values
     if (lid >= 64) {
       min_reduction[lid - 64] = minBound;
       max_reduction[lid - 64] = maxBound;
     }
+    // Barrier synchronize the threads in the work group
+    // and parallel reduce the min and max values in shared memory 
     barrier();
     if (lid < 64) {
       min_reduction[lid] = min(minBound, min_reduction[lid]);
@@ -266,6 +296,8 @@ const char* bounds_source = GLSL(430,
   }
 );
 
+// The embedding is recentered and (if enabled) scaled to fit within the bounds of the data.
+// In practice scaling is used with higher exageration factors. 
 const char* center_and_scale_source = GLSL(430,
   layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
   layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
