@@ -89,10 +89,12 @@ const char* compute_forces_source = GLSL(430,
   layout(std430, binding = 3) buffer Ind { int Indices[]; };
   layout(std430, binding = 4) buffer Fiel { vec4 Fields[]; };
   layout(std430, binding = 5) buffer Grad { vec2 Gradients[]; };
+  layout(std430, binding = 6) buffer KL { float KLdivergence[]; };
   layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
   const uint group_size = 64;
   shared vec2 sum_positive_red[group_size];
+  shared float sum_kl_divergence[group_size];
 
   //layout(rg32f) uniform image2D point_tex;
   uniform uint num_points;
@@ -123,7 +125,9 @@ const char* compute_forces_source = GLSL(430,
     for (uint j = lid; j < size; j += group_size) {
       // Get other point coordinates
       vec2 point_j = Positions[Neighbours[index + j]];
-
+      // The high dimensional probabilities provided are symmetrized 
+      // but not normalized
+      float norm_prob = Probabilities[index + j] * inv_num_points;
       // Calculate 2D distance between the two points
       vec2 dist = point_i - point_j;
 
@@ -131,27 +135,33 @@ const char* compute_forces_source = GLSL(430,
       float qij = 1 / (1 + dist.x*dist.x + dist.y*dist.y);
 
       // Calculate the attractive force  - https://arxiv.org/pdf/1805.10817 Eq 12
-      positive_force += Probabilities[index + j] * qij * dist * inv_num_points;
+      positive_force += norm_prob * qij * dist;
+      // Make this optional
+      kl_divergence += (Probabilities[index + j] * log(norm_prob/(v * inv_sum_Q)));
     }
 
     // Reduce add sum_positive_red to a single value
     if (lid >= 32) {
       sum_positive_red[lid - 32] = positive_force;
+      sum_kl_divergence[lid - 32] = kl_divergence;
     }
     barrier();
     if (lid < 32) {
       sum_positive_red[lid] += positive_force;
+      sum_kl_divergence[lid] += kl_divergence;
     }
     for (uint reduceSize = group_size/4; reduceSize > 1; reduceSize /= 2)
     {
       barrier();
       if (lid < reduceSize) {
         sum_positive_red[lid] += sum_positive_red[lid + reduceSize];
+        sum_kl_divergence[lid] += sum_kl_divergence[lid + reduceSize];
       }
     }
     barrier();
     if (lid < 1) {
       sum_positive = sum_positive_red[0] + sum_positive_red[1];
+      KL[0] = sum_kl_divergence[0] + sum_kl_divergence[1];
 
       // Computing repulsive forces - https://arxiv.org/pdf/1805.10817 Eq 14
       vec2 sum_negative = Fields[i].yz * inv_sum_Q;

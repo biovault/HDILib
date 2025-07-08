@@ -65,7 +65,8 @@ namespace hdi {
     GradientDescentTSNETexture::GradientDescentTSNETexture() :
       _initialized(false),
       _logger(nullptr),
-      _exaggeration_baseline(1)
+      _exaggeration_baseline(1),
+      kl_divergence(-1.0f)
     {
 #ifndef __APPLE__
       _gpgpu_type = AUTO_DETECT;
@@ -284,10 +285,12 @@ namespace hdi {
     void GradientDescentTSNETexture::doAnIterationImpl(double mult) {
       // Compute gradient of the KL function using a compute shader approach
 #ifndef __APPLE__
-      if (_gpgpu_type == COMPUTE_SHADER)
+      if (_gpgpu_type == COMPUTE_SHADER) {
         _gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
-      else
+        kl_divergence = _gpgpu_compute_tsne.kl_divergence;
+    } else {
         _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+    }
 #else
       _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
 #endif

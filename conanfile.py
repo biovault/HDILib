@@ -14,7 +14,7 @@ required_conan_version = "~=1.66.0"
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "1.2.10"
+    version = "1.3.0a1"
     description = (
         "HDILib is a library for the scalable analysis of large and high-dimensional"
         " data. "

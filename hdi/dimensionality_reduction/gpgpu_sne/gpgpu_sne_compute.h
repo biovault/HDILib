@@ -69,6 +69,7 @@ namespace hdi {
 
       typedef hdi::data::Embedding<float> embedding_type;
       typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
+      float kl_divergence = -1.0f; // Kullback-Leibler divergence, only computed in the compute shader version otherwise defaults to -1.0f
 
     public:
       GpgpuSneCompute();
