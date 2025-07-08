@@ -361,6 +361,7 @@ namespace hdi {
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _compute_buffers[POSITION]);
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _compute_buffers[BOUNDS]);
 
+        // see https://arxiv.org/pdf/1512.01655 4.3 - Early exaggeration (of atractive forces) 
       if (exaggeration > 1.2)
       {
         _center_and_scale_program.uniform1i("scale", 1);
