@@ -117,6 +117,7 @@ const char* compute_forces_source = GLSL(430,
 
     //computing positive forces
     vec2 sum_positive = vec2(0);
+    float kl_divergence = 0;
 
     int index = Indices[i * 2 + 0];
     int size = Indices[i * 2 + 1];
