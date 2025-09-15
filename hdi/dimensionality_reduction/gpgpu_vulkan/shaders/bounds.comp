@@ -1,0 +1,84 @@
+  #version 450
+
+  layout(std430, binding = 0) buffer BoundsInterface { vec2 Bounds[]; };
+  layout(std430, binding = 1) buffer Pos{ vec2 Positions[]; };
+  layout(std430, binding = 2) readonly buffer NumPoints { uint NP[]; };
+  //layout(std430, binding = 3) buffer Dbg { vec2 Bug[]; };
+  layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+  shared vec2 min_reduction[64];
+  shared vec2 max_reduction[64]; 
+
+  layout(push_constant) uniform Params {
+      float padding;    // offset 0
+  } pc;
+
+  void main() {
+    uint lid = gl_LocalInvocationIndex.x;
+    uint groupSize = gl_WorkGroupSize.x;
+    vec2 minBound = vec2(1e38);  // inf
+    vec2 maxBound = vec2(-1e38);  // -inf
+
+
+    
+    // Find min and max bounds by striding (by groupSize) across the positions in each thread.
+    for (uint i = lid; i < NP[0]; i += groupSize)
+    {
+      vec2 pos = Positions[i];
+
+      minBound = min(pos, minBound);
+      maxBound = max(pos, maxBound);
+    }
+    
+    // Reduce bounds
+    // Initialize the reduction arrays from the top 64 thread min and max values
+    if (lid >= 64) {
+      min_reduction[lid - 64] = minBound;
+      max_reduction[lid - 64] = maxBound;
+    }
+    // Barrier synchronize the threads in the work group
+    // and parallel reduce the min and max values in shared memory 
+    barrier();
+    if (lid < 64) {
+      min_reduction[lid] = min(minBound, min_reduction[lid]);
+      max_reduction[lid] = max(maxBound, max_reduction[lid]);
+    }
+    barrier();
+    if (lid < 32) {
+      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 32]);
+      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 32]);
+    }
+    barrier();
+    if (lid < 16) {
+      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 16]);
+      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 16]);
+    }
+    barrier();
+    if (lid < 8) {
+      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 8]);
+      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 8]);
+    }
+    barrier();
+    if (lid < 4) {
+      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 4]);
+      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 4]);
+    }
+    barrier();
+    if (lid < 2) {
+      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 2]);
+      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 2]);
+    }
+    barrier();
+    if (lid == 0) {
+      minBound = min(min_reduction[0], min_reduction[1]);
+      maxBound = max(max_reduction[0], max_reduction[1]);
+
+      vec2 padding = (maxBound - minBound) * pc.padding * 0.5;
+
+      minBound -= padding;
+      maxBound += padding;
+
+      Bounds[0] = minBound;
+      Bounds[1] = maxBound;
+    }
+  }

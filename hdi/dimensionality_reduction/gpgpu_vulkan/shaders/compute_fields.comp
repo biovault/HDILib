@@ -1,0 +1,87 @@
+  #version 430
+
+  layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+  layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
+  layout(std430, binding = 1) readonly buffer BoundsInterface { vec2 Bounds[]; };
+
+
+  layout(binding = 2, rgba32f) writeonly uniform image2D Fields;
+  layout(binding = 3, rgba8) readonly uniform image2D Stencil;
+  layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
+
+  const uint groupSize = gl_WorkGroupSize.x;
+  const uint hgSize = groupSize / 2;
+  shared vec3 reduction_array[hgSize];
+
+  layout(push_constant) uniform FieldPushConstants {
+    vec2 imageSize;
+    float support; 
+  } pc;
+
+  void main() {
+    uint x = gl_WorkGroupID.x;
+    uint y = gl_WorkGroupID.y;
+    
+    // An x and y coordinate across the image. 
+    // Anything that is masked by the stencil 
+    // i.e. the edges regions with no points is ignored.
+    float mask = imageLoad(Stencil, ivec2(x, y)).x;
+    if (mask == 0) return;
+
+    uint lid = gl_LocalInvocationIndex.x;
+
+    // Bounds can be calculated to allow adaptive scaling
+    vec2 min_bounds = Bounds[0];
+    vec2 max_bounds = Bounds[1];
+    vec2 range = max_bounds - min_bounds;
+
+    // Position of the current pixel in world (domain) coords
+    vec2 pixel_pos = (((vec2(x, y) + vec2(0.5)) / pc.imageSize) * range) + min_bounds;
+
+    vec4 value = vec4(0);
+
+    // Stride over the point positions by the group size
+    // calculating field (vector and scalar) contribution
+    // at this pixel position based on the point distance.
+    for (uint i = lid; i < NP[0]; i += groupSize)
+    {
+      // Distance between pixel and kernel center in domain units
+      vec2 t = pixel_pos - Positions[i];
+
+      float eucl_sqrd = dot(t, t);
+
+      float tstud = 1.0 / (1.0 + eucl_sqrd);
+      float tstud2 = tstud*tstud;
+
+      // The vec3 contains the scalar and the vector fields (Eq 15 & 16)
+      // summed over all points for the current pixel values
+      value.xyz += vec3(tstud, tstud2*t.x, tstud2*t.y);
+
+    }
+      
+    // Initialize the reduction array with the values from the last thread
+    // then reduce the static and vector values in parallel for this pixel 
+    if (lid >= hgSize) {
+      reduction_array[lid - hgSize] = value.xyz;
+    }
+    barrier();
+    if (lid < hgSize) {
+      reduction_array[lid] += value.xyz;
+    }
+    for (uint reduceSize = hgSize/2; reduceSize > 1; reduceSize /= 2)
+    {
+      barrier();
+      if (lid < reduceSize) {
+        reduction_array[lid] += reduction_array[lid + reduceSize];
+      }
+    }
+    barrier();
+    if (lid < 1) {
+      imageStore(Fields, ivec2(x, y), vec4(reduction_array[0] + reduction_array[1], 0));
+    } 
+    // field fiducials
+    // imageStore(Fields, ivec2(0,0), vec4(255.0));
+    // imageStore(Fields, ivec2(0, pc.imageSize.y - 1),  vec4(255.0)); 
+    // imageStore(Fields, ivec2(pc.imageSize.x - 1, 0),  vec4(255.0));
+    // imageStore(Fields, ivec2(pc.imageSize) - ivec2(1,1),  vec4(255.0));
+  }

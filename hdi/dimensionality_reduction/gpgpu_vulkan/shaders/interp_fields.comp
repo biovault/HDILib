@@ -1,0 +1,131 @@
+  #version 450
+// Sample the static field texture for all the points.
+// and sum the value to product the normalization factor Z-hat
+// see https://arxiv.org/pdf/1805.10817 Eq 13
+// This is subsequently used to calculate the repulsive forces Eq 14.
+  layout(std430, binding = 0) readonly buffer PosBuf{ vec2 Positions[]; };
+  layout(std430, binding = 1) writeonly buffer ValBuf { vec4 Values[]; };
+  layout(std430, binding = 2) writeonly buffer SumBuf { float Sum[]; };
+  layout(std430, binding = 3) readonly buffer BoundsInterface { vec2 Bounds[]; };
+  layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
+  layout(binding = 5, rgba32f) uniform readonly image2D inputFields;
+
+  layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+  shared float reduction_array[64];
+
+  layout(push_constant) uniform FieldPushConstants {
+    vec2 imageSize; // scaled image size used for fields image
+  } pc;
+
+// sample field based on the range [0,0] -> [1.0,1.0]
+// equivalent to texture(fields, point) call 
+vec4 bilinearSample(vec2 uv) {
+    vec2 pixelCoord = (uv * pc.imageSize) - vec2(0.5); 
+
+    ivec2 p0 = ivec2(floor(pixelCoord));
+    ivec2 p1 = p0 + ivec2(1, 0);
+    ivec2 p2 = p0 + ivec2(0, 1);
+    ivec2 p3 = p0 + ivec2(1, 1);
+
+    vec2 frac = fract(pixelCoord);
+
+    vec4 c00 = imageLoad(inputFields, clamp(p0, ivec2(0), ivec2(round(pc.imageSize)) - ivec2(1)));
+    vec4 c10 = imageLoad(inputFields, clamp(p1, ivec2(0), ivec2(round(pc.imageSize)) - ivec2(1)));
+    vec4 c01 = imageLoad(inputFields, clamp(p2, ivec2(0), ivec2(round(pc.imageSize)) - ivec2(1)));
+    vec4 c11 = imageLoad(inputFields, clamp(p3, ivec2(0), ivec2(round(pc.imageSize)) - ivec2(1)));
+
+    vec4 c0 = mix(c00, c10, frac.x);
+    vec4 c1 = mix(c01, c11, frac.x);
+    return mix(c0, c1, frac.y);
+}
+
+vec4 bilinearSample2(vec2 uv) {
+    // Get the integer dimensions of the image
+    ivec2 image_dims = ivec2(pc.imageSize + vec2(0.1));
+    ivec2 max_coord = image_dims - 1;
+
+    // 1. Convert UV to a float-based pixel coordinate aligned with pixel centers
+    vec2 sample_pos = uv * vec2(image_dims) - 0.5;
+
+    // 2. Get the integer coordinate of the bottom-left pixel and the fractional weights
+    ivec2 p00 = ivec2(floor(sample_pos));
+    vec2 t = fract(sample_pos); // These are our interpolation factors
+
+    // 3. Get the coordinates of all 4 neighboring pixels, clamping to the image edges
+    ivec2 p10 = min(p00 + ivec2(1, 0), max_coord);
+    ivec2 p01 = min(p00 + ivec2(0, 1), max_coord);
+    ivec2 p11 = min(p00 + ivec2(1, 1), max_coord);
+
+    // 4. Fetch the colors of the four pixels using imageLoad
+    vec4 c00 = imageLoad(inputFields, p00);
+    vec4 c10 = imageLoad(inputFields, p10);
+    vec4 c01 = imageLoad(inputFields, p01);
+    vec4 c11 = imageLoad(inputFields, p11);
+
+    // 5. Interpolate horizontally, then vertically
+    vec4 bottom_mix = mix(c00, c10, t.x);
+    vec4 top_mix    = mix(c01, c11, t.x);
+    return mix(bottom_mix, top_mix, t.y);
+}
+
+  void main() {
+    uint lid = gl_LocalInvocationIndex.x;
+    uint groupSize = gl_WorkGroupSize.x;
+    vec2 min_bounds = Bounds[0];
+    vec2 max_bounds = Bounds[1];
+
+    vec2 range = max_bounds - min_bounds;
+    vec2 inv_range = 1.0 / range;
+
+    float sum_Q = 0;
+    for (uint i = lid; i < NP[0]; i += groupSize)
+    {
+      // Normalized position of point in range [0,0] to [1.0, 1.0]
+      vec2 normPos = (Positions[i] - min_bounds) / range;
+
+      // Bilinearly sample the input texture 
+      // using GPU native texture operation
+      // see https://arxiv.org/pdf/1805.10817 5.1.2
+      vec4 v = bilinearSample2(normPos);
+      // SumQ (Z-hat) is the sum of the (static field -1)
+      // that is used as the normalization factor for 
+      // the repulsive forces.
+      sum_Q += max(v.x - 1.0, 0.0);
+      Values[i] = v;
+    }
+  
+    // Reduce add sum_Q to a single value
+    //uint reduction_size = 64;
+    if (lid >= 64) {
+      reduction_array[lid - 64] = sum_Q;
+    }
+    barrier();
+    if (lid < 64) {
+      reduction_array[lid] += sum_Q;
+    }
+    barrier();
+    if (lid < 32) {
+      reduction_array[lid] += reduction_array[lid + 32];
+    }
+    barrier();
+    if (lid < 16) {
+      reduction_array[lid] += reduction_array[lid + 16];
+    }
+    barrier();
+    if (lid < 8) {
+      reduction_array[lid] += reduction_array[lid + 8];
+    }
+    barrier();
+    if (lid < 4) {
+      reduction_array[lid] += reduction_array[lid + 4];
+    }
+    barrier();
+    if (lid < 2) {
+      reduction_array[lid] += reduction_array[lid + 2];
+    }
+    barrier();
+    if (lid < 1) {
+      Sum[0] = reduction_array[0] + reduction_array[1];
+    }
+  }
