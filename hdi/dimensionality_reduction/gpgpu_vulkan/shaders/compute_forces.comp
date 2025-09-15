@@ -1,0 +1,112 @@
+  #version 430
+  // Calculate the forces acting on a point i
+  // this is the modified (by the exaggeration factor on the attractive force)
+  // sum of the attractive forces (Eq 12) and the repulsive forces (Eq 14)
+
+  layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
+  layout(std430, binding = 1) buffer Neigh { uint Neighbours[]; };
+  layout(std430, binding = 2) buffer Ind { uint Indices[]; };
+  layout(std430, binding = 3) buffer Prob { float Probabilities[]; };
+  layout(std430, binding = 4) buffer Fiel { vec4 Fields[]; };
+  layout(std430, binding = 5) buffer Grad { vec2 Gradients[]; };
+  layout(std430, binding = 6) readonly buffer NumPoints { uint NP[]; };
+  layout(std430, binding = 7) writeonly buffer SumBuf { float KL[]; };
+  layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+  const uint group_size = 64;
+  shared vec2 sum_positive_red[group_size];
+  shared float sum_kl_divergence[group_size];
+  shared float sum_norm_qij[group_size];
+
+  //layout(rg32f) uniform image2D point_tex;
+
+  layout (push_constant) uniform ForcesPushConstants {
+    float exaggeration;
+    float sum_Q; 
+  } pc;
+
+
+  void main() {
+
+    uint i = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint groupSize = gl_WorkGroupSize.x;
+    uint lid = gl_LocalInvocationID.x;
+
+    float inv_num_points = 1.0 / float(NP[0]);
+    float inv_sum_Q = 1.0 / pc.sum_Q;
+
+    if (i >= NP[0])
+      return;
+
+    // Get the point coordinates
+    vec2 point_i = Positions[i];
+
+    vec2 sum_positive = vec2(0);
+    float kl_divergence = 0;
+    
+    uint index = Indices[i * 2 + 0]; // offset to start of nn list - in Neighbours
+    uint size = Indices[i * 2 + 1]; // length of nn list
+
+    vec2 positive_force = vec2(0);
+   
+
+    // Start computing positive forces
+    // for all the (size) nearest neighbours
+    for (uint j = lid; j < size; j += group_size) {
+      //uint ni = Neighbours[index + j];
+      //if (ni == i) {
+      //  continue;
+      //}
+      // Get other point coordinates
+      vec2 point_j = Positions[Neighbours[index + j]];
+      // The high dimensional probabilities provided are symmetrized 
+      // but not normalized
+      float norm_prob = Probabilities[index + j] * inv_num_points;
+
+      // Calculate 2D distance between the two points
+      vec2 dist = point_i - point_j;
+
+      // Similarity measure of the two embedding points - https://arxiv.org/pdf/1805.10817 Eq 5
+      // Not normalized
+      float v = 1.0 / (1.0 + dist.x*dist.x + dist.y*dist.y);
+
+      // Calculate the attractive force  - https://arxiv.org/pdf/1805.10817 Eq 12
+      positive_force += norm_prob * v * dist;
+      // KL divergence - this will be made optional 
+      kl_divergence += (Probabilities[index + j] * log(norm_prob/(v * inv_sum_Q)));
+    }
+
+    // Reduce add sum_positive_red to a single value
+    if (lid >= 32) {
+      sum_positive_red[lid - 32] = positive_force;
+      sum_kl_divergence[lid - 32] = kl_divergence;
+    }
+    memoryBarrierShared();
+    barrier();
+    if (lid < 32) {
+      sum_positive_red[lid] += positive_force;
+      sum_kl_divergence[lid] += kl_divergence;
+    }
+    // Reduce 16, 8, 4, and 2 
+    for (uint reduceSize = group_size/4; reduceSize > 1; reduceSize /= 2)
+    {
+      memoryBarrierShared();
+      barrier();
+      if (lid < reduceSize) {
+        sum_positive_red[lid] += sum_positive_red[lid + reduceSize];
+        sum_kl_divergence[lid] += sum_kl_divergence[lid + reduceSize];
+      }
+    }
+    memoryBarrierShared();
+    barrier();
+    if (lid < 1) {
+      sum_positive = sum_positive_red[0] + sum_positive_red[1];
+      KL[0] = sum_kl_divergence[0] + sum_kl_divergence[1];
+
+      // Computing repulsive force vector - https://arxiv.org/pdf/1805.10817 Eq 14
+      vec2 sum_negative = Fields[i].yz * inv_sum_Q;
+
+      // Computation of field based gradient - https://arxiv.org/pdf/1805.10817 Eq 9
+      Gradients[i] = 4 * (pc.exaggeration * sum_positive - sum_negative);
+    }
+  }
