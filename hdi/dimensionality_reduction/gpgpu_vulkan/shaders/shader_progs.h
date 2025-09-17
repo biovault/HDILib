@@ -1,0 +1,112 @@
+#progma once
+#include "shader.h"
+#include "../tensor_config.h"
+#include <kompute/Kompute.hpp>
+
+class BoundsShaderProg {
+public:
+  BoundsShaderProg(kp::Manager &mgr, TensorMap &tensors) {
+      _shaderBinary = SPIRVShaderBinaries[SPIRVShader::BOUNDS];
+      _mgr = mgr;
+      _tensors = tensors;
+  }
+  std::vector<float> compute(float padding);
+
+private:
+  const std::vector<uint32_t>& _shaderBinary;
+  const kp::Manager& _mgr;
+  TensorMap& _tensors
+
+};
+
+class StencilShaderProg {
+public: 
+  StencilShaderProg(kp::Manager &mgr, TensorMap &tensors) {
+      _shaderBinary = SPIRVShaderBinaries[SPIRVShader::STENCIL];
+      _mgr = mgr;
+      _tensors = tensors;
+  }
+  std::vector<uint8_t> compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds);
+
+private:
+  const std::vector<uint32_t>& _shaderBinary;
+  const kp::Manager& _mgr;
+  TensorMap& _tensors
+};
+
+class FieldComputationShaderProg {
+public: 
+  FieldComputationShaderProg(kp::Manager &mgr, TensorMap &tensors) {
+      _shaderBinary = SPIRVShaderBinaries[SPIRVShader::COMPUTE_FIELDS];
+      _mgr = mgr;
+      _tensors = tensors;
+  }
+  std::vector<float> compute(std::vector<uint8_t> stencil, uint32_t width, uint32_t height);
+
+private:
+  const std::vector<uint32_t>& _shaderBinary; 
+  const kp::Manager& _mgr;
+  TensorMap& _tensors;    
+  const float _function_support = 6.5f;  
+};
+
+class InterpolationShaderProg {
+public: 
+  InterpolationShaderProg(kp::Manager &mgr, TensorMap &tensors) {
+      _shaderBinary = SPIRVShaderBinaries[SPIRVShader::INTERP_FIELDS];
+      _mgr = mgr;
+      _tensors = tensors;
+  }
+  void compute(std::vector<float> fields, uint32_t width, uint32_t height);
+
+private:
+  const std::vector<uint32_t>& _shaderBinary;
+  const kp::Manager& _mgr;
+  TensorMap& _tensors;
+  float _sum_Q = 0.0f;
+};
+
+class ForcesShaderProg {
+public: 
+  ForcesShaderProg(kp::Manager &mgr, TensorMap &tensors) {
+      _shaderBinary = SPIRVShaderBinaries[SPIRVShader::COMPUTE_FORCES];
+      _mgr = mgr;
+      _tensors = tensors;
+  }
+  float compute(unsigned int num_points, float exaggeration);
+
+private:
+  const std::vector<uint32_t>& _shaderBinary; 
+  const kp::Manager& _mgr;
+  TensorMap& _tensors;
+};
+
+class UpdateShaderProg {
+public: 
+  UpdateShaderProg(kp::Manager &mgr, TensorMap &tensors) {
+      _shaderBinary = SPIRVShaderBinaries[SPIRVShader::UPDATE];
+      _mgr = mgr;
+      _tensors = tensors;
+  }
+  void compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentumn, unsigned int momentumn_switch, float final_momentum, float gain_mult);
+
+private:
+  const std::vector<uint32_t>& _shaderBinary;
+  const kp::Manager& _mgr;
+  TensorMap& _tensors;
+};
+
+class CenterScaleShaderProg {
+public:   
+  CenterScaleShaderProg(kp::Manager &mgr, TensorMap &tensors) {
+      _shaderBinary = SPIRVShaderBinaries[SPIRVShader::CENTER_SCALE];
+      _mgr = mgr;
+      _tensors = tensors;
+  }
+  void compute(unsigned int num_points, float exaggeration);
+
+private:
+  const std::vector<uint32_t>& _shaderBinary;
+  const kp::Manager& _mgr;
+  TensorMap& _tensors;
+};

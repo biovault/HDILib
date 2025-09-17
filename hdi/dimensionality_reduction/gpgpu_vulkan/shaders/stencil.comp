@@ -10,7 +10,7 @@ layout(std430, binding = 0) buffer Points {
 // Output image
 layout(rgba8, binding = 1) writeonly uniform image2D outImage;
 
-layout(std430, binding = 2) buffer Dbg { vec2 Bug[]; };
+//layout(std430, binding = 2) buffer Dbg { vec2 Bug[]; };
 
 
 // Push constants for rectangle bounds and image dimensions
