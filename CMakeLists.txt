@@ -1,5 +1,21 @@
 cmake_minimum_required (VERSION 3.22)
 
+option(USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
+
+if(USE_VULKAN_KOMPUTE)
+    list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
+
+    # Make sure vcpkg toolchain is picked up (or pass -DCMAKE_TOOLCHAIN_FILE=...)
+    # Example: cmake .. -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
+    set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
+
+    if(WIN32 AND NOT DEFINED VCPKG_LIBRARY_LINKAGE)
+        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "")
+        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
+        set(VCPKG_LIBRARY_LINKAGE "static" CACHE STRING "")
+    endif()
+endif()
+
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
 
@@ -143,6 +159,16 @@ message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 add_subdirectory (hdi/utils)
 add_subdirectory (hdi/data)
 add_subdirectory (hdi/dimensionality_reduction)
+
+# -----------------------------------------------------------------------------
+# Tests
+# -----------------------------------------------------------------------------
+option(ENABLE_TESTS "Enable building the test executables" ON)
+if (ENABLE_TESTS)
+    add_subdirectory(tests)
+endif()
+
+
 
 # -----------------------------------------------------------------------------
 # Create HDILib find_package

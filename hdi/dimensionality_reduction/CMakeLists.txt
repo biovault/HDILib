@@ -1,15 +1,29 @@
 set(PROJECT "hdidimensionalityreduction")
 
 # Gather list of all .h files in "/"
-file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
-message(STATUS "################# ${HeaderFiles} ##############")
-file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
+configure_file(dr_config.h.in dr_config.h)
 
-add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
+if(USE_VULKAN_KOMPUTE)
+    file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h gpgpu_vulkan/*.h gpgpu_vulkan/shaders/*.h)
+    message(STATUS "################# ${HeaderFiles} ##############")
+    file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp gpgpu_vulkan/*.cpp gpgpu_vulkan/shaders/*.cpp)
+    file(GLOB_RECURSE ShaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/gpgpu_vulkan/shaders/*.comp")
+    add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${ShaderFiles})
+    source_group(Shaders FILES ${ShaderFiles})
+    add_dependencies(${PROJECT} compile_shaders)
+else()
+    file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
+    message(STATUS "################# ${HeaderFiles} ##############")
+    file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
+    add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
+endif()
+
+
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${hnswlib_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}/src")
+
 
 # prefer static linking
 if(NOT FLANN_TARGET)
@@ -100,4 +114,9 @@ if(${HDILib_INSTALL})
             DESTINATION lib/cmake/HDILib
             COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
     )
+endif()
+
+if(USE_VULKAN_KOMPUTE)
+    message(STATUS "Add vulkan subdir")
+    add_subdirectory(gpgpu_vulkan)
 endif()

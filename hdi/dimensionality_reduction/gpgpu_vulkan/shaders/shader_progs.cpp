@@ -5,12 +5,12 @@ std::vector<float> BoundsShaderProg::compute(float padding) {
     // This is a placeholder implementation
     std::vector<uint32_t> result;
     // Actual computation logic goes here
-    const std::vector<std::shared_ptr<kp::Tensor>> params = {
+    const std::vector<std::shared_ptr<kp::Memory>> params = {
         _tensors[Tensors::BOUNDS],
         _tensors[Tensors::POSITION],
         _tensors[Tensors::NUM_POINTS]
     };
-    auto algorithm = _mgr.algorithm(params, _shaderBinary, kp::Workgroup({1,1,1}), {}, std::vector<float>{padding});
+    auto algorithm = _mgr.algorithm(params, _shaderBinary, kp::Workgroup({1,1,1}), {}, std::vector<float>({padding}));
     auto seq = _mgr.sequence()
         ->record<kp::OpSyncDevice>(params)
         ->record<kp::OpAlgoDispatch>(algorithm)
@@ -18,7 +18,7 @@ std::vector<float> BoundsShaderProg::compute(float padding) {
         ->eval();
 
 
-    return _tensors[Tensors::BOUNDS]->data();
+    return *_tensors[Tensors::BOUNDS]->data<std::vector<float>>();
 }
 
 std::vector<uint8_t> StencilShaderProg::compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds) {
@@ -28,7 +28,7 @@ std::vector<uint8_t> StencilShaderProg::compute(uint32_t width, uint32_t height,
     }
     
     auto stencil_array = std::vector<uint8_t>(npwidth * height, 4);
-    stencil_out = _mgr.imageT(stencil_array, { npwidth, height, 4 });
+    auto stencil_out = _mgr.imageT(stencil_array, npwidth, height, 4 );
     auto pushConsts = std::vector<float>({ bounds[0], bounds[1], bounds[2], bounds[3], (float)width, (float)height});
 
     const std::vector<std::shared_ptr<kp::Memory>> params = {_tensors[Tensors::POSITION], stencil_out }
@@ -48,8 +48,8 @@ std::vector<float> FieldComputationShaderProg::compute(std::vector<uint8_t> sten
         npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
     }
 
-    auto stencil_in = _mgr.imageT(stencil, { npwidth, height, 4 });
-    auto field_out = _mgr.imageT(std::vector<float>(npwidth * height * 4, 0.0f), { npwidth, height, 4 });
+    auto stencil_in = _mgr.imageT(stencil, npwidth, height, 4);
+    auto field_out = _mgr.imageT(std::vector<float>(npwidth * height * 4, 0.0f), npwidth, height, 4);
     const std::vector<std::shared_ptr<kp::Memory>> params = {
         _tensors[Tensors::POSITION],
         _tensors[Tensors::BOUNDS],
@@ -74,7 +74,7 @@ void InterpolationShaderProg::compute(std::vector<float> fields, uint32_t width,
         npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
     }
 
-    auto fields_in = _mgr.imageT(fields, { npwidth, height, 4 });
+    auto fields_in = _mgr.imageT(fields, npwidth, height, 4);
     const std::vector<std::shared_ptr<kp::Memory>> params = {
         _tensors[Tensors::POSITION],
         _tensors[Tensors::INTERP_FIELDS],
@@ -95,7 +95,7 @@ void InterpolationShaderProg::compute(std::vector<float> fields, uint32_t width,
     _sum_Q = _tensors[Tensors::SUM_Q]->data<float>()[0];
 }
 
-float ForcesShaderProg::compute(unsigned int num_points, float sum_Q, float exaggeration) {
+float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
     const std::vector<std::shared_ptr<kp::Memory>> params = {
         _tensors[Tensors::POSITION],
         _tensors[Tensors::NEIGHBOUR],

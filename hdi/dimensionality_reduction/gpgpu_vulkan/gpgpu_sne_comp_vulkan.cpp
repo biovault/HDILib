@@ -4,6 +4,9 @@
 #include <limits> 
 #include <iostream>
 #include <cmath> // for sqrt
+#include "tensor_config.h"
+#include "shaders/shaders.h"
+#include "gpgpu_sne_comp_vulkan.h"
 
 namespace hdi {
   namespace dr {
@@ -11,8 +14,7 @@ namespace hdi {
     typedef GpgpuSneVulkan::Point2D Point2D;
 
     // Linearized sparse neighbourhood matrix
-    struct LinearProbabilityMatrix
-    {
+    struct LinearProbabilityMatrix {
       std::vector<uint32_t> neighbours;
       std::vector<float> probabilities;
       std::vector<int> indices;
@@ -84,23 +86,31 @@ namespace hdi {
       _bounds = computeInitialBounds(embedding, 0.1f);
 
       // Initialize all Vulkan resources
-      initializeVulkan(num_pts, linear_P);
+      initializeVulkan(num_points, linear_P);
 
       _initialized = true;
     }
 
-    GpgpuSneVulkan::initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P) {
-        _tensors[POSITION] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 0.0f));
-        _tensors[INTERP_FIELDS] = _mgr.tensorT(std::vector<float>(num_pnts * 4, 0.0f));
-        _tensors[SUM_Q] = _mgr.tensorT(std::vector<float>(1, 0.0f));
-        _tensors[KLDIV] = _mgr.tensorT(std::vector<float>(1, 0.0f));
-        _tensors[GRADIENTS] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 0.0f));
-        _tensors[NEIGHBOUR] = _mgr.tensorT(linear_P.neighbours);
-        _tensors[PROBABILITIES] = _mgr.tensorT(linear_P.probabilities);
-        _tensors[INDEX] = _mgr.tensorT(linear_P.indices);
-        _tensors[PREV_GRADIENTS] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 0.0f));
-        _tensors[GAIN] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 1.0f));
-        _tensors[BOUNDS] = _mgr.tensorT(std::vector<float>{std::vector<float>(4, 1.0f)});
-        _tensors[NUM_POINTS] = _mgr.tensorT(std::vector<int>{static_cast<uint32_t>(1, num_pnts)});
+    void GpgpuSneVulkan::initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P) {
+      _tensors[Tensors::POSITION] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 0.0f));
+      _tensors[Tensors::INTERP_FIELDS] = _mgr.tensorT(std::vector<float>(num_pnts * 4, 0.0f));
+      _tensors[Tensors::SUM_Q] = _mgr.tensorT(std::vector<float>(1, 0.0f));
+      _tensors[Tensors::KLDIV] = _mgr.tensorT(std::vector<float>(1, 0.0f));
+      _tensors[Tensors::GRADIENTS] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 0.0f));
+      _tensors[Tensors::NEIGHBOUR] = _mgr.tensorT(linear_P.neighbours);
+      _tensors[Tensors::PROBABILITIES] = _mgr.tensorT(linear_P.probabilities);
+      _tensors[Tensors::INDEX] = _mgr.tensorT(linear_P.indices);
+      _tensors[Tensors::PREV_GRADIENTS] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 0.0f));
+      _tensors[Tensors::GAIN] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 1.0f));
+      _tensors[Tensors::BOUNDS] = _mgr.tensorT(std::vector<float>{std::vector<float>(4, 1.0f)});
+      _tensors[Tensors::NUM_POINTS] = _mgr.tensorT(std::vector<unsigned int>{static_cast<uint32_t>(1), num_pnts});
     }
+
+    void GpgpuSneVulkan::calculateNormalizationFactor(float* Z_hat) {}
+    void GpgpuSneVulkan::computeGradients(unsigned int num_points, float Z_hat, float exaggeration) {}
+    void GpgpuSneVulkan::updatePoints(unsigned int num_points, float* points, embedding_type* embedding, float iteration, float mult) {}
+    void GpgpuSneVulkan::updateEmbedding(unsigned int num_points, float exaggeration, float iteration, float mult) {}
+
+
+  }
 }
