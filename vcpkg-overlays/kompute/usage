@@ -1,0 +1,4 @@
+kompute provides CMake targets :
+
+find_package(kompute CONFIG REQUIRED)
+target_link_libraries(main PRIVATE kompute::kompute)

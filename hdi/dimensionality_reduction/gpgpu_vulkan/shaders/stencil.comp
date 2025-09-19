@@ -32,7 +32,7 @@ void main() {
     ivec2 pxCoord = ivec2(round(norm * pc.imageSize));
     
     // Draw a 3x3 region around the point
-    Bug[id] = pxCoord;
+    //Bug[id] = pxCoord;
     for (int dy = -1; dy <= 1; ++dy) {
         for (int dx = -1; dx <= 1; ++dx) {
             ivec2 target = pxCoord + ivec2(dx, dy);
