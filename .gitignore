@@ -8,3 +8,4 @@ ci/
 *.bak
 install
 out
+*.hpp
