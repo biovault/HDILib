@@ -25,7 +25,7 @@ int main(int argc, const char** argv) {
         .help("Perplexity value for tSNE (default: 30.0).");
     program.add_argument("-i", "--iterations")
         .default_value(1000)
-        .scan<'i', int>()
+        .scan<'i', unsigned int>()
         .help("Number of iterations for tSNE (default: 1000).");
     try {
         program.parse_args(argc, argv);
@@ -33,6 +33,24 @@ int main(int argc, const char** argv) {
         std::cerr << err.what() << std::endl;
         std::cerr << program;
         return 1;
+    }
+
+    auto csvpath = program.get<std::string>("csvfile");
+    auto output = program.get<std::string>("output");
+    auto perplexity = program.get<double>("perplexity");
+    auto iterations = program.get<unsigned int>("iterations");
+
+    rapidcsv::Document doc(csvpath);
+
+    std::vector<float> X = doc.GetColumn<float>("X");
+    std::vector<float> Y = doc.GetColumn<float>("Y");
+
+    auto num_points = X.size();
+    std::vector<float> data = std::vector<float>(num_points * 2);
+
+    for (auto i = 0; i < num_points; ++i) {
+        data[2*i] = X[i];
+        data[2 * i + 1] = Y[i];
     }
 
     return 0;

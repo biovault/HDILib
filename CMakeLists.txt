@@ -153,8 +153,11 @@ FetchContent_MakeAvailable(annoy)
 
 message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 
-add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+if (USE_VULKAN_KOMPUTE)
+    # Neede for fmt library used in vulkan 
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif()
 # -----------------------------------------------------------------------------
 # Projects
 # -----------------------------------------------------------------------------
@@ -168,6 +171,7 @@ add_subdirectory (hdi/dimensionality_reduction)
 option(ENABLE_TESTS "Enable building the test executables" ON)
 if (ENABLE_TESTS)
     add_subdirectory(tests)
+    add_dependencies(tsne_tester hdiutils hdidimensionalityreduction hdidata)
 endif()
 
 
@@ -211,4 +215,5 @@ if(${HDILib_INSTALL})
             COMPONENT HDI_PACKAGE
     )
 endif()
+
 
