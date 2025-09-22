@@ -42,6 +42,7 @@
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
 #include "gpgpu_sne/gpgpu_sne_compute.h"
+#include "gpgpu_vulkan/gpgpu_sne_comp_vulkan.h"
 #include "gpgpu_sne/gpgpu_sne_raster.h"
 #include "tsne_parameters.h"
 #include <array>
@@ -157,7 +158,8 @@ namespace hdi {
       scalar_type _normalization_Q; //! Normalization factor of Q - Z in the original paper
 
 #ifndef __APPLE__
-      GpgpuSneCompute _gpgpu_compute_tsne;
+      //GpgpuSneCompute _gpgpu_compute_tsne;  ** test vulkan impl **
+      GpgpuSneVulkan _gpgpu_compute_tsne;
       GpgpuSneType _gpgpu_type;
 #endif // __APPLE__
       GpgpuSneRaster _gpgpu_raster_tsne;
