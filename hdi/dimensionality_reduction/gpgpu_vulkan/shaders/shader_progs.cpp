@@ -18,7 +18,7 @@ std::vector<float> BoundsShaderProg::compute(float padding) {
     ->eval();
 
 
-  return *_tensors[ShaderBuffers::BOUNDS]->data<std::vector<float>>();
+  return _tensors[ShaderBuffers::BOUNDS]->vector<float>();
 }
 
 std::vector<uint8_t> StencilShaderProg::compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds) {
@@ -27,7 +27,7 @@ std::vector<uint8_t> StencilShaderProg::compute(uint32_t width, uint32_t height,
     npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
   }
 
-  auto stencil_array = std::vector<uint8_t>(npwidth * height, 4);
+  auto stencil_array = std::vector<uint8_t>(npwidth * height * 4);
   auto stencil_out = _mgr.imageT<uint8_t>(stencil_array, npwidth, height, uint32_t(4));
   auto pushConsts = std::vector<float>({ bounds[0], bounds[1], bounds[2], bounds[3], (float) width, (float) height });
 
@@ -140,7 +140,7 @@ void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum
     ->eval();
 }
 
-void CenterScaleShaderProg::compute(unsigned int num_points, float exaggeration) {
+std::vector<float> CenterScaleShaderProg::compute(unsigned int num_points, float exaggeration) {
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
@@ -163,4 +163,6 @@ void CenterScaleShaderProg::compute(unsigned int num_points, float exaggeration)
     ->record<kp::OpAlgoDispatch>(algorithm)
     ->record<kp::OpSyncLocal>(params)
     ->eval();
+
+  return _tensors[ShaderBuffers::POSITION]->vector<float>();
 }

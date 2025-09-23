@@ -39,6 +39,7 @@
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
 #include "sptree.h"
+#include "dr_config.h"
 #include <random>
 
 #pragma warning( push )
@@ -75,6 +76,9 @@ namespace hdi {
 
 #ifndef __APPLE__
     void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
+#ifdef USE_VULKAN_KOMPUTE
+      _gpgpu_type = COMPUTE_SHADER;
+#else
       if (tsne_type == AUTO_DETECT)
       {
         //resolve the optimal type to use based on the available OpenGL version
@@ -90,6 +94,7 @@ namespace hdi {
       }
       else
         _gpgpu_type = tsne_type;
+#endif // USE_VULKAN_KOMPUTE
     }
 #endif
 
