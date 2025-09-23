@@ -11,6 +11,8 @@ if(USE_VULKAN_KOMPUTE)
     add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${ShaderFiles})
     source_group(Shaders FILES ${ShaderFiles})
     add_dependencies(${PROJECT} compile_shaders)
+    find_package(fmt CONFIG REQUIRED)
+    find_package(kompute CONFIG REQUIRED)
 else()
     file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
     message(STATUS "################# ${HeaderFiles} ##############")
@@ -23,6 +25,8 @@ endif()
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${hnswlib_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}/src")
+#include the generated dr_config.h file and any others
+target_include_directories(${PROJECT} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 
 # prefer static linking
@@ -77,6 +81,10 @@ endif()
 
 hdi_check_and_set_AVX(${PROJECT} ${HDILib_ENABLE_AVX})
 hdi_set_optimization_level(${PROJECT} ${HDILib_OPTIMIZATION_LEVEL})
+
+if (USE_VULKAN_KOMPUTE)
+    target_link_libraries(${PROJECT} PRIVATE kompute::kompute)
+endif()
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)

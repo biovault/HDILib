@@ -147,7 +147,9 @@ namespace hdi {
       _updateProg->compute(num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
       padding = 0.0f;
       bounds = _boundsProg->compute(padding);
-      _centerScaleProg->compute(num_points, exaggeration);
+      auto positions =_centerScaleProg->compute(num_points, exaggeration);
+      size_t size = sizeof(float) * 2 * num_points;
+      embedding->getContainer().assign(positions.data(), positions.data() + size);
     }
   }
 }

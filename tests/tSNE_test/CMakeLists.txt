@@ -31,12 +31,33 @@ add_executable(
     tSNEtester.cpp
 )
 
+find_package(fmt CONFIG REQUIRED)
+find_package(kompute CONFIG REQUIRED)
+
 target_include_directories(tsne_tester PRIVATE "${argparse_SOURCE_DIR}/include")
 target_include_directories(tsne_tester PRIVATE "${rapidcsv_SOURCE_DIR}/src")
 target_include_directories(tsne_tester 
-    PRIVATE "${CMAKE_SOURCE_DIR}/hdi/data" 
-    PRIVATE "${CMAKE_SOURCE_DIR}/hdi/dimensionality_reduction"
-    PRIVATE "${CMAKE_SOURCE_DIR}/hdi/utils")
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../hdi/dimensionality_reduction/$<CONFIG>/hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../hdi/dimensionality_reduction/$<CONFIG>/hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../hdi/dimensionality_reduction/$<CONFIG>/hdidimensionalityreduction${CMAKE_STATIC_LIBRARY_SUFFIX})
+    PRIVATE "${CMAKE_SOURCE_DIR}")
+message(STATUS "binary at ${CMAKE_CURRENT_BINARY_DIR}")
+target_link_libraries(tsne_tester PRIVATE kompute::kompute)
+target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/utils/$<CONFIG>/hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/data/$<CONFIG>/hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/dimensionality_reduction/$<CONFIG>/hdidimensionalityreduction${CMAKE_STATIC_LIBRARY_SUFFIX})
+if(NOT LZ4_TARGET)
+    if(TARGET LZ4::lz4_static)
+        set(LZ4_TARGET LZ4::lz4_static)
+    elseif(TARGET LZ4::lz4_shared)
+        set(LZ4_TARGET LZ4::lz4_shared)
+    elseif(TARGET lz4::lz4)
+        set(LZ4_TARGET lz4::lz4)
+    elseif(TARGET LZ4::lz4)    # intentionally UPPERCASE::LOWERCASE
+        set(LZ4_TARGET LZ4::lz4)
+    else()
+        message(FATAL_ERROR "No LZ4 target found.")
+    endif()
+endif()
+
+#message (STATUS "Flann link library: " ${FLANN_TARGET})
+#target_link_libraries(tsne_tester PRIVATE ${FLANN_TARGET})
+message (STATUS "Linking lz4 library " ${LZ4_TARGET})
+target_link_libraries(tsne_tester PRIVATE ${LZ4_TARGET})
