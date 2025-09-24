@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cmath> // for sqrt
 #include <memory>
+#include <sstream>
 #include "tensor_config.h"
 #include "shaders/shaders.h"
 #include "gpgpu_sne_comp_vulkan.h"
@@ -103,8 +104,8 @@ namespace hdi {
       _tensors[ShaderBuffers::INDEX] = _mgr.tensorT(linear_P.indices);
       _tensors[ShaderBuffers::PREV_GRADIENTS] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 0.0f));
       _tensors[ShaderBuffers::GAIN] = _mgr.tensorT(std::vector<float>(num_pnts * 2, 1.0f));
-      _tensors[ShaderBuffers::BOUNDS] = _mgr.tensorT(std::vector<float>{std::vector<float>(4, 1.0f)});
-      _tensors[ShaderBuffers::NUM_POINTS] = _mgr.tensorT(std::vector<unsigned int>{static_cast<uint32_t>(1), num_pnts});
+      _tensors[ShaderBuffers::BOUNDS] = _mgr.tensorT(std::vector<float>(4, 1.0f));
+      _tensors[ShaderBuffers::NUM_POINTS] = _mgr.tensorT(std::vector<unsigned int>(1, num_pnts));
 
       _boundsProg = std::make_shared<BoundsShaderProg>(_mgr, _tensors);
       _stencilProg = std::make_shared<StencilShaderProg>(_mgr, _tensors);
@@ -125,30 +126,49 @@ namespace hdi {
     void GpgpuSneVulkan::compute(embedding_type* embedding, float exaggeration, float iteration, float mult) {
       float* points = embedding->getContainer().data();
       unsigned int num_points = embedding->numDataPoints();
-      _tensors[ShaderBuffers::POSITION]->setData(embedding->getContainer());
+      if (iteration < 0.5) { // only on the first iteration
+        _tensors[ShaderBuffers::POSITION]->setData(embedding->getContainer());
+        _tensors[ShaderBuffers::NUM_POINTS]->setData(std::vector<unsigned int>({ num_points }));
+      }
+
+      // Compute the bounds of the given embedding and add a 10% border around it
       auto padding = 0.1f;
       std::vector<float> bounds = _boundsProg->compute(padding);
 
       auto range_x = abs(bounds[1] - bounds[0]);
       auto range_y = abs(bounds[3] - bounds[2]);
 
-      //assume adaptive resolution(scales with points range) with a minimum size
+      // assume adaptive resolution(scales with points range) with a minimum size
       auto width = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_x, float(MINIMUM_FIELDS_SIZE))));
       auto height = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_y, float(MINIMUM_FIELDS_SIZE))));
 
+      // calculate the fields texture
       auto stencil = _stencilProg->compute(width, height, num_points, bounds);
       auto fields = _fieldCompProg->compute(stencil, width, height);
+
+      // Calculate the normalization sum
       _interpProg->compute(fields, width, height);
       if (_interpProg->getSumQ() == 0) {
-        std::cerr << "Interpolation SumQ is 0, breaking out " << std::endl;
+        std::stringstream ss;
+        ss << "Interpolation SumQ is 0, breaking out at iteration: " << iteration;
+        throw std::runtime_error(ss.str());
         return;
       }
-      auto sum_kl = _forcesProg->compute(num_points, exaggeration);
+
+      // compute the forces based on the gradients record the kl_divergence
+      kl_divergence = _forcesProg->compute(num_points, exaggeration);
+
+      // Update the embedding positions
       _updateProg->compute(num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
+
+      // Get the bounds of the new embedding
       padding = 0.0f;
       bounds = _boundsProg->compute(padding);
-      auto positions =_centerScaleProg->compute(num_points, exaggeration);
+      // Use that to center the embedding around 0,0 and scale it if needed
+      auto positions = _centerScaleProg->compute(num_points, exaggeration);
       size_t size = sizeof(float) * 2 * num_points;
+
+      // Save the new embedding
       embedding->getContainer().assign(positions.data(), positions.data() + size);
     }
   }
