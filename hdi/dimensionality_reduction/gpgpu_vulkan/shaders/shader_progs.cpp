@@ -1,8 +1,10 @@
 #include "shader_progs.h"
+#include <iostream> // for debug logging
 
 std::vector<float> BoundsShaderProg::compute(float padding) {
   // Implement the compute function using _mgr and _tensors
   // This is a placeholder implementation
+  std::cout << "Bounds prog" << std::endl;
   std::vector<uint32_t> result;
   // Actual computation logic goes here
   const std::vector<std::shared_ptr<kp::Memory>> params = {
@@ -22,13 +24,14 @@ std::vector<float> BoundsShaderProg::compute(float padding) {
 }
 
 std::vector<uint8_t> StencilShaderProg::compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds) {
+  std::cout << "Stencil prog" << std::endl;
   auto npwidth = width;
   if (npwidth % 8) {
     npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
   }
 
   auto stencil_array = std::vector<uint8_t>(npwidth * height * 4);
-  auto stencil_out = _mgr.imageT<uint8_t>(stencil_array, npwidth, height, uint32_t(4));
+  auto stencil_out = _mgr.image(stencil_array.data(), stencil_array.size(), npwidth, height, 4u, kp::Memory::DataTypes::eFloat);
   auto pushConsts = std::vector<float>({ bounds[0], bounds[1], bounds[2], bounds[3], (float) width, (float) height });
 
   const std::vector<std::shared_ptr<kp::Memory>> params = { _tensors[ShaderBuffers::POSITION], stencil_out };
@@ -39,17 +42,18 @@ std::vector<uint8_t> StencilShaderProg::compute(uint32_t width, uint32_t height,
     ->record<kp::OpSyncLocal>(params)
     ->eval();
 
-  return stencil_out->vector();
+  return stencil_out->vector<uint8_t>();
 }
 
 std::vector<float> FieldComputationShaderProg::compute(std::vector<uint8_t> stencil, uint32_t width, uint32_t height) {
+  std::cout << "Field comp prog" << std::endl;
   auto npwidth = width;
   if (npwidth % 8) {
     npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
   }
 
-  auto stencil_in = _mgr.imageT(stencil, npwidth, height, 4);
-  auto field_out = _mgr.imageT(std::vector<float>(npwidth * height * 4, 0.0f), npwidth, height, 4);
+  auto stencil_in = _mgr.image(stencil.data(), stencil.size(), npwidth, height, 4u, kp::Memory::DataTypes::eFloat);
+  auto field_out = _mgr.image(std::vector<float>(npwidth * height * 4, 0.0f), npwidth, height, 4);
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
@@ -69,6 +73,7 @@ std::vector<float> FieldComputationShaderProg::compute(std::vector<uint8_t> sten
 }
 
 void InterpolationShaderProg::compute(std::vector<float> fields, uint32_t width, uint32_t height) {
+  std::cout << "Interpolation prog" << std::endl;
   auto npwidth = width;
   if (npwidth % 8) {
     npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
@@ -96,6 +101,7 @@ void InterpolationShaderProg::compute(std::vector<float> fields, uint32_t width,
 }
 
 float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
+  std::cout << "Forces comp prog" << std::endl;
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::NEIGHBOUR],
@@ -121,6 +127,7 @@ float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
 }
 
 void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentum, unsigned int momentum_switch, float final_momentum, float gain_mult) {
+  std::cout << "Update prog" << std::endl;
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::GRADIENTS],
@@ -141,6 +148,7 @@ void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum
 }
 
 std::vector<float> CenterScaleShaderProg::compute(unsigned int num_points, float exaggeration) {
+  std::cout << "Center-Scale prog" << std::endl;
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
