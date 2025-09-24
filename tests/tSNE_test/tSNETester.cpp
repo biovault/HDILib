@@ -15,6 +15,7 @@
 #include "hdi/dimensionality_reduction/knn_utils.h"
 #include "hdi/dimensionality_reduction/tsne.h"
 #include "hdi/dimensionality_reduction/gradient_descent_tsne_texture.h"
+#include <kompute/logger/Logger.hpp>
 
 
 std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimensions, std::vector<float> data, int iterations = 1000, int perplexity = 30, int exaggeration_iter = 250, hdi::dr::knn_library knn_algorithm = hdi::dr::knn_library::KNN_HNSW, hdi::dr::knn_distance_metric knn_distance_metric = hdi::dr::knn_distance_metric::KNN_METRIC_EUCLIDEAN, int num_target_dimensions = 2) {
@@ -30,7 +31,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
     using SparseScalarMatrixType = std::vector<MapType>;
     SparseScalarMatrixType distributions;
     hdi::dr::GradientDescentTSNETexture tSNE;
-
+    
     tSNE_param._embedding_dimensionality = num_target_dimensions;
     tSNE_param._mom_switching_iter = exaggeration_iter;
     tSNE_param._remove_exaggeration_iter = exaggeration_iter;
@@ -46,9 +47,15 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
 
     std::cout << "knn complete" << std::endl;
     tSNE.initializeWithJointProbabilityDistribution(distributions, &embedding, tSNE_param);
-    for (int iter = 0; iter < iterations; ++iter) {
-        tSNE.doAnIteration();
-        std::cout << "Iter: " << iter << "kl_divergences: " << tSNE.kl_divergence << std::endl;
+    try {
+        for (int iter = 0; iter < iterations; ++iter) {
+            tSNE.doAnIteration();
+            std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << std::endl;
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Exception with error: " << e.what() << std::endl;
+        return std::vector<float>();
     }
     std::cout << "... done!\n";
     return embedding.getContainer();
@@ -75,6 +82,10 @@ int main(int argc, const char** argv) {
         .default_value(1000u)
         .scan<'i', unsigned int>()
         .help("Number of iterations for tSNE (default: 1000).");
+    //program.add_argument("-l", "--loglevel")
+    //    .default_value(2u)
+    //    .scan<'l', unsigned int>()
+    //    .help("0: Trace, 1: Debug, 2: Info, 3: Warn, 4: Error:, 5: Critical, 6: Off");
     try {
         program.parse_args(argc, argv);
     } catch (const std::runtime_error& err) {
@@ -87,6 +98,7 @@ int main(int argc, const char** argv) {
     auto output = program.get<std::string>("output");
     auto perplexity = program.get<double>("perplexity");
     auto iterations = program.get<unsigned int>("iterations");
+    //auto loglevel = program.get<unsigned int>("loglevel");
 
     rapidcsv::Document doc(csvpath.string());
 
