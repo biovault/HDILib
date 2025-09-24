@@ -1,1 +1,2 @@
 #cmakedefine USE_VULKAN_KOMPUTE
+#cmakedefine KOMPUTE_OPT_LOG_LEVEL_DISABLED
