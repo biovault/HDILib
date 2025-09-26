@@ -121,6 +121,8 @@ int main(int argc, const char** argv) {
         float y = *it++;
         s << std::setprecision(6) << x << "," << std::setprecision(6) << y << "\n";
     }
+    s.flush();
+    s.close();
 
     return 0;
 }
