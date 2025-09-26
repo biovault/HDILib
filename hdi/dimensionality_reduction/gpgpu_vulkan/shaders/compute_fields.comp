@@ -6,7 +6,7 @@
 
 
   layout(binding = 2, rgba32f) writeonly uniform image2D Fields;
-  layout(binding = 3, rgba8) readonly uniform image2D Stencil;
+  layout(binding = 3, rgba32f) readonly uniform image2D Stencil;
   layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
 
   const uint groupSize = gl_WorkGroupSize.x;
@@ -25,7 +25,7 @@
     // An x and y coordinate across the image. 
     // Anything that is masked by the stencil 
     // i.e. the edges regions with no points is ignored.
-    float mask = imageLoad(Stencil, ivec2(x, y)).x;
+    int mask = int(round(imageLoad(Stencil, ivec2(x, y)).x));
     if (mask == 0) return;
 
     uint lid = gl_LocalInvocationIndex.x;

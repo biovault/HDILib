@@ -23,15 +23,15 @@ std::vector<float> BoundsShaderProg::compute(float padding) {
   return _tensors[ShaderBuffers::BOUNDS]->vector<float>();
 }
 
-std::vector<uint8_t> StencilShaderProg::compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds) {
+std::vector<float> StencilShaderProg::compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds) {
   std::cout << "Stencil prog" << std::endl;
   auto npwidth = width;
   if (npwidth % 8) {
     npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
   }
 
-  auto stencil_array = std::vector<uint8_t>(npwidth * height * 4);
-  auto stencil_out = _mgr.image(stencil_array.data(), stencil_array.size(), npwidth, height, 4u, kp::Memory::DataTypes::eFloat);
+  auto stencil_array = std::vector<float>(width * height * 4, 0.0); //npwidth
+  auto stencil_out = _mgr.image(stencil_array, width, height, 4u); //npwidth
   auto pushConsts = std::vector<float>({ bounds[0], bounds[1], bounds[2], bounds[3], (float) width, (float) height });
 
   const std::vector<std::shared_ptr<kp::Memory>> params = { _tensors[ShaderBuffers::POSITION], stencil_out };
@@ -42,18 +42,18 @@ std::vector<uint8_t> StencilShaderProg::compute(uint32_t width, uint32_t height,
     ->record<kp::OpSyncLocal>(params)
     ->eval();
 
-  return stencil_out->vector<uint8_t>();
+  return stencil_out->vector();
 }
 
-std::vector<float> FieldComputationShaderProg::compute(std::vector<uint8_t> stencil, uint32_t width, uint32_t height) {
+std::vector<float> FieldComputationShaderProg::compute(std::vector<float> stencil, uint32_t width, uint32_t height) {
   std::cout << "Field comp prog" << std::endl;
   auto npwidth = width;
   if (npwidth % 8) {
     npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
   }
 
-  auto stencil_in = _mgr.image(stencil.data(), stencil.size(), npwidth, height, 4u, kp::Memory::DataTypes::eFloat);
-  auto field_out = _mgr.image(std::vector<float>(npwidth * height * 4, 0.0f), npwidth, height, 4);
+  auto stencil_in = _mgr.image(stencil, width, height, 4u); //npwidth
+  auto field_out = _mgr.image(std::vector<float>(width * height * 4, 0.0f), width, height, 4); // npwidth
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
@@ -79,7 +79,7 @@ void InterpolationShaderProg::compute(std::vector<float> fields, uint32_t width,
     npwidth += 8 - (npwidth % 8); // Align to next multiple of 8
   }
 
-  auto fields_in = _mgr.imageT(fields, npwidth, height, 4);
+  auto fields_in = _mgr.image(fields, width, height, 4); //npwidth
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::INTERP_FIELDS],

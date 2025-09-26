@@ -135,8 +135,12 @@ namespace hdi {
       auto padding = 0.1f;
       std::vector<float> bounds = _boundsProg->compute(padding);
 
-      auto range_x = abs(bounds[1] - bounds[0]);
-      auto range_y = abs(bounds[3] - bounds[2]);
+      auto range_x = abs(bounds[2] - bounds[0]);
+      auto range_y = abs(bounds[3] - bounds[1]);
+
+      std::cout << "min x,y" << bounds[0] << "," << bounds[1] << std::endl;
+      std::cout << "max x,y" << bounds[2] << "," << bounds[3] << std::endl;
+      std::cout << "Range X: " << range_x << " Range_Y: " << range_y << std::endl;
 
       // assume adaptive resolution(scales with points range) with a minimum size
       auto width = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_x, float(MINIMUM_FIELDS_SIZE))));
@@ -169,7 +173,8 @@ namespace hdi {
       size_t size = sizeof(float) * 2 * num_points;
 
       // Save the new embedding
-      embedding->getContainer().assign(positions.data(), positions.data() + size);
+      //embedding->getContainer().assign(positions.data(), positions.data() + size);
+      memcpy(points, positions.data(), size);
     }
   }
 }

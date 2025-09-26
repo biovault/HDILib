@@ -11,7 +11,7 @@ public:
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::BOUNDS] )
   {}
 
-  std::vector<float> compute(float padding);
+  std::vector<float> compute(float padding = 0.0);
 
 private:
   std::vector<uint32_t>& _shaderBinary;
@@ -26,7 +26,7 @@ public:
     _tensors(tensors), 
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::STENCIL]) {
   }
-  std::vector<uint8_t> compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds);
+  std::vector<float> compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds);
 
 private:
   std::vector<uint32_t>& _shaderBinary;
@@ -42,7 +42,7 @@ public:
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS])
   {
   }
-  std::vector<float> compute(std::vector<uint8_t> stencil, uint32_t width, uint32_t height);
+  std::vector<float> compute(std::vector<float> stencil, uint32_t width, uint32_t height);
 
 private:
   std::vector<uint32_t>& _shaderBinary;
