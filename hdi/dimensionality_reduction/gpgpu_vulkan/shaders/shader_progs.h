@@ -26,7 +26,7 @@ public:
     _tensors(tensors), 
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::STENCIL]) {
   }
-  std::vector<float> compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds);
+  std::shared_ptr<kp::ImageT<float>> compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds);
 
 private:
   std::vector<uint32_t>& _shaderBinary;
@@ -42,7 +42,7 @@ public:
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS])
   {
   }
-  std::vector<float> compute(std::vector<float> stencil, uint32_t width, uint32_t height);
+  std::shared_ptr<kp::ImageT<float>> compute(std::shared_ptr<kp::ImageT<float>> stencil, uint32_t width, uint32_t height);
 
 private:
   std::vector<uint32_t>& _shaderBinary;
@@ -59,7 +59,7 @@ public:
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::INTERP_FIELDS])
   {
   }
-  void compute(std::vector<float> fields, uint32_t width, uint32_t height);
+  void compute(std::shared_ptr<kp::ImageT<float>> fields, uint32_t width, uint32_t height);
   float getSumQ() { return _sum_Q; };
 private:
   std::vector<uint32_t>& _shaderBinary;

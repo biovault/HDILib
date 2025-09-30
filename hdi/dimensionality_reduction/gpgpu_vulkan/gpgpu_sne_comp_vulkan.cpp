@@ -137,10 +137,11 @@ namespace hdi {
 
       auto range_x = abs(bounds[2] - bounds[0]);
       auto range_y = abs(bounds[3] - bounds[1]);
+     // std::cout << "exaggeration: " << exaggeration << std::endl;
 
-      std::cout << "min x,y" << bounds[0] << "," << bounds[1] << std::endl;
-      std::cout << "max x,y" << bounds[2] << "," << bounds[3] << std::endl;
-      std::cout << "Range X: " << range_x << " Range_Y: " << range_y << std::endl;
+      //std::cout << "min x,y" << bounds[0] << "," << bounds[1] << std::endl;
+      //std::cout << "max x,y" << bounds[2] << "," << bounds[3] << std::endl;
+      //std::cout << "Range X: " << range_x << " Range_Y: " << range_y << std::endl;
 
       // assume adaptive resolution(scales with points range) with a minimum size
       auto width = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_x, float(MINIMUM_FIELDS_SIZE))));
@@ -152,6 +153,7 @@ namespace hdi {
 
       // Calculate the normalization sum
       _interpProg->compute(fields, width, height);
+      //std::cout << "width: " << width << " height: " << height << std::endl;
       if (_interpProg->getSumQ() == 0) {
         std::stringstream ss;
         ss << "Interpolation SumQ is 0, breaking out at iteration: " << iteration;
