@@ -1,8 +1,15 @@
 set(PROJECT "hdiutils")
 
 # Gather list of all .h files in "/"
-file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h glad/*.h glad/KHR/*.h)
+file(GLOB UtilsHeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
+file(GLOB GladHeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} glad/*.h glad/KHR/*.h)
 file(GLOB SourceFiles *.cpp)
+
+if(NOT APPLE)
+    set(HeaderFiles ${UtilsHeaderFiles} ${GladHeaderFiles})
+else()
+    set(HeaderFiles ${UtilsHeaderFiles})
+endif()
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
