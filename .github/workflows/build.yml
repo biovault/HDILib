@@ -35,14 +35,6 @@ jobs:
           #  build-cversion: 16
           #  build-config: Analysis
 
-          - name: Windows-msvc2019
-            os: windows-2019
-            compiler: msvc-2019
-            build-cversion: 16
-            build-runtime: MD
-            build-config: Release
-            build-arch: x86_64
-
           - name: Windows-msvc2022
             os: windows-2022
             compiler: msvc-2022
