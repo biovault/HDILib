@@ -137,8 +137,10 @@ if (NOT TARGET Annoy::Annoy)
       EXCLUDE_FROM_ALL
     )
     FetchContent_MakeAvailable(annoy)
+    set(Annoy_SOURCE_DIR "${Annoy_SOURCE_DIR}/src")
 else()
     get_target_property(Annoy_SOURCE_DIR Annoy::Annoy INTERFACE_INCLUDE_DIRECTORIES)
+    set(Annoy_SOURCE_DIR "${Annoy_SOURCE_DIR}/annoy")
 endif()
 
 message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
