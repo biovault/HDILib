@@ -2,7 +2,6 @@ set(PROJECT "hdidimensionalityreduction")
 
 # Gather list of all .h files in "/"
 file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
-message(STATUS "################# ${HeaderFiles} ##############")
 file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
