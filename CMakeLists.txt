@@ -133,7 +133,7 @@ if (NOT TARGET Annoy::Annoy)
     FetchContent_Declare(
       annoy
       GIT_REPOSITORY https://github.com/spotify/annoy
-      GIT_TAG v1.17.2
+      GIT_TAG v1.17.3
       EXCLUDE_FROM_ALL
     )
     FetchContent_MakeAvailable(annoy)
