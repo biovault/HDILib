@@ -113,27 +113,33 @@ else()
     message(WARNING, "OpenMP not found!")
 endif()
 
-message (STATUS "Fetching hnswlib...")
-FetchContent_Declare(
-  hnswlib
-  GIT_REPOSITORY https://github.com/nmslib/hnswlib
-  GIT_TAG v0.8.0
-  EXCLUDE_FROM_ALL
-)
-
-FetchContent_MakeAvailable(hnswlib)
+if (NOT TARGET hnswlib::hnswlib)
+    message (STATUS "Fetching hnswlib...")
+    FetchContent_Declare(
+      hnswlib
+      GIT_REPOSITORY https://github.com/nmslib/hnswlib
+      GIT_TAG v0.8.0
+      EXCLUDE_FROM_ALL
+    )
+    FetchContent_MakeAvailable(hnswlib)
+else()
+    get_target_property(hnswlib_SOURCE_DIR hnswlib::hnswlib INTERFACE_INCLUDE_DIRECTORIES)
+endif()
 
 message(STATUS "hnswlib at ${hnswlib_SOURCE_DIR}")
 
-message (STATUS "Fetching annoy...")
-FetchContent_Declare(
-  annoy
-  GIT_REPOSITORY https://github.com/spotify/annoy
-  GIT_TAG v1.17.2
-  EXCLUDE_FROM_ALL
-)
-
-FetchContent_MakeAvailable(annoy)
+if (NOT TARGET Annoy::Annoy)
+    message (STATUS "Fetching annoy...")
+    FetchContent_Declare(
+      annoy
+      GIT_REPOSITORY https://github.com/spotify/annoy
+      GIT_TAG v1.17.2
+      EXCLUDE_FROM_ALL
+    )
+    FetchContent_MakeAvailable(annoy)
+else()
+    get_target_property(Annoy_SOURCE_DIR Annoy::Annoy INTERFACE_INCLUDE_DIRECTORIES)
+endif()
 
 message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 
