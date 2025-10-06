@@ -94,6 +94,13 @@ class HDILibConan(ConanFile):
         ).as_posix()
         tc.variables["IN_CONAN_BUILD"] = "TRUE"
 
+        # Fix build with manylinux for nptsne building
+        if self.settings.os == "Linux" and self.settings.compiler.version == "14":
+            tc.variables["CMAKE_C_FLAGS"] = (
+                "${CMAKE_C_FLAGS} -m64 -std=c99 -D_ISOC99_SOURCE -D_GNU_SOURCE"
+            )
+            tc.variables["CMAKE_CXX_FLAGS"] = "${CMAKE_CXX_FLAGS} -D_ISOC99_SOURCE"
+
         if os_info.is_macos:
             proc = subprocess.run("brew --prefix libomp", shell=True, capture_output=True)
             omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"

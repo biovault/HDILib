@@ -23,6 +23,10 @@ inputs:
   conan-build-os:
     description: "Linux or Macos"
     required: true
+  conan-channel:
+    description: "The reference channel one of [stable python]"
+    default: "stable" # Default value for input2
+    required: false
   build-arch:
     description: "either x86_64 or armv8 (for macos)"
     required: true
@@ -38,11 +42,22 @@ runs:
   steps:
     - name: Install conan & build configuration
       run: |
-        pip install conan~=1.66.0
-        pip install packaging
+        pip3 install conan~=1.66.0
+        pip3 install packaging
 
-        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then 
-          sudo apt-get install -y ninja-build; 
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
+          if [[ ${{ inputs.conan-channel }} == "python" ]]; then 
+            dnf install -y ninja-build;
+            yum install -y libomp;
+          else
+            sudo apt-get install -y ninja-build;
+          fi
+        fi
+
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-compiler-version }} == "10" ]]; then
+          sudo apt install gcc-10 g++-10 libstdc++-10-dev
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 --slave /usr/bin/gcov gcov /usr/bin/gcov-10
+          sudo update-alternatives --set gcc /usr/bin/gcc-10
         fi
 
         export CONAN_CMAKE_PROGRAM=`which cmake`
@@ -85,9 +100,9 @@ runs:
         export HOMEBREW_NO_AUTO_UPDATE=1
         export CONAN_PACKAGE_VERSION=`conan inspect --raw version conanfile.py`
         if [[ ${{ inputs.conan-build-os }} == "Macos" ]] && [[ ${{ inputs.conan-compiler-version }} == "14" ]]; then
-          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/stable -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+          conan create . HDILib/$biovault/${{ inputs.conan-channel }} -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
         else
-          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/stable -pr:h action_build -pr:b action_build -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+          conan create . HDILib/$biovault/${{ inputs.conan-channel }} -pr:h action_build -pr:b action_build -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
         fi
 
       shell: bash
