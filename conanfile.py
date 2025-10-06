@@ -19,7 +19,9 @@ class HDILibConan(ConanFile):
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
     author = "B. van Lew <b.van_lew@lumc.nl>"  # conanfile author
-    license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+    license = (  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+        "MIT"
+    )
     default_user = "lkeb"
     default_channel = "stable"
 
@@ -108,7 +110,8 @@ class HDILibConan(ConanFile):
 
     def build(self):
         print(
-            f"Build folder {self.build_folder} \n Package folder {self.package_folder}\n Source folder {self.source_folder}"
+            f"Build folder {self.build_folder} \n Package folder"
+            f" {self.package_folder}\n Source folder {self.source_folder}"
         )
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
