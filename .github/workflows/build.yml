@@ -43,6 +43,17 @@ jobs:
             build-config: Release
             build-arch: x86_64
 
+          - name: Linux_gcc10
+            os: ubuntu-22.04
+            build-cc: gcc
+            build-cxx: g++
+            build-compiler: gcc
+            build-cversion: 10
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++11
+            build-arch: x86_64
+
           - name: Linux_gcc11
             os: ubuntu-22.04
             build-cc: gcc
@@ -64,6 +75,27 @@ jobs:
             build-os: Linux
             build-libcxx: libstdc++11
             build-arch: x86_64
+
+          - name: Linux_gcc14
+            os: ubuntu-24.04
+            build-cc: gcc
+            build-cxx: g++
+            build-compiler: gcc
+            build-cversion: 14
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++11
+            build-arch: x86_64
+
+          - name: Macos_xcode14.3
+            os: macos-14
+            build-compiler: apple-clang
+            build-cversion: 14
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 15.0.1
+            build-libcxx: libc++
+            build-arch: armv8
 
           - name: Macos_xcode15
             os: macos-14
@@ -137,3 +169,49 @@ jobs:
           build-arch: ${{matrix.build-arch}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+
+  Python-ManyLinux-2-28-Build:
+    runs-on: ubuntu-latest
+    container: quay.io/pypa/manylinux_2_28_x86_64
+    strategy:
+      matrix:
+        include: 
+          - name: python manylinux_2_28
+            build-cc: gcc
+            build-cxx: g++
+            build-compiler: gcc
+            build-cversion: 14
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++11
+            build-arch: x86_64      
+
+    steps:
+      - name: Checkout the source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Verify default Python installation
+        run: |
+          python3 --version
+          python3 -m ensurepip --upgrade
+          pip3 --version
+  
+      - name: Verify Python installation
+        run: |
+          python3 --version
+          pip3 --version
+      - name: Linux build
+        uses: ./.github/conan_linuxmac_build
+        with:
+          conan-compiler: ${{matrix.build-compiler}}
+          conan-compiler-version: ${{matrix.build-cversion}}
+          conan-libcxx-version: ${{matrix.build-libcxx}}
+          conan-build-type: ${{matrix.build-config}}
+          conan-build-os: ${{matrix.build-os}}
+          conan-channel: python
+          build-arch: ${{matrix.build-arch}}
+          conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
+          conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+  

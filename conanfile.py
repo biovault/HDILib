@@ -19,7 +19,9 @@ class HDILibConan(ConanFile):
     topics = ("embedding", "analysis", "n-dimensional", "tSNE")
     url = "https://github.com/biovault/HDILib"
     author = "B. van Lew <b.van_lew@lumc.nl>"  # conanfile author
-    license = "MIT"  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+    license = (  # License for packaged library; please use SPDX Identifiers https://spdx.org/licenses/
+        "MIT"
+    )
     default_user = "lkeb"
     default_channel = "stable"
 
@@ -55,7 +57,7 @@ class HDILibConan(ConanFile):
             del self.options.fPIC
 
     def generate(self):
-        print("In generate")
+        print(f"Generate for channel {self.channel}")
         generator = None
         if self.settings.os == "Macos":
             generator = "Xcode"
@@ -92,6 +94,13 @@ class HDILibConan(ConanFile):
         ).as_posix()
         tc.variables["IN_CONAN_BUILD"] = "TRUE"
 
+        # Fix build with manylinux for nptsne building
+        if self.settings.os == "Linux" and self.channel == "python":
+            tc.variables["CMAKE_C_FLAGS"] = (
+                "${CMAKE_C_FLAGS} -m64 -std=c99 -D_ISOC99_SOURCE -D_GNU_SOURCE"
+            )
+            tc.variables["CMAKE_CXX_FLAGS"] = "${CMAKE_CXX_FLAGS} -D_ISOC99_SOURCE"
+
         if os_info.is_macos:
             proc = subprocess.run("brew --prefix libomp", shell=True, capture_output=True)
             omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
@@ -108,7 +117,8 @@ class HDILibConan(ConanFile):
 
     def build(self):
         print(
-            f"Build folder {self.build_folder} \n Package folder {self.package_folder}\n Source folder {self.source_folder}"
+            f"Build folder {self.build_folder} \n Package folder"
+            f" {self.package_folder}\n Source folder {self.source_folder}"
         )
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
