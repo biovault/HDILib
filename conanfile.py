@@ -26,7 +26,7 @@ class HDILibConan(ConanFile):
     default_channel = "stable"
 
     # Options may need to change depending on the packaged library
-    settings = "os", "compiler", "arch", "build_type"
+    settings = "os", "compiler", "arch", "build_type", "channel"
     # Note : This should only be built with: shared=False, fPIC=True
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
