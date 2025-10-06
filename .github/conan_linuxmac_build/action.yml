@@ -100,9 +100,9 @@ runs:
         export HOMEBREW_NO_AUTO_UPDATE=1
         export CONAN_PACKAGE_VERSION=`conan inspect --raw version conanfile.py`
         if [[ ${{ inputs.conan-build-os }} == "Macos" ]] && [[ ${{ inputs.conan-compiler-version }} == "14" ]]; then
-          conan create . HDILib/$biovault/${{ inputs.conan-channel }} -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/${{ inputs.conan-channel }} -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
         else
-          conan create . HDILib/$biovault/${{ inputs.conan-channel }} -pr:h action_build -pr:b action_build -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
+          conan create . HDILib/$CONAN_PACKAGE_VERSION@biovault/${{ inputs.conan-channel }} -pr:h action_build -pr:b action_build -s build_type=Release -o HDILib:shared=False -o HDILib:fPIC=True
         fi
 
       shell: bash
