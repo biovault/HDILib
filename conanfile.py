@@ -95,7 +95,7 @@ class HDILibConan(ConanFile):
         tc.variables["IN_CONAN_BUILD"] = "TRUE"
 
         # Fix build with manylinux for nptsne building
-        if self.settings.os == "Linux" and self.settings.compiler.version == "14":
+        if self.settings.os == "Linux" and self.settings.channel == "python":
             tc.variables["CMAKE_C_FLAGS"] = (
                 "${CMAKE_C_FLAGS} -m64 -std=c99 -D_ISOC99_SOURCE -D_GNU_SOURCE"
             )
