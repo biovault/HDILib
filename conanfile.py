@@ -26,7 +26,7 @@ class HDILibConan(ConanFile):
     default_channel = "stable"
 
     # Options may need to change depending on the packaged library
-    settings = "os", "compiler", "arch", "build_type", "channel"
+    settings = "os", "compiler", "arch", "build_type"
     # Note : This should only be built with: shared=False, fPIC=True
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
@@ -57,7 +57,7 @@ class HDILibConan(ConanFile):
             del self.options.fPIC
 
     def generate(self):
-        print("In generate")
+        print(f"Generate for channel {self.channel}")
         generator = None
         if self.settings.os == "Macos":
             generator = "Xcode"
@@ -95,8 +95,8 @@ class HDILibConan(ConanFile):
         tc.variables["IN_CONAN_BUILD"] = "TRUE"
 
         # Fix build with manylinux for nptsne building
-        if self.settings.os == "Linux" and self.settings.channel == "python":
-            print(f"self.settings.channel: {self.settings.channel}")
+        if self.settings.os == "Linux" and self.channel == "python":
+            print(f"self.settings.channel: {self.channel}")
             tc.variables["CMAKE_C_FLAGS"] = (
                 "${CMAKE_C_FLAGS} -m64 -std=c99 -D_ISOC99_SOURCE -D_GNU_SOURCE"
             )
