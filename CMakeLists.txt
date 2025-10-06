@@ -11,7 +11,7 @@ option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC"
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
-set(HDILib_VERSION "1.2.10" CACHE STRING "HDILib Library version")
+set(HDILib_VERSION "1.2.11" CACHE STRING "HDILib Library version")
 
 if (HDILib_ENABLE_AVX)
     message(STATUS "ENABLE_AVX is ON")
