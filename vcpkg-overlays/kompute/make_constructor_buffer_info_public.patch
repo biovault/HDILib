@@ -1,0 +1,22 @@
+diff --git a/src/include/kompute/Tensor.hpp b/src/include/kompute/Tensor.hpp
+index 9739faa..685488e 100644
+--- a/src/include/kompute/Tensor.hpp
++++ b/src/include/kompute/Tensor.hpp
+@@ -175,6 +175,8 @@ namespace kp {
+ 
+     Type type() override { return Type::eTensor; }
+ 
++    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
++
+   protected:
+     // -------------- ALWAYS OWNED RESOURCES
+     vk::DescriptorBufferInfo mDescriptorBufferInfo;
+@@ -214,8 +216,6 @@ namespace kp {
+     vk::BufferUsageFlags getPrimaryBufferUsageFlags();
+     vk::BufferUsageFlags getStagingBufferUsageFlags();
+ 
+-    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
+-
+     /**
+      * Function to reserve memory on the tensor. This does not copy any data, it
+      * just reserves memory, similarly to std::vector reserve() method.

@@ -4,6 +4,9 @@ vcpkg_from_github(
     REF 342af81a671099ff590effc30af18551db063917  # Used this SHA in the python test
     SHA512 2F3B83DC3455A1BCBE5D8DD407FD81C3BC2F23CCEA6A6F76626F8E36F541D230F88CDAFFC6B34A0DD34586B5DE6098D6779DC425807152577D52F8D9CF0EBEF4
     HEAD_REF master
+    PATCHES 
+        make_constructor_buffer_info_public.patch
+        add_indirect_buffer_flag_to_tensor.patch
 )
 
 vcpkg_cmake_configure(
@@ -14,7 +17,7 @@ vcpkg_cmake_configure(
         -DKOMPUTE_OPT_BUILD_DOCS=OFF
         -DKOMPUTE_OPT_INSTALL=ON
         -DKOMPUTE_OPT_BUILD_PYTHON=OFF
-        -DKOMPUTE_OPT_LOG_LEVEL="Default"
+        -DKOMPUTE_OPT_LOG_LEVEL="Warn"
         -DKOMPUTE_OPT_USE_SPDLOG=OFF
         -DKOMPUTE_OPT_ANDROID_BUILD=OFF
         -DKOMPUTE_OPT_DISABLE_VK_DEBUG_LAYERS=OFF
