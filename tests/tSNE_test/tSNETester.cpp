@@ -68,7 +68,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
         try {
             for (int iter = 0; iter < iterations; ++iter) {
                 tSNE.doAnIteration();
-                //std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
+                std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
                 if (stepsoutput > 0) {
                     if (iter > 0 && iter % stepsoutput == 0) {
                         save_to_csv(embedding.getContainer(), output, iter);
@@ -205,3 +205,4 @@ int main(int argc, const char** argv) {
 // -p 30 -i 1000 -s 10000 -d 784 D:\Data\ML\MNIST\mnist_train.csv
 // -p 30 -i 1000 -s 500 -d 784 D:\Data\ML\MNIST\mnist_train.csv
 // -p 13 -i 500 -d 2 D:\Data\ML\xmas\data.csv
+// -b - p 30 - i 1000 - s 70000 - d 784 D:\Data\ML\MNIST\MNIST_70000.bin
