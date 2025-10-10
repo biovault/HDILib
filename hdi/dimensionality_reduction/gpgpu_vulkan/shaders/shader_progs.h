@@ -2,10 +2,18 @@
 #include "shaders.h"
 #include "../tensor_config.h"
 #include <kompute/Kompute.hpp>
+#include <memory>
+#include <vector>
 
+
+// The shader programs present two separate APIS:
+// 1) compute() function that runs the shader program immediately and returns the result
+// 2) record() and update() function that records the commands into a kompute::Sequence for later execution
+// Do not mix the two APIs for the same shader program instance (or bad things will happen)
+// API 1) is useful for development and debugging, while API 2) is more efficient for production use cases
 class BoundsShaderProg {
 public:
-  BoundsShaderProg(kp::Manager& mgr, TensorMap& tensors) :
+  BoundsShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::BOUNDS] )
@@ -13,96 +21,187 @@ public:
 
   std::vector<float> compute(float padding = 0.0);
 
+  void record_padded(
+    std::shared_ptr<kp::Sequence> seq,
+    float padding = 0.1);
+
+  void record_unpadded(
+    std::shared_ptr<kp::Sequence> seq);
+
 private:
   std::vector<uint32_t>& _shaderBinary;
-  kp::Manager& _mgr;
+  std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _boundsAlgorithmPadded;
+  std::shared_ptr<kp::Algorithm> _boundsAlgorithmUnpadded;
   TensorMap& _tensors;
 };
 
 class StencilShaderProg {
 public:
-  StencilShaderProg(kp::Manager& mgr, TensorMap& tensors) :
+  StencilShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
-    _tensors(tensors), 
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::STENCIL]) {
-  }
-  std::shared_ptr<kp::ImageT<float>> compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds);
+    _tensors(tensors),
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::STENCIL]),
+    _fields_buffer_size(0),
+    _stencil_array(std::vector<float>(0))
+  {
+  };
 
+  std::shared_ptr<kp::ImageT<float>> compute(
+    uint32_t width, uint32_t height, 
+    unsigned int num_points, 
+    std::vector<float> bounds);
+
+  void record(
+    std::shared_ptr<kp::Sequence> seq,
+    uint32_t width, uint32_t height,
+    unsigned int num_points,
+    std::vector<float> bounds,
+    unsigned int new_fields_buffer_size = 0);
+
+  void update(
+    uint32_t width, uint32_t height,
+    std::vector<float> bounds,
+    unsigned int new_fields_buffer_size = 0);
+
+  std::shared_ptr<kp::ImageT<float>> _stencil_out;
 private:
   std::vector<uint32_t>& _shaderBinary;
-  kp::Manager& _mgr;
+  std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _stencilAlgorithm;
   TensorMap& _tensors;
+  unsigned int _fields_buffer_size;
+  std::vector<float> _stencil_array;
 };
 
 class FieldComputationShaderProg {
 public:
-  FieldComputationShaderProg(kp::Manager& mgr, TensorMap& tensors) :
+  FieldComputationShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS])
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS]),
+    _fields_buffer_size(0),
+    _field_array(std::vector<float>(0))
   {
-  }
-  std::shared_ptr<kp::ImageT<float>> compute(std::shared_ptr<kp::ImageT<float>> stencil, uint32_t width, uint32_t height);
+  };
 
+  std::shared_ptr<kp::ImageT<float>> compute(
+    std::shared_ptr<kp::ImageT<float>> stencil, 
+    uint32_t width, uint32_t height);
+
+  void record(
+    std::shared_ptr<kp::Sequence> seq,
+    std::shared_ptr<kp::ImageT<float>> stencil,
+    uint32_t width, uint32_t height,
+    unsigned int new_fields_buffer_size = 0);
+
+  void update(
+    uint32_t width, uint32_t height,
+    unsigned int new_fields_buffer_size = 0);
+
+  std::shared_ptr<kp::ImageT<float>> _field_out;
 private:
   std::vector<uint32_t>& _shaderBinary;
-  kp::Manager& _mgr;
+  std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _fieldAlgorithm;
   TensorMap& _tensors;
   const float _function_support = 6.5f;
+  unsigned int _fields_buffer_size;
+  std::vector<float> _field_array;
 };
 
 class InterpolationShaderProg {
 public:
-  InterpolationShaderProg(kp::Manager& mgr, TensorMap& tensors) :
+  InterpolationShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::INTERP_FIELDS])
   {
-  }
+  };
+
   void compute(std::shared_ptr<kp::ImageT<float>> fields, uint32_t width, uint32_t height);
-  float getSumQ() { return _sum_Q; };
+  void record(
+    std::shared_ptr<kp::Sequence> seq,
+    std::shared_ptr<kp::ImageT<float>> fields,
+    uint32_t width,
+    uint32_t height);
+
+  void update(
+    uint32_t width,
+    uint32_t height);
+
+  float getSumQ() const { return _sum_Q; };
 private:
   std::vector<uint32_t>& _shaderBinary;
-  kp::Manager& _mgr;
+  std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _interpAlgorithm;
   TensorMap& _tensors;
   float _sum_Q = 0.0f;
 };
 
 class ForcesShaderProg {
 public:
-  ForcesShaderProg(kp::Manager& mgr, TensorMap& tensors) :
+  ForcesShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FORCES])
   {
   }
   float compute(unsigned int num_points, float exaggeration);
+  void record(
+    std::shared_ptr<kp::Sequence> seq, 
+    unsigned int num_points, 
+    float exaggeration);
+
+  void update(
+    float exaggeration);
 
 private:
   std::vector<uint32_t>& _shaderBinary;
-  kp::Manager& _mgr;
+  std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _forcesAlgorithm;
   TensorMap& _tensors;
 };
 
 class UpdateShaderProg {
 public:
-  UpdateShaderProg(kp::Manager& mgr, TensorMap& tensors) :
+  UpdateShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::UPDATE])
   {
   }
   void compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentumn, unsigned int momentum_switch, float final_momentum, float gain_mult);
+  void record(
+    std::shared_ptr<kp::Sequence> seq, 
+    unsigned int num_points, 
+    float eta, 
+    float minimum_gain, 
+    float iteration, 
+    float momentum, 
+    unsigned int momentum_switch, 
+    float final_momentum, 
+    float gain_mult);
+
+  void update(
+    float eta,
+    float minimum_gain,
+    float iteration,
+    float momentum,
+    unsigned int momentum_switch,
+    float final_momentum,
+    float gain_mult);
 
 private:
   std::vector<uint32_t>& _shaderBinary;
-  kp::Manager& _mgr;
+  std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _updateAlgorithm;
   TensorMap& _tensors;
 };
 
 class CenterScaleShaderProg {
 public:
-  CenterScaleShaderProg(kp::Manager& mgr, TensorMap& tensors) :
+  CenterScaleShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::CENTER_SCALE])
@@ -110,8 +209,61 @@ public:
   }
   std::vector<float> compute(unsigned int num_points, float exaggeration);
 
+  void record(
+    std::shared_ptr<kp::Sequence> seq, 
+    unsigned int num_points, 
+    float exaggeration);
+
+  void update(
+    float exaggeration);
+
 private:
   std::vector<uint32_t>& _shaderBinary;
-  kp::Manager& _mgr;
+  std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _centerScaleAlgorithm;
   TensorMap& _tensors;
 };
+
+/*
+class AllInOneShaderProg {
+ public:
+  AllInOneShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors, float initialBounds[4]);
+  std::vector<float> compute(
+    unsigned int num_points, 
+    float exaggeration, 
+    float iteration, 
+    float mult, 
+    float eta, 
+    float minimum_gain, 
+    float momentum, 
+    unsigned int momentum_switch, 
+    float final_momentum,
+    float bounds[4]);
+
+private:  
+  std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Sequence> seq;
+  TensorMap& _tensors;
+  BoundsShaderProg _boundsProg;
+  StencilShaderProg _stencilProg;
+  FieldComputationShaderProg _fieldCompProg;
+  InterpolationShaderProg _interpProg;
+  ForcesShaderProg _forcesProg;
+  UpdateShaderProg _updateProg;
+  CenterScaleShaderProg _centerScaleProg;
+
+  // 
+  std::shared_ptr<kp::Algorithm> _stencilAlgorithm;
+  std::shared_ptr<kp::Algorithm> _fieldCompAlgorithm;
+  std::shared_ptr<kp::Algorithm> _interpAlgorithm;
+  std::shared_ptr<kp::Algorithm> _forcesAlgorithm;
+  std::shared_ptr<kp::Algorithm> _updateAlgorithm;
+  std::shared_ptr<kp::Algorithm> _centerScaleAlgorithm;
+  std::shared_ptr<kp::Algorithm> _boundsAlgorithm;
+
+  unsigned int _current_fields_buffer_size;
+  float kl_divergence = 0.0f;
+  const unsigned int MINIMUM_FIELDS_SIZE = 5;
+  const float RESOLUTION_SCALING = 2.0;
+  const unsigned int STARTING_FIELDS_BUFFER_SIZE = 8;
+}; */
