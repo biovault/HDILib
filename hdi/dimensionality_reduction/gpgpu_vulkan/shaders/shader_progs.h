@@ -64,6 +64,10 @@ public:
     std::vector<float> bounds,
     unsigned int new_fields_buffer_size = 0);
 
+  std::shared_ptr<kp::ImageT<float>> getStencil() const {
+    return _stencil_out;
+  };
+
   std::shared_ptr<kp::ImageT<float>> _stencil_out;
 private:
   std::vector<uint32_t>& _shaderBinary;
@@ -130,13 +134,16 @@ public:
     uint32_t width,
     uint32_t height);
 
-  float getSumQ() const { return _sum_Q; };
+  float getSumQ() const { 
+    auto sumQ = _tensors[ShaderBuffers::SUM_Q]->vector<float>()[0];
+    return sumQ; 
+  };
 private:
   std::vector<uint32_t>& _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _interpAlgorithm;
   TensorMap& _tensors;
-  float _sum_Q = 0.0f;
+  //float _sum_Q = 0.0f;
 };
 
 class ForcesShaderProg {
@@ -223,47 +230,3 @@ private:
   std::shared_ptr<kp::Algorithm> _centerScaleAlgorithm;
   TensorMap& _tensors;
 };
-
-/*
-class AllInOneShaderProg {
- public:
-  AllInOneShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors, float initialBounds[4]);
-  std::vector<float> compute(
-    unsigned int num_points, 
-    float exaggeration, 
-    float iteration, 
-    float mult, 
-    float eta, 
-    float minimum_gain, 
-    float momentum, 
-    unsigned int momentum_switch, 
-    float final_momentum,
-    float bounds[4]);
-
-private:  
-  std::shared_ptr<kp::Manager> _mgr;
-  std::shared_ptr<kp::Sequence> seq;
-  TensorMap& _tensors;
-  BoundsShaderProg _boundsProg;
-  StencilShaderProg _stencilProg;
-  FieldComputationShaderProg _fieldCompProg;
-  InterpolationShaderProg _interpProg;
-  ForcesShaderProg _forcesProg;
-  UpdateShaderProg _updateProg;
-  CenterScaleShaderProg _centerScaleProg;
-
-  // 
-  std::shared_ptr<kp::Algorithm> _stencilAlgorithm;
-  std::shared_ptr<kp::Algorithm> _fieldCompAlgorithm;
-  std::shared_ptr<kp::Algorithm> _interpAlgorithm;
-  std::shared_ptr<kp::Algorithm> _forcesAlgorithm;
-  std::shared_ptr<kp::Algorithm> _updateAlgorithm;
-  std::shared_ptr<kp::Algorithm> _centerScaleAlgorithm;
-  std::shared_ptr<kp::Algorithm> _boundsAlgorithm;
-
-  unsigned int _current_fields_buffer_size;
-  float kl_divergence = 0.0f;
-  const unsigned int MINIMUM_FIELDS_SIZE = 5;
-  const float RESOLUTION_SCALING = 2.0;
-  const unsigned int STARTING_FIELDS_BUFFER_SIZE = 8;
-}; */

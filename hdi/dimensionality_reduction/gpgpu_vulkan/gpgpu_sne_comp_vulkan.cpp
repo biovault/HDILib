@@ -196,27 +196,27 @@ namespace hdi {
       memcpy(points, positions.data(), size);
     }
 
-    void GpgpuSneVulkan::record_compute_sequence(uint32_t width, uint32_t height, uint32_t num_points, float* bounds) {
+    void GpgpuSneVulkan::record_compute_sequence(float iteration, uint32_t width, uint32_t height, uint32_t num_points, float* bounds, float exaggeration, float mult) {
       _seq = _mgr->sequence();
       _seq->begin();
       _stencilProg->record(_seq, width, height, num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompProg->record(_seq, _stencilProg->_stencil_out, width, height, _fields_buffer_size);
       _interpProg->record(_seq, _fieldCompProg->_field_out, width, height);
-      _forcesProg->record(_seq, num_points, _params._exaggeration_factor);
-      _updateProg->record(_seq, num_points, _params._eta, _params._minimum_gain, 0.0f, _params._momentum, _params._mom_switching_iter, _params._final_momentum, 1.0f);
+      _forcesProg->record(_seq, num_points, exaggeration);
+      _updateProg->record(_seq, num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
       _boundsProg->record_unpadded(_seq);
-      _centerScaleProg->record(_seq, num_points, _params._exaggeration_factor);
+      _centerScaleProg->record(_seq, num_points, exaggeration);
       _boundsProg->record_padded(_seq, 0.1f);
       _seq->end();
     }
 
-    void GpgpuSneVulkan::update_compute_sequence(uint32_t width, uint32_t height, float* bounds, float exaggeration) {
+    void GpgpuSneVulkan::update_compute_sequence(float iteration, uint32_t width, uint32_t height, float* bounds, float exaggeration, float mult) {
       _stencilProg->update(width, height, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompProg->update(width, height, _fields_buffer_size);
       _interpProg->update(width, height);
       _forcesProg->update(exaggeration);
-      _updateProg->update(_params._eta, _params._minimum_gain, 0.0f, _params._momentum, _params._mom_switching_iter, _params._final_momentum, 1.0f);
-      _centerScaleProg->update(_params._exaggeration_factor);
+      _updateProg->update(_params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
+      _centerScaleProg->update(exaggeration);
     }
 
     void GpgpuSneVulkan::compute_sequence(embedding_type* embedding, float exaggeration, float iteration, float mult) {
@@ -234,26 +234,47 @@ namespace hdi {
 
       float* points = embedding->getContainer().data();
       unsigned int num_points = embedding->numDataPoints();
-
+      bool new_field_buf = false;
       if (iteration < 0.5) { // only on the first iteration
         _tensors[ShaderBuffers::POSITION]->setData(embedding->getContainer());
         _tensors[ShaderBuffers::NUM_POINTS]->setData(std::vector<unsigned int>({ num_points }));
         // on first iteration the bound were calculated on the CPU so load them to the tensor
         _tensors[ShaderBuffers::BOUNDS]->setData(_bounds);
-
+        _fields_buffer_size = 8;
+        new_field_buf = true;
+      }
+      else if (width > _fields_buffer_size || height > _fields_buffer_size) {
+        if (width > 2048 || height > 2048) {
+          throw std::runtime_error("Field size larger than 2048 not supported");
+        }
+        while (width > _fields_buffer_size || height > _fields_buffer_size)
+          _fields_buffer_size = std::min(2 * _fields_buffer_size, 2048u);
+        new_field_buf = true;
+      }
+      else if (width < _fields_buffer_size / 2 || height < _fields_buffer_size / 2) {
+        _fields_buffer_size = std::max(_fields_buffer_size/2, 8u);
+        new_field_buf = true;
       }
 
-      if ((iteration < 0.5) || width > _fields_buffer_size || height > _fields_buffer_size) {
+      if (new_field_buf) {
         // rerecord the computer buffer sequence with the new field size
-        _fields_buffer_size = std::min(2 * _fields_buffer_size, 1024u); // at most 1024 (should this be an exception?)
-        record_compute_sequence(width, height, num_points, _bounds.data());
+        ; // at most 1024 (should this be an exception?)
+        record_compute_sequence(iteration, width, height, num_points, _bounds.data(), exaggeration, mult);
       } else {
         // simply update the push constants of the sequence
-        update_compute_sequence(width, height, _bounds.data(), exaggeration);
+        update_compute_sequence(iteration, width, height, _bounds.data(), exaggeration, mult);
       }
-
       _seq->eval();
+      auto stencil = static_cast<kp::Image *>(_stencilProg->_stencil_out.get())->vector<float>();
+      auto field = static_cast<kp::Image*>(_fieldCompProg->_field_out.get())->vector<float>();
+      auto sum_q = _interpProg->getSumQ();
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
+      auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
+      _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
+      kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
+      if (kl_divergence < 0) {  
+        std::cout << "Sequence KL Divergence is negative, at iteration: " << iteration;
+      }
       memcpy(points, positions.data(), num_points*sizeof(float));
 
     }

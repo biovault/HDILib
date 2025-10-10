@@ -52,8 +52,8 @@ namespace hdi {
       void initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P);
 
       std::vector<float> computeInitialBounds(const embedding_type* embedding, float padding);
-      void record_compute_sequence(uint32_t width, uint32_t height, uint32_t num_points, float* bounds);
-      void update_compute_sequence(uint32_t width, uint32_t height, float* bounds, float exaggeration);
+      void record_compute_sequence(float iteration, uint32_t width, uint32_t height, uint32_t num_points, float* bounds, float exaggeration, float mult);
+      void update_compute_sequence(float iteration, uint32_t width, uint32_t height, float* bounds, float exaggeration, float mult);
 
       bool _initialized = false;
       float _resolutionScaling = 1.0f;
