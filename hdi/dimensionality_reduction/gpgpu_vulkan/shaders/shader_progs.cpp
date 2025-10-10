@@ -147,7 +147,8 @@ void FieldComputationShaderProg::record(
   _field_array = std::vector<float>(_fields_buffer_size * _fields_buffer_size * 4, 0.0f);
   _field_out = _mgr->image(_field_array, _fields_buffer_size, _fields_buffer_size, 4); // npwidth
   auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
-  dispatchTensor->setData(std::vector<uint32_t>({ width, height, 1 }));
+  uint32_t dispatchData[3] = { width, height, 1 };
+  dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
@@ -156,8 +157,10 @@ void FieldComputationShaderProg::record(
       _tensors[ShaderBuffers::NUM_POINTS]
   };
   auto pushConsts = std::vector<float>({ (float)width, (float)height, _function_support });
-  _fieldAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ width, height, 1 }), {}, pushConsts);
-  seq->record<kp::OpSyncDevice>(params)
+  _fieldAlgorithm = _mgr->algorithm(params, _shaderBinary, {}, {}, pushConsts);
+
+  seq->record<kp::OpSyncDevice>({ dispatchTensor })
+    ->record<kp::OpSyncDevice>(params)
     ->record<OpIndirectDispatch>(_fieldAlgorithm, dispatchTensor)
     ->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>>({ _field_out }));
 }
@@ -173,6 +176,10 @@ void FieldComputationShaderProg::update(
   _field_out->setData(_field_array);
   auto pushConsts = std::vector<float>({ (float)width, (float)height, _function_support });
   _fieldAlgorithm->setPushConstants(static_cast<void *>(pushConsts.data()), pushConsts.size(), sizeof(float));
+  // IS this needed here or in the sequence?
+  _mgr->sequence()
+    ->record<kp::OpSyncDevice>({ dispatchTensor })
+    ->eval();
 }
 
 void InterpolationShaderProg::compute(std::shared_ptr<kp::ImageT<float>> fields, uint32_t width, uint32_t height) {
@@ -194,7 +201,7 @@ void InterpolationShaderProg::compute(std::shared_ptr<kp::ImageT<float>> fields,
     ->record<kp::OpSyncLocal>(params)
     ->eval();
 
-  _sum_Q = _tensors[ShaderBuffers::SUM_Q]->data<float>()[0];
+  // _sum_Q = _tensors[ShaderBuffers::SUM_Q]->data<float>()[0];
 }
 
 void InterpolationShaderProg::record(
@@ -403,47 +410,3 @@ void CenterScaleShaderProg::update(
   _centerScaleAlgorithm->setPushConstants(static_cast<void*>(pushConsts.data()), pushConsts.size(), sizeof(float));
 }
 
-/*
-AllInOneShaderProg::AllInOneShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors, float initialBounds[4]) :
-  _mgr(mgr),
-  _tensors(tensors),
-  _boundsProg(mgr, tensors),
-  _stencilProg(mgr, tensors),
-  _fieldCompProg(mgr, tensors),
-  _interpProg(mgr, tensors),
-  _forcesProg(mgr, tensors),
-  _updateProg(mgr, tensors),
-  _centerScaleProg(mgr, tensors),
-  _current_fields_buffer_size(STARTING_FIELDS_BUFFER_SIZE)
-{
-  auto stencil_array = std::vector<float>(_current_fields_buffer_size * _current_fields_buffer_size * 4, 0.0); //npwidth 4
-  auto stencil_out = _mgr->imageT<float>(stencil_array, npwidth, height, 4); //npwidth 4u
-  auto pushConsts = std::vector<float>({ 
-    initialBounds[0], initialBounds[1], initialBounds[2], initialBounds[3], 
-    (float)width, (float)height });
-
-  const std::vector<std::shared_ptr<kp::Memory>> params = { _tensors[ShaderBuffers::POSITION], stencil_out };
-  _stencilAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, pushConsts);
-}
-
-std::vector<float> AllInOneShaderProg::compute(
-  unsigned int num_points,
-  float exaggeration,
-  float iteration,
-  float mult,
-  float eta,
-  float minimum_gain,
-  float momentum,
-  unsigned int momentum_switch,
-  float final_momentum,
-  float bounds[4]) {
-
-  auto range_x = abs(bounds[2] - bounds[0]);
-  auto range_y = abs(bounds[3] - bounds[1]);
-  auto imgwidth = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_x, float(MINIMUM_FIELDS_SIZE))));
-  auto imgheight = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_y, float(MINIMUM_FIELDS_SIZE))));
-
-
-  return std::vector<float>();
-}
-*/
