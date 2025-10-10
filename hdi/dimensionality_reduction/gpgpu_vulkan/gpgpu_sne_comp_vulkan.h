@@ -17,18 +17,6 @@ namespace hdi {
     struct LinearProbabilityMatrix;
     class GpgpuSneVulkan {
     public:
-      struct Point2D {
-        float x, y;
-      };
-
-      struct Bounds2D {
-        Point2D min;
-        Point2D max;
-
-        Point2D getRange() {
-          return Point2D{ max.x - min.x, max.y - min.y };
-        }
-      };
 
       typedef hdi::data::Embedding<float> embedding_type;
       typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
@@ -42,6 +30,8 @@ namespace hdi {
 
       // a single iteration of the tSNE algorithm involving field computation, forces computation and embedding update
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
+      void compute_stepwise(embedding_type* embedding, float exaggeration, float iteration, float mult);
+      void compute_sequence(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
       //!  Change the runtime configurable params
@@ -51,7 +41,7 @@ namespace hdi {
         }
         _params = params;
       }
-      bool isInitialized() { return _initialized == true; }
+      bool isInitialized() const { return _initialized == true; }
 
     private:
       const unsigned int FIXED_FIELDS_SIZE = 40;
@@ -61,17 +51,22 @@ namespace hdi {
 
       void initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P);
 
-      Bounds2D computeInitialBounds(const embedding_type* embedding, float padding);
+      std::vector<float> computeInitialBounds(const embedding_type* embedding, float padding);
+      void record_compute_sequence(uint32_t width, uint32_t height, uint32_t num_points, float* bounds);
+      void update_compute_sequence(uint32_t width, uint32_t height, float* bounds, float exaggeration);
 
       bool _initialized = false;
       float _resolutionScaling = 1.0f;
       TsneParameters _params;
       bool _adaptive_resolution;
       // Embedding bounds
-      Bounds2D _bounds;
+      std::vector<float> _bounds;
+      unsigned int _fields_buffer_size;
 
       // kompute manager context
-      kp::Manager _mgr;
+      std::shared_ptr <kp::Manager> _mgr;
+      // recorded sequence for the compute shader version
+      std::shared_ptr<kp::Sequence> _seq;
       // kompute tensor buffers
       std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> _tensors;
       // kompute compute shaders
