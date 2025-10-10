@@ -16,7 +16,8 @@ enum class ShaderBuffers {
   BOUNDS = 8,
   SUM_Q = 9,
   KLDIV = 10,
-  NUM_POINTS = 11
+  NUM_POINTS = 11,
+  IMAGE_WORKGROUP = 12,
 };
 
 typedef std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> TensorMap;
