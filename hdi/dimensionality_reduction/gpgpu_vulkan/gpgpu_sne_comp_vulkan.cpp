@@ -108,6 +108,21 @@ namespace hdi {
       _tensors[ShaderBuffers::BOUNDS] = _mgr->tensorT(std::vector<float>(4, 1.0f));
       _tensors[ShaderBuffers::NUM_POINTS] = _mgr->tensorT(std::vector<unsigned int>(1, num_pnts));
       _tensors[ShaderBuffers::IMAGE_WORKGROUP] = _mgr->tensorT(std::vector<unsigned int>(3, 1u));
+#ifndef SHADER_USE_PUSH_CONSTANTS
+      // These tensors will be used as UBOs
+      _tensors[ShaderBuffers::UBO_STENCIL] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(stencilParams), 0));
+      _tensors[ShaderBuffers::UBO_STENCIL]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
+      _tensors[ShaderBuffers::UBO_FIELD] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(fieldParams), 0));
+      _tensors[ShaderBuffers::UBO_FIELD]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
+      _tensors[ShaderBuffers::UBO_INTERP] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(interpParams), 0));
+      _tensors[ShaderBuffers::UBO_INTERP]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
+      _tensors[ShaderBuffers::UBO_FORCES] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(forcesParams), 0));
+      _tensors[ShaderBuffers::UBO_FORCES]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
+      _tensors[ShaderBuffers::UBO_UPDATE] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(updaterParams), 0));
+      _tensors[ShaderBuffers::UBO_UPDATE]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
+      _tensors[ShaderBuffers::UBO_CENTER_SCALE] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(centerScaleParams), 0));
+      _tensors[ShaderBuffers::UBO_CENTER_SCALE]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
+#endif
 
       _boundsProg = std::make_shared<BoundsShaderProg>(_mgr, _tensors);
       _stencilProg = std::make_shared<StencilShaderProg>(_mgr, _tensors);
@@ -126,13 +141,12 @@ namespace hdi {
     }
 
     void GpgpuSneVulkan::compute(embedding_type* embedding, float exaggeration, float iteration, float mult) {
-      auto optimized = true;
-      if (optimized) {
-        compute_sequence(embedding, exaggeration, iteration, mult);
-      }
-      else {
-        compute_stepwise(embedding, exaggeration, iteration, mult);
-      }
+#ifdef SHADER_USE_PUSH_CONSTANTS
+      compute_stepwise(embedding, exaggeration, iteration, mult);
+#else
+      compute_sequence(embedding, exaggeration, iteration, mult);
+#endif // SHADER_USE_PUSH_CONSTANTS
+
     }
 
     void GpgpuSneVulkan::compute_stepwise(embedding_type* embedding, float exaggeration, float iteration, float mult) {
@@ -196,7 +210,14 @@ namespace hdi {
       memcpy(points, positions.data(), size);
     }
 
-    void GpgpuSneVulkan::record_compute_sequence(float iteration, uint32_t width, uint32_t height, uint32_t num_points, float* bounds, float exaggeration, float mult) {
+    void GpgpuSneVulkan::record_compute_sequence(
+      float iteration, 
+      uint32_t width, 
+      uint32_t height, 
+      uint32_t num_points, 
+      float* bounds, 
+      float exaggeration, 
+      float mult) {
       _seq = _mgr->sequence();
       _seq->begin();
       _stencilProg->record(_seq, width, height, num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
@@ -210,7 +231,13 @@ namespace hdi {
       _seq->end();
     }
 
-    void GpgpuSneVulkan::update_compute_sequence(float iteration, uint32_t width, uint32_t height, float* bounds, float exaggeration, float mult) {
+    void GpgpuSneVulkan::update_compute_sequence(
+      float iteration, 
+      uint32_t width, 
+      uint32_t height, 
+      float* bounds, 
+      float exaggeration, 
+      float mult) {
       _stencilProg->update(width, height, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompProg->update(width, height, _fields_buffer_size);
       _interpProg->update(width, height);
@@ -275,7 +302,7 @@ namespace hdi {
       if (kl_divergence < 0) {  
         std::cout << "Sequence KL Divergence is negative, at iteration: " << iteration;
       }
-      memcpy(points, positions.data(), num_points*sizeof(float));
+      memcpy(points, positions.data(), 2*num_points*sizeof(float));
 
     }
   }
