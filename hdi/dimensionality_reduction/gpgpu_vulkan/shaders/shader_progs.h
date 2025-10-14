@@ -4,6 +4,7 @@
 #include <kompute/Kompute.hpp>
 #include <memory>
 #include <vector>
+#include "vkUniformBufferHelper.h"
 
 
 // The shader programs present two separate APIS:
@@ -43,7 +44,8 @@ public:
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::STENCIL]),
     _fields_buffer_size(0),
-    _stencil_array(std::vector<float>(0))
+    _stencil_array(std::vector<float>(0)),
+    _ubo(mgr, sizeof(stencilParams))
   {
   };
 
@@ -76,6 +78,8 @@ private:
   TensorMap& _tensors;
   unsigned int _fields_buffer_size;
   std::vector<float> _stencil_array;
+  UniformBufferHelper _ubo;
+
 };
 
 class FieldComputationShaderProg {
