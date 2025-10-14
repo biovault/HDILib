@@ -89,7 +89,8 @@ public:
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS]),
     _fields_buffer_size(0),
-    _field_array(std::vector<float>(0))
+    _field_array(std::vector<float>(0)),
+    _ubo(mgr, sizeof(fieldParams))
   {
   };
 
@@ -116,6 +117,7 @@ private:
   const float _function_support = 6.5f;
   unsigned int _fields_buffer_size;
   std::vector<float> _field_array;
+  UniformBufferHelper _ubo;
 };
 
 class InterpolationShaderProg {
@@ -123,7 +125,8 @@ public:
   InterpolationShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::INTERP_FIELDS])
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::INTERP_FIELDS]),
+    _ubo(mgr, sizeof(interpParams))
   {
   };
 
@@ -147,6 +150,7 @@ private:
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _interpAlgorithm;
   TensorMap& _tensors;
+  UniformBufferHelper _ubo;
   //float _sum_Q = 0.0f;
 };
 
@@ -155,7 +159,8 @@ public:
   ForcesShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FORCES])
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FORCES]),
+    _ubo(mgr, sizeof(forcesParams))
   {
   }
   float compute(unsigned int num_points, float exaggeration);
@@ -172,6 +177,7 @@ private:
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _forcesAlgorithm;
   TensorMap& _tensors;
+  UniformBufferHelper _ubo;
 };
 
 class UpdateShaderProg {
@@ -179,7 +185,8 @@ public:
   UpdateShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::UPDATE])
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::UPDATE]),
+    _ubo(mgr, sizeof(updaterParams))
   {
   }
   void compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentumn, unsigned int momentum_switch, float final_momentum, float gain_mult);
@@ -208,6 +215,7 @@ private:
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _updateAlgorithm;
   TensorMap& _tensors;
+  UniformBufferHelper _ubo;
 };
 
 class CenterScaleShaderProg {
@@ -215,7 +223,8 @@ public:
   CenterScaleShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::CENTER_SCALE])
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::CENTER_SCALE]),
+    _ubo(mgr, sizeof(centerScaleParams))
   {
   }
   std::vector<float> compute(unsigned int num_points, float exaggeration);
@@ -233,4 +242,5 @@ private:
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _centerScaleAlgorithm;
   TensorMap& _tensors;
+  UniformBufferHelper _ubo;
 };

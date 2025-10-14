@@ -94,11 +94,11 @@ void StencilShaderProg::record(
   _stencil_array = std::vector<float>(_fields_buffer_size * _fields_buffer_size * 4, 0.0);
   _stencil_out = _mgr->imageT<float>(_stencil_array, _fields_buffer_size, _fields_buffer_size, 4);
 
-  stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
   const std::vector<std::shared_ptr<kp::Memory>> params = { 
     _tensors[ShaderBuffers::POSITION], _stencil_out, _tensors[ShaderBuffers::UBO_STENCIL]};
 
   _stencilAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
+  stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
   _ubo.setData(uboVals, _stencilAlgorithm, 3);
   seq->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(_stencilAlgorithm)
@@ -116,10 +116,6 @@ void StencilShaderProg::update(
   _stencil_out->setData(_stencil_array);
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
   _ubo.setData(uboVals, _stencilAlgorithm, 3);
-  _mgr->sequence()
-    ->record<kp::OpSyncDevice>({ _stencil_out })
-    ->record<kp::OpAlgoDispatch>(_stencilAlgorithm)
-    ->eval();
 }
 
 
@@ -168,10 +164,11 @@ void FieldComputationShaderProg::record(
       _tensors[ShaderBuffers::BOUNDS],
       _field_out,
       stencil,
-      _tensors[ShaderBuffers::NUM_POINTS]
+      _tensors[ShaderBuffers::UBO_FIELD]
   };
-  auto pushConsts = std::vector<float>({ (float)width, (float)height, _function_support });
-  _fieldAlgorithm = _mgr->algorithm(params, _shaderBinary, {}, {}, pushConsts);
+  _fieldAlgorithm = _mgr->algorithm(params, _shaderBinary, {}, {}, {});
+  fieldParams uboVals = { {(float)width, (float)height}, _function_support };
+  _ubo.setData(uboVals, _fieldAlgorithm, 5);
 
   seq->record<kp::OpSyncDevice>({ dispatchTensor })
     ->record<kp::OpSyncDevice>(params)
@@ -189,14 +186,8 @@ void FieldComputationShaderProg::update(
   dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
   std::fill(_field_array.begin(), _field_array.end(), 0.0f);
   _field_out->setData(_field_array);
-  auto pushConsts = std::vector<float>({ (float)width, (float)height, _function_support });
-  _fieldAlgorithm->setPushConstants(static_cast<void *>(pushConsts.data()), pushConsts.size(), sizeof(float));
-  // IS this needed here or in the sequence?
-  _mgr->sequence()
-    ->record<kp::OpSyncDevice>({ dispatchTensor })
-    ->record<kp::OpSyncDevice>({ _field_out })
-    ->record<OpIndirectDispatch>(_fieldAlgorithm, dispatchTensor)
-    ->eval();
+  fieldParams uboVals = { {(float)width, (float)height}, _function_support };
+  _ubo.setData(uboVals, _fieldAlgorithm, 5);
 }
 
 void InterpolationShaderProg::compute(
@@ -234,10 +225,12 @@ void InterpolationShaderProg::record(
       _tensors[ShaderBuffers::SUM_Q],
       _tensors[ShaderBuffers::BOUNDS],
       _tensors[ShaderBuffers::NUM_POINTS],
-      fields
+      fields,
+      _tensors[ShaderBuffers::UBO_INTERP]
   };
-  auto pushConsts = std::vector<float>({ (float)width, (float)height });
-  _interpAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ 1, 1, 1 }), {}, pushConsts);
+  _interpAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ 1, 1, 1 }), {}, {});
+  interpParams uboVals = { {(float)width, (float)height} };
+  _ubo.setData(uboVals, _interpAlgorithm, 6);
   seq->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(_interpAlgorithm)
     ->record<kp::OpSyncLocal>(params);
@@ -246,11 +239,8 @@ void InterpolationShaderProg::record(
 void InterpolationShaderProg::update(
   uint32_t width,
   uint32_t height) {
-  auto pushConsts = std::vector<float>({ (float)width, (float)height });
-  _interpAlgorithm->setPushConstants(static_cast<void *>(pushConsts.data()), pushConsts.size(), sizeof(float));
-  _mgr->sequence()
-    ->record<kp::OpAlgoDispatch>(_interpAlgorithm)
-    ->eval();
+  interpParams uboVals = { {(float)width, (float)height} };
+  _ubo.setData(uboVals, _interpAlgorithm, 6);
 }
 
 float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
@@ -294,11 +284,13 @@ void ForcesShaderProg::record(
     _tensors[ShaderBuffers::GRADIENTS],
     _tensors[ShaderBuffers::NUM_POINTS],
     _tensors[ShaderBuffers::SUM_Q],
-    _tensors[ShaderBuffers::KLDIV]
+    _tensors[ShaderBuffers::KLDIV],
+    _tensors[ShaderBuffers::UBO_FORCES]
   };
-  auto pushConsts = std::vector<float>({ exaggeration});
   auto grid_size = unsigned int(sqrt(num_points) + 1);
-  _forcesAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
+  _forcesAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, {});
+  forcesParams uboVals = { {exaggeration} };
+  _ubo.setData(uboVals, _forcesAlgorithm, 9);
   seq->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(_forcesAlgorithm)
     ->record<kp::OpSyncLocal>(params);
@@ -306,10 +298,8 @@ void ForcesShaderProg::record(
 
 void ForcesShaderProg::update(
   float exaggeration) {
-  _forcesAlgorithm->setPushConstants(static_cast<void *>(&exaggeration), 1, sizeof(float));
-  _mgr->sequence()
-    ->record<kp::OpAlgoDispatch>(_forcesAlgorithm)
-    ->eval();
+  forcesParams uboVals = { {exaggeration} };
+  _ubo.setData(uboVals, _forcesAlgorithm, 9);
 }
 
 void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentum, unsigned int momentum_switch, float final_momentum, float gain_mult) {
@@ -354,18 +344,21 @@ void UpdateShaderProg::record(
         _tensors[ShaderBuffers::GRADIENTS],
         _tensors[ShaderBuffers::PREV_GRADIENTS],
         _tensors[ShaderBuffers::GAIN],
-        _tensors[ShaderBuffers::NUM_POINTS]
+        _tensors[ShaderBuffers::NUM_POINTS],
+        _tensors[ShaderBuffers::UBO_UPDATE]
     };
     auto num_workgroups = unsigned int((num_points * 2 / 64) + 1);
     auto grid_size = unsigned int(sqrt(num_workgroups) + 1);
-    auto pushConsts = std::vector<float>({ 
-      eta, minimum_gain, 
-      float(iteration), float(momentum_switch), 
-      momentum, final_momentum, gain_mult });
     _updateAlgorithm = _mgr->algorithm(
       params, 
       _shaderBinary, 
-      kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
+      kp::Workgroup({ grid_size, grid_size, 1 }), {}, {});
+    updaterParams uboVals = { 
+      eta, minimum_gain, 
+      iteration, momentum_switch, 
+      momentum, final_momentum, 
+      gain_mult };
+    _ubo.setData(uboVals, _updateAlgorithm, 5);
     seq->record<kp::OpSyncDevice>(params)
       ->record<kp::OpAlgoDispatch>(_updateAlgorithm)
       ->record<kp::OpSyncLocal>(params);
@@ -383,8 +376,12 @@ void UpdateShaderProg::update(
     eta, minimum_gain, 
     float(iteration), float(momentum_switch),
     momentum, final_momentum, gain_mult });
-  _updateAlgorithm->setPushConstants(static_cast<void*>(pushConsts.data()), pushConsts.size(), sizeof(float));
-  _mgr->sequence()->eval<kp::OpAlgoDispatch>(_updateAlgorithm);
+  updaterParams uboVals = {
+    eta, minimum_gain,
+    iteration, momentum_switch,
+    momentum, final_momentum,
+    gain_mult };
+  _ubo.setData(uboVals, _updateAlgorithm, 5);
 }
 
 std::vector<float> CenterScaleShaderProg::compute(unsigned int num_points, float exaggeration) {
@@ -425,7 +422,8 @@ void CenterScaleShaderProg::record(
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
-      _tensors[ShaderBuffers::NUM_POINTS]
+      _tensors[ShaderBuffers::NUM_POINTS],
+      _tensors[ShaderBuffers::UBO_CENTER_SCALE]
   };
   auto scale = 0.0f;
   auto diameter = 0.0f;
@@ -435,13 +433,14 @@ void CenterScaleShaderProg::record(
     diameter = 0.1;
   }
 
-  auto pushConsts = std::vector<float>({ scale, diameter });
   auto num_workgroups = unsigned int(num_points / 128) + 1;
   auto grid_size = unsigned int(sqrt(num_workgroups) + 1);
   _centerScaleAlgorithm = _mgr->algorithm(
     params, 
     _shaderBinary, 
-    kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
+    kp::Workgroup({ grid_size, grid_size, 1 }), {}, {});
+  centerScaleParams uboVals = { scale, diameter};
+  _ubo.setData(uboVals, _centerScaleAlgorithm, 3);
   seq->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(_centerScaleAlgorithm)
     ->record<kp::OpSyncLocal>(params);
@@ -456,10 +455,8 @@ void CenterScaleShaderProg::update(
     scale = 1.0f;
     diameter = 0.1;
   }
-  auto pushConsts = std::vector<float>({ scale, diameter });
-  _centerScaleAlgorithm->setPushConstants(
-    static_cast<void*>(pushConsts.data()), pushConsts.size(), sizeof(float));
-  _mgr->sequence()->eval<kp::OpAlgoDispatch>(_centerScaleAlgorithm);
+  centerScaleParams uboVals = { scale, diameter };
+  _ubo.setData(uboVals, _centerScaleAlgorithm, 3);
 
 }
 
