@@ -1,5 +1,10 @@
 #version 450
 
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_ARB_shading_language_include : enable
+
+#include "config/shader_defines.glsl"
+
 layout(local_size_x = 1) in;
 
 // Uniforms
@@ -12,24 +17,35 @@ layout(rgba32f, binding = 1) writeonly uniform image2D outImage;
 
 //layout(std430, binding = 2) buffer Dbg { vec2 Bug[]; };
 
-
+#ifdef SHADER_USE_PUSH_CONSTANTS
 // Push constants for rectangle bounds and image dimensions
-layout (push_constant) uniform StencilPushConstants {
+layout (push_constant) uniform stencilParams {
     vec2 rect_min; // min bounds of the points rectangle
     vec2 rect_max; // max bounds of the points rectangle
     vec2 imageSize; // dimensions of the output image
-} pc;
+} sp;
+
+#else
+// If not using push constants, use a uniform buffer object
+layout(scalar, binding = 3 ) uniform stencilParams {
+    vec2 rect_min; // min bounds of the points rectangle
+    vec2 rect_max; // max bounds of the points rectangle
+    vec2 imageSize; // dimensions of the output image
+} sp;
+#endif
+
+
 
 void main() {
     uint id = gl_GlobalInvocationID.x;
     vec2 point = points[id];
 
-    vec2 range = pc.rect_max - pc.rect_min;
+    vec2 range = sp.rect_max - sp.rect_min;
 
     // Convert point to normalized device coordinates in [0,1]
-    vec2 norm = (point - pc.rect_min) / range;
+    vec2 norm = (point - sp.rect_min) / range;
     // Convert to nearest pixel coordinates
-    ivec2 pxCoord = ivec2(round(norm * pc.imageSize));
+    ivec2 pxCoord = ivec2(round(norm * sp.imageSize));
     
     // Draw a 3x3 region around the point
     //Bug[id] = pxCoord;
@@ -37,17 +53,17 @@ void main() {
         for (int dx = -1; dx <= 1; ++dx) {
             ivec2 target = pxCoord + ivec2(dx, dy);
             // Bounds check
-            if (target.x >= 0 && target.x < pc.imageSize.x &&
-                target.y >= 0 && target.y < pc.imageSize.y) {
+            if (target.x >= 0 && target.x < sp.imageSize.x &&
+                target.y >= 0 && target.y < sp.imageSize.y) {
                 imageStore(outImage, target, vec4(1.0));
             }
         }
     }
     // // stencil fiducials
     // imageStore(outImage, ivec2(0,0), ivec4(1));
-    // imageStore(outImage, ivec2(pc.imageSize.x - 1,pc.imageSize.y -1), ivec4(1));
-    // imageStore(outImage, ivec2(0,pc.imageSize.y -1), ivec4(1));
-    // imageStore(outImage, ivec2(pc.imageSize.x - 1,0), ivec4(1));
+    // imageStore(outImage, ivec2(sp.imageSize.x - 1,sp.imageSize.y -1), ivec4(1));
+    // imageStore(outImage, ivec2(0,sp.imageSize.y -1), ivec4(1));
+    // imageStore(outImage, ivec2(sp.imageSize.x - 1,0), ivec4(1));
     // // aligned image fiducials
     // ivec2 outSize = imageSize(outImage);
     // imageStore(outImage, ivec2(0,0), ivec4(1));

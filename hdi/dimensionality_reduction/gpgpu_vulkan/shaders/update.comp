@@ -1,12 +1,19 @@
-  #version 430
-  layout(std430, binding = 0) buffer Pos{ float Positions[]; };
-  layout(std430, binding = 1) buffer GradientLayout { float Gradients[]; };
-  layout(std430, binding = 2) buffer PrevGradientLayout { float PrevGradients[]; };
-  layout(std430, binding = 3) buffer GainLayout { float Gain[]; };
-  layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
-  layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+#version 430
 
-  layout(push_constant) uniform FieldPushConstants {
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_ARB_shading_language_include : enable
+
+#include "config/shader_defines.glsl"
+
+layout(std430, binding = 0) buffer Pos{ float Positions[]; };
+layout(std430, binding = 1) buffer GradientLayout { float Gradients[]; };
+layout(std430, binding = 2) buffer PrevGradientLayout { float PrevGradients[]; };
+layout(std430, binding = 3) buffer GainLayout { float Gain[]; };
+layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+#ifdef SHADER_USE_PUSH_CONSTANTS
+layout(push_constant) uniform FieldPushConstants {
     float eta;        // Learning rate
     float minGain;   // Minimum gain value
     float iter;      // Current iteration number
@@ -14,13 +21,24 @@
     float mom;       // Initial momentum value
     float final_mom; // Final momentum value
     float mult;      // Multiplier for position update
-  } pc;
+} pc;
+#else
+layout(scalar, binding = 5 ) uniform FieldPushConstants {    
+    float eta;        // Learning rate
+    float minGain;   // Minimum gain value
+    float iter;      // Current iteration number
+    float mom_iter;  // Iteration number for momentum switch
+    float mom;       // Initial momentum value
+    float final_mom; // Final momentum value
+    float mult;      // Multiplier for position update
+} pc;
+#endif
 
-  void main() {
+void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
     uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
     if (i >= NP[0] * 2)
-      return;
+        return;
 
     float grad = Gradients[i];
     float pgrad = PrevGradients[i];
@@ -37,4 +55,4 @@
     Gain[i] = gain;
     PrevGradients[i] = pgrad;
     Positions[i] += pgrad * pc.mult;
-  }
+}

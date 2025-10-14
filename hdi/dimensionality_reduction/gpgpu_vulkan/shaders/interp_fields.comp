@@ -1,22 +1,34 @@
-  #version 450
+#version 450
+
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_ARB_shading_language_include : enable
+
+#include "config/shader_defines.glsl"
+
 // Sample the static field texture for all the points.
 // and sum the value to product the normalization factor Z-hat
 // see https://arxiv.org/pdf/1805.10817 Eq 13
 // This is subsequently used to calculate the repulsive forces Eq 14.
-  layout(std430, binding = 0) readonly buffer PosBuf{ vec2 Positions[]; };
-  layout(std430, binding = 1) writeonly buffer ValBuf { vec4 Values[]; };
-  layout(std430, binding = 2) writeonly buffer SumBuf { float Sum[]; };
-  layout(std430, binding = 3) readonly buffer BoundsInterface { vec2 Bounds[]; };
-  layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
-  layout(binding = 5, rgba32f) uniform readonly image2D inputFields;
+layout(std430, binding = 0) readonly buffer PosBuf{ vec2 Positions[]; };
+layout(std430, binding = 1) writeonly buffer ValBuf { vec4 Values[]; };
+layout(std430, binding = 2) writeonly buffer SumBuf { float Sum[]; };
+layout(std430, binding = 3) readonly buffer BoundsInterface { vec2 Bounds[]; };
+layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
+layout(binding = 5, rgba32f) uniform readonly image2D inputFields;
 
-  layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
-  shared float reduction_array[64];
+shared float reduction_array[64];
 
-  layout(push_constant) uniform FieldPushConstants {
+#ifdef SHADER_USE_PUSH_CONSTANTS
+layout(push_constant) uniform FieldPushConstants {
     vec2 imageSize; // scaled image size used for fields image
-  } pc;
+} pc;
+#else
+    layout(scalar, binding = 6 ) uniform FieldPushConstants {
+        vec2 imageSize; // scaled image size used for fields image
+    } pc;
+#endif
 
 // sample field based on the range [0,0] -> [1.0,1.0]
 // equivalent to texture(fields, point) call 
@@ -69,7 +81,7 @@ vec4 bilinearSample2(vec2 uv) {
     return mix(bottom_mix, top_mix, t.y);
 }
 
-  void main() {
+void main() {
     uint lid = gl_LocalInvocationIndex.x;
     uint groupSize = gl_WorkGroupSize.x;
     vec2 min_bounds = Bounds[0];
@@ -81,51 +93,51 @@ vec4 bilinearSample2(vec2 uv) {
     float sum_Q = 0;
     for (uint i = lid; i < NP[0]; i += groupSize)
     {
-      // Normalized position of point in range [0,0] to [1.0, 1.0]
-      vec2 normPos = (Positions[i] - min_bounds) / range;
+        // Normalized position of point in range [0,0] to [1.0, 1.0]
+        vec2 normPos = (Positions[i] - min_bounds) / range;
 
-      // Bilinearly sample the input texture 
-      // using GPU native texture operation
-      // see https://arxiv.org/pdf/1805.10817 5.1.2
-      vec4 v = bilinearSample2(normPos);
-      // SumQ (Z-hat) is the sum of the (static field -1)
-      // that is used as the normalization factor for 
-      // the repulsive forces.
-      sum_Q += max(v.x - 1.0, 0.0);
-      Values[i] = v;
+        // Bilinearly sample the input texture 
+        // using GPU native texture operation
+        // see https://arxiv.org/pdf/1805.10817 5.1.2
+        vec4 v = bilinearSample2(normPos);
+        // SumQ (Z-hat) is the sum of the (static field -1)
+        // that is used as the normalization factor for 
+        // the repulsive forces.
+        sum_Q += max(v.x - 1.0, 0.0);
+        Values[i] = v;
     }
   
     // Reduce add sum_Q to a single value
     //uint reduction_size = 64;
     if (lid >= 64) {
-      reduction_array[lid - 64] = sum_Q;
+        reduction_array[lid - 64] = sum_Q;
     }
     barrier();
     if (lid < 64) {
-      reduction_array[lid] += sum_Q;
+        reduction_array[lid] += sum_Q;
     }
     barrier();
     if (lid < 32) {
-      reduction_array[lid] += reduction_array[lid + 32];
+        reduction_array[lid] += reduction_array[lid + 32];
     }
     barrier();
     if (lid < 16) {
-      reduction_array[lid] += reduction_array[lid + 16];
+        reduction_array[lid] += reduction_array[lid + 16];
     }
     barrier();
     if (lid < 8) {
-      reduction_array[lid] += reduction_array[lid + 8];
+        reduction_array[lid] += reduction_array[lid + 8];
     }
     barrier();
     if (lid < 4) {
-      reduction_array[lid] += reduction_array[lid + 4];
+        reduction_array[lid] += reduction_array[lid + 4];
     }
     barrier();
     if (lid < 2) {
-      reduction_array[lid] += reduction_array[lid + 2];
+        reduction_array[lid] += reduction_array[lid + 2];
     }
     barrier();
     if (lid < 1) {
-      Sum[0] = reduction_array[0] + reduction_array[1];
+        Sum[0] = reduction_array[0] + reduction_array[1];
     }
-  }
+}
