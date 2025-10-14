@@ -1,0 +1,18 @@
+diff --git a/src/include/kompute/Memory.hpp b/src/include/kompute/Memory.hpp
+index f952acb..63ae70f 100644
+--- a/src/include/kompute/Memory.hpp
++++ b/src/include/kompute/Memory.hpp
+@@ -222,6 +222,13 @@ namespace kp {
+ 
+     vk::DescriptorType getDescriptorType() { return mDescriptorType; }
+ 
++    /** Sets the descriptor type for this memory object.
++     * @param newType The new descriptor type to set.
++     *
++     * This is use to override the default Tensor type to support UNIFORM buffers (ubos)
++    */
++    void setDescriptorType(vk::DescriptorType newType) { mDescriptorType = newType; }
++
+     /**
+      * Retrieve the raw data via the pointer to the memory that contains the raw
+      * memory of this current tensor. This tensor gets changed to a nullptr when
