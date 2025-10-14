@@ -1,29 +1,41 @@
-  #version 430
-  // Calculate the forces acting on a point i
-  // this is the modified (by the exaggeration factor on the attractive force)
-  // sum of the attractive forces (Eq 12) and the repulsive forces (Eq 14)
+#version 430
 
-  layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
-  layout(std430, binding = 1) buffer Neigh { uint Neighbours[]; };
-  layout(std430, binding = 2) buffer Ind { uint Indices[]; };
-  layout(std430, binding = 3) buffer Prob { float Probabilities[]; };
-  layout(std430, binding = 4) buffer Fiel { vec4 Fields[]; };
-  layout(std430, binding = 5) buffer Grad { vec2 Gradients[]; };
-  layout(std430, binding = 6) readonly buffer NumPoints { uint NP[]; };
-  layout(std430, binding = 7) readonly buffer SumQ { float SQ[]; };
-  layout(std430, binding = 8) writeonly buffer SumBuf { float KL[]; };
-  layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_ARB_shading_language_include : enable
 
-  const uint group_size = 64;
-  shared vec2 sum_positive_red[group_size];
-  shared float sum_kl_divergence[group_size];
-  shared float sum_norm_qij[group_size];
+#include "config/shader_defines.glsl"
 
-  //layout(rg32f) uniform image2D point_tex;
+// Calculate the forces acting on a point i
+// this is the modified (by the exaggeration factor on the attractive force)
+// sum of the attractive forces (Eq 12) and the repulsive forces (Eq 14)
 
-  layout (push_constant) uniform ForcesPushConstants {
+layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
+layout(std430, binding = 1) buffer Neigh { uint Neighbours[]; };
+layout(std430, binding = 2) buffer Ind { uint Indices[]; };
+layout(std430, binding = 3) buffer Prob { float Probabilities[]; };
+layout(std430, binding = 4) buffer Fiel { vec4 Fields[]; };
+layout(std430, binding = 5) buffer Grad { vec2 Gradients[]; };
+layout(std430, binding = 6) readonly buffer NumPoints { uint NP[]; };
+layout(std430, binding = 7) readonly buffer SumQ { float SQ[]; };
+layout(std430, binding = 8) writeonly buffer SumBuf { float KL[]; };
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+const uint group_size = 64;
+shared vec2 sum_positive_red[group_size];
+shared float sum_kl_divergence[group_size];
+shared float sum_norm_qij[group_size];
+
+//layout(rg32f) uniform image2D point_tex;
+
+#ifdef SHADER_USE_PUSH_CONSTANTS
+layout (push_constant) uniform ForcesPushConstants {
     float exaggeration;
-  } pc;
+} pc;
+#else
+layout(scalar, binding = 9 ) uniform ForcesPushConstants {
+    float exaggeration;
+} pc;
+#endif
 
 
   void main() {
