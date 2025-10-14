@@ -7,6 +7,9 @@ vcpkg_from_github(
     PATCHES 
         make_constructor_buffer_info_public.patch
         add_indirect_buffer_flag_to_tensor.patch
+        get_algorithm_descriptor_set.patch
+        get_manager_devices.patch
+        permit_descriptor_type_update.patch
 )
 
 vcpkg_cmake_configure(

@@ -1,0 +1,16 @@
+diff --git a/src/include/kompute/Algorithm.hpp b/src/include/kompute/Algorithm.hpp
+index 64f480e..44b11b3 100644
+--- a/src/include/kompute/Algorithm.hpp
++++ b/src/include/kompute/Algorithm.hpp
+@@ -284,6 +284,11 @@ namespace kp {
+ 
+     void destroy();
+ 
++    /**
++     * Gets descriptor set used by the algorithm.
++     */
++    std::shared_ptr<vk::DescriptorSet> getDescriptorSet() { return this->mDescriptorSet; }
++
+   private:
+     // -------------- NEVER OWNED RESOURCES
+     std::shared_ptr<vk::Device> mDevice;
