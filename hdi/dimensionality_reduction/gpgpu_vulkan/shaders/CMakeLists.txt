@@ -4,6 +4,8 @@
 file(GLOB COMP_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.comp)
 find_package(kompute CONFIG REQUIRED) # imports the vulkan compiler
 set(_shader_hpp_list)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/shader_defines.glsl.in
+               ${CMAKE_CURRENT_SOURCE_DIR}/config/shader_defines.glsl @ONLY)
 foreach(_shader ${COMP_FILES})
     string(REPLACE ".comp" ".hpp" _shader_hpp ${_shader})
     get_filename_component(_namespace ${_shader} NAME_WE)

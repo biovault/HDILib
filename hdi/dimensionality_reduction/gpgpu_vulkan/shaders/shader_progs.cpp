@@ -55,7 +55,11 @@ void BoundsShaderProg::record_unpadded(
     ->record<kp::OpSyncLocal>(params);
 }
 
-std::shared_ptr<kp::ImageT<float>> StencilShaderProg::compute(uint32_t width, uint32_t height, unsigned int num_points, std::vector<float> bounds) {
+std::shared_ptr<kp::ImageT<float>> StencilShaderProg::compute(
+  uint32_t width, 
+  uint32_t height, 
+  unsigned int num_points, 
+  std::vector<float> bounds) {
   //std::cout << "Stencil prog" << std::endl;
   auto npwidth = width;
   if (npwidth % 8) {
@@ -89,9 +93,13 @@ void StencilShaderProg::record(
   _fields_buffer_size = new_fields_buffer_size;
   _stencil_array = std::vector<float>(_fields_buffer_size * _fields_buffer_size * 4, 0.0);
   _stencil_out = _mgr->imageT<float>(_stencil_array, _fields_buffer_size, _fields_buffer_size, 4);
-  auto pushConsts = std::vector<float>({ bounds[0], bounds[1], bounds[2], bounds[3], (float)width, (float)height });
-  const std::vector<std::shared_ptr<kp::Memory>> params = { _tensors[ShaderBuffers::POSITION], _stencil_out };
-  _stencilAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, pushConsts);
+
+  stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
+  const std::vector<std::shared_ptr<kp::Memory>> params = { 
+    _tensors[ShaderBuffers::POSITION], _stencil_out, _tensors[ShaderBuffers::UBO_STENCIL]};
+
+  _stencilAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
+  _ubo.setData(uboVals, _stencilAlgorithm, 3);
   seq->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(_stencilAlgorithm)
     ->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>>({ _stencil_out }));
@@ -106,12 +114,18 @@ void StencilShaderProg::update(
   assert(new_fields_buffer_size == _fields_buffer_size);
   std::fill(_stencil_array.begin(), _stencil_array.end(), 0.0f);
   _stencil_out->setData(_stencil_array);
-  auto pushConsts = std::vector<float>({ bounds[0], bounds[1], bounds[2], bounds[3], (float)width, (float)height });
-  _stencilAlgorithm->setPushConstants(static_cast<void *>(pushConsts.data()), pushConsts.size(), sizeof(float));
+  stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
+  _ubo.setData(uboVals, _stencilAlgorithm, 3);
+  _mgr->sequence()
+    ->record<kp::OpSyncDevice>({ _stencil_out })
+    ->record<kp::OpAlgoDispatch>(_stencilAlgorithm)
+    ->eval();
 }
 
 
-std::shared_ptr<kp::ImageT<float>> FieldComputationShaderProg::compute(std::shared_ptr<kp::ImageT<float>> stencil, uint32_t width, uint32_t height) {
+std::shared_ptr<kp::ImageT<float>> FieldComputationShaderProg::compute(
+  std::shared_ptr<kp::ImageT<float>> stencil, 
+  uint32_t width, uint32_t height) {
   //std::cout << "Field comp prog" << std::endl;
   auto npwidth = width;
   if (npwidth % 8) {
@@ -162,7 +176,7 @@ void FieldComputationShaderProg::record(
   seq->record<kp::OpSyncDevice>({ dispatchTensor })
     ->record<kp::OpSyncDevice>(params)
     ->record<OpIndirectDispatch>(_fieldAlgorithm, dispatchTensor)
-    ->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>>({ _field_out }));
+    ->record<kp::OpSyncLocal>(params);
 }
 
 void FieldComputationShaderProg::update(
@@ -171,7 +185,8 @@ void FieldComputationShaderProg::update(
   unsigned int new_fields_buffer_size) {
   assert(new_fields_buffer_size == _fields_buffer_size);
   auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
-  dispatchTensor->setData(std::vector<uint32_t>({ width, height, 1 }));
+  uint32_t dispatchData[3] = { width, height, 1 };
+  dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
   std::fill(_field_array.begin(), _field_array.end(), 0.0f);
   _field_out->setData(_field_array);
   auto pushConsts = std::vector<float>({ (float)width, (float)height, _function_support });
@@ -179,10 +194,14 @@ void FieldComputationShaderProg::update(
   // IS this needed here or in the sequence?
   _mgr->sequence()
     ->record<kp::OpSyncDevice>({ dispatchTensor })
+    ->record<kp::OpSyncDevice>({ _field_out })
+    ->record<OpIndirectDispatch>(_fieldAlgorithm, dispatchTensor)
     ->eval();
 }
 
-void InterpolationShaderProg::compute(std::shared_ptr<kp::ImageT<float>> fields, uint32_t width, uint32_t height) {
+void InterpolationShaderProg::compute(
+  std::shared_ptr<kp::ImageT<float>> fields, 
+  uint32_t width, uint32_t height) {
 
   const std::vector<std::shared_ptr<kp::Memory>> params = {
       _tensors[ShaderBuffers::POSITION],
@@ -229,6 +248,9 @@ void InterpolationShaderProg::update(
   uint32_t height) {
   auto pushConsts = std::vector<float>({ (float)width, (float)height });
   _interpAlgorithm->setPushConstants(static_cast<void *>(pushConsts.data()), pushConsts.size(), sizeof(float));
+  _mgr->sequence()
+    ->record<kp::OpAlgoDispatch>(_interpAlgorithm)
+    ->eval();
 }
 
 float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
@@ -247,7 +269,10 @@ float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
 
   auto pushConsts = std::vector<float>({ exaggeration});
   auto grid_size = unsigned int(sqrt(num_points) + 1);
-  auto algorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
+  auto algorithm = _mgr->algorithm(
+    params, 
+    _shaderBinary, 
+    kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
   auto seq = _mgr->sequence()
     ->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(algorithm)
@@ -282,6 +307,9 @@ void ForcesShaderProg::record(
 void ForcesShaderProg::update(
   float exaggeration) {
   _forcesAlgorithm->setPushConstants(static_cast<void *>(&exaggeration), 1, sizeof(float));
+  _mgr->sequence()
+    ->record<kp::OpAlgoDispatch>(_forcesAlgorithm)
+    ->eval();
 }
 
 void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentum, unsigned int momentum_switch, float final_momentum, float gain_mult) {
@@ -296,8 +324,14 @@ void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum
 
   auto num_workgroups = unsigned int((num_points * 2 / 64) + 1);
   auto grid_size = unsigned int(sqrt(num_workgroups) + 1);
-  auto pushConsts = std::vector<float>({ eta, minimum_gain, float(iteration), float(momentum_switch), momentum, final_momentum, gain_mult });
-  auto algorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
+  auto pushConsts = std::vector<float>({ 
+    eta, minimum_gain, 
+    float(iteration), float(momentum_switch), 
+    momentum, final_momentum, gain_mult });
+  auto algorithm = _mgr->algorithm(
+    params, 
+    _shaderBinary, 
+    kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
   auto seq = _mgr->sequence()
     ->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(algorithm)
@@ -324,8 +358,14 @@ void UpdateShaderProg::record(
     };
     auto num_workgroups = unsigned int((num_points * 2 / 64) + 1);
     auto grid_size = unsigned int(sqrt(num_workgroups) + 1);
-    auto pushConsts = std::vector<float>({ eta, minimum_gain, float(iteration), float(momentum_switch), momentum, final_momentum, gain_mult });
-    _updateAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
+    auto pushConsts = std::vector<float>({ 
+      eta, minimum_gain, 
+      float(iteration), float(momentum_switch), 
+      momentum, final_momentum, gain_mult });
+    _updateAlgorithm = _mgr->algorithm(
+      params, 
+      _shaderBinary, 
+      kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
     seq->record<kp::OpSyncDevice>(params)
       ->record<kp::OpAlgoDispatch>(_updateAlgorithm)
       ->record<kp::OpSyncLocal>(params);
@@ -339,8 +379,12 @@ void UpdateShaderProg::update(
   unsigned int momentum_switch,
   float final_momentum,
   float gain_mult) {
-  auto pushConsts = std::vector<float>({ eta, minimum_gain, float(iteration), float(momentum_switch), momentum, final_momentum, gain_mult });
+  auto pushConsts = std::vector<float>({ 
+    eta, minimum_gain, 
+    float(iteration), float(momentum_switch),
+    momentum, final_momentum, gain_mult });
   _updateAlgorithm->setPushConstants(static_cast<void*>(pushConsts.data()), pushConsts.size(), sizeof(float));
+  _mgr->sequence()->eval<kp::OpAlgoDispatch>(_updateAlgorithm);
 }
 
 std::vector<float> CenterScaleShaderProg::compute(unsigned int num_points, float exaggeration) {
@@ -361,7 +405,10 @@ std::vector<float> CenterScaleShaderProg::compute(unsigned int num_points, float
   auto pushConsts = std::vector<float>({ scale, diameter });
   auto num_workgroups = unsigned int(num_points / 128) + 1;
   auto grid_size = unsigned int(sqrt(num_workgroups) + 1);
-  auto algorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
+  auto algorithm = _mgr->algorithm(
+    params, 
+    _shaderBinary, 
+    kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
   auto seq = _mgr->sequence()
     ->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(algorithm)
@@ -391,7 +438,10 @@ void CenterScaleShaderProg::record(
   auto pushConsts = std::vector<float>({ scale, diameter });
   auto num_workgroups = unsigned int(num_points / 128) + 1;
   auto grid_size = unsigned int(sqrt(num_workgroups) + 1);
-  _centerScaleAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
+  _centerScaleAlgorithm = _mgr->algorithm(
+    params, 
+    _shaderBinary, 
+    kp::Workgroup({ grid_size, grid_size, 1 }), {}, pushConsts);
   seq->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(_centerScaleAlgorithm)
     ->record<kp::OpSyncLocal>(params);
@@ -407,6 +457,9 @@ void CenterScaleShaderProg::update(
     diameter = 0.1;
   }
   auto pushConsts = std::vector<float>({ scale, diameter });
-  _centerScaleAlgorithm->setPushConstants(static_cast<void*>(pushConsts.data()), pushConsts.size(), sizeof(float));
+  _centerScaleAlgorithm->setPushConstants(
+    static_cast<void*>(pushConsts.data()), pushConsts.size(), sizeof(float));
+  _mgr->sequence()->eval<kp::OpAlgoDispatch>(_centerScaleAlgorithm);
+
 }
 
