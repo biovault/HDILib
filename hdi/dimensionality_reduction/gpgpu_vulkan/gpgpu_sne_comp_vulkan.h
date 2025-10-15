@@ -67,6 +67,7 @@ namespace hdi {
       std::shared_ptr <kp::Manager> _mgr;
       // recorded sequence for the compute shader version
       std::shared_ptr<kp::Sequence> _seq;
+      std::shared_ptr<kp::Sequence> _stencilSeq;
       // kompute tensor buffers
       std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> _tensors;
       // kompute compute shaders
