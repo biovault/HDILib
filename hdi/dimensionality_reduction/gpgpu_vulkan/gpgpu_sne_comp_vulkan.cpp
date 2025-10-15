@@ -110,18 +110,12 @@ namespace hdi {
       _tensors[ShaderBuffers::IMAGE_WORKGROUP] = _mgr->tensorT(std::vector<unsigned int>(3, 1u));
 #ifndef SHADER_USE_PUSH_CONSTANTS
       // These tensors will be used as UBOs
-      _tensors[ShaderBuffers::UBO_STENCIL] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(stencilParams), 0));
-      _tensors[ShaderBuffers::UBO_STENCIL]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
-      _tensors[ShaderBuffers::UBO_FIELD] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(fieldParams), 0));
-      _tensors[ShaderBuffers::UBO_FIELD]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
-      _tensors[ShaderBuffers::UBO_INTERP] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(interpParams), 0));
-      _tensors[ShaderBuffers::UBO_INTERP]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
-      _tensors[ShaderBuffers::UBO_FORCES] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(forcesParams), 0));
-      _tensors[ShaderBuffers::UBO_FORCES]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
-      _tensors[ShaderBuffers::UBO_UPDATE] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(updaterParams), 0));
-      _tensors[ShaderBuffers::UBO_UPDATE]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
-      _tensors[ShaderBuffers::UBO_CENTER_SCALE] = _mgr->tensorT<uint8_t>(std::vector<uint8_t>(sizeof(centerScaleParams), 0));
-      _tensors[ShaderBuffers::UBO_CENTER_SCALE]->setDescriptorType(vk::DescriptorType::eUniformBuffer);
+      _tensors[ShaderBuffers::UBO_STENCIL] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(stencilParams), 0));
+      _tensors[ShaderBuffers::UBO_FIELD] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(fieldParams), 0));
+      _tensors[ShaderBuffers::UBO_INTERP] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(interpParams), 0));
+      _tensors[ShaderBuffers::UBO_FORCES] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(forcesParams), 0));
+      _tensors[ShaderBuffers::UBO_UPDATE] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(updaterParams), 0));
+      _tensors[ShaderBuffers::UBO_CENTER_SCALE] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(centerScaleParams), 0));
 #endif
 
       _boundsProg = std::make_shared<BoundsShaderProg>(_mgr, _tensors);
@@ -218,6 +212,12 @@ namespace hdi {
       float* bounds, 
       float exaggeration, 
       float mult) {
+      // for testing only - record stencil only and eval it later
+      //_stencilSeq = _mgr->sequence();
+      //_stencilSeq->begin();
+      //_stencilProg->record(_stencilSeq, width, height, num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
+      //_stencilSeq->end();
+
       _seq = _mgr->sequence();
       _seq->begin();
       _stencilProg->record(_seq, width, height, num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
@@ -253,7 +253,7 @@ namespace hdi {
 
        //std::cout << "min x,y" << bounds[0] << "," << bounds[1] << std::endl;
        //std::cout << "max x,y" << bounds[2] << "," << bounds[3] << std::endl;
-      std::cout << "Range X: " << range_x << " Range Y: " << range_y << std::endl;
+     // std::cout << "Range X: " << range_x << " Range Y: " << range_y << std::endl;
 
       // assume adaptive resolution(scales with points range) with a minimum size
       auto width = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_x, float(MINIMUM_FIELDS_SIZE))));
@@ -278,7 +278,7 @@ namespace hdi {
           _fields_buffer_size = std::min(2 * _fields_buffer_size, 2048u);
         new_field_buf = true;
       }
-      else if (width < _fields_buffer_size / 2 || height < _fields_buffer_size / 2) {
+      else if (width < _fields_buffer_size / 2 && height < _fields_buffer_size / 2) {
         _fields_buffer_size = std::max(_fields_buffer_size/2, 8u);
         new_field_buf = true;
       }
@@ -291,12 +291,16 @@ namespace hdi {
         // simply update the push constants of the sequence
         update_compute_sequence(iteration, width, height, _bounds.data(), exaggeration, mult);
       }
+     // _stencilSeq->eval();
       _seq->eval();
-      auto stencil = static_cast<kp::Image *>(_stencilProg->_stencil_out.get())->vector<float>();
+      /*
+      auto stencil = static_cast<kp::Image*>(_stencilProg->_stencil_out.get())->vector<float>();
       auto field = static_cast<kp::Image*>(_fieldCompProg->_field_out.get())->vector<float>();
       auto sum_q = _interpProg->getSumQ();
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
+      */
+      auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
       kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
       if (kl_divergence < 0) {  
