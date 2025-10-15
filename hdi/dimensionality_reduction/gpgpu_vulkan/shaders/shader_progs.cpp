@@ -95,11 +95,11 @@ void StencilShaderProg::record(
   _stencil_out = _mgr->imageT<float>(_stencil_array, _fields_buffer_size, _fields_buffer_size, 4);
 
   const std::vector<std::shared_ptr<kp::Memory>> params = { 
-    _tensors[ShaderBuffers::POSITION], _stencil_out, _tensors[ShaderBuffers::UBO_STENCIL]};
+    _tensors[ShaderBuffers::POSITION], _tensors[ShaderBuffers::UBO_STENCIL], _stencil_out};
 
   _stencilAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
-  _ubo.setData(uboVals, _stencilAlgorithm, 3);
+  _ubo.setData(uboVals, _stencilAlgorithm, 1);
   seq->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(_stencilAlgorithm)
     ->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>>({ _stencil_out }));
@@ -115,7 +115,7 @@ void StencilShaderProg::update(
   std::fill(_stencil_array.begin(), _stencil_array.end(), 0.0f);
   _stencil_out->setData(_stencil_array);
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
-  _ubo.setData(uboVals, _stencilAlgorithm, 3);
+  _ubo.setData(uboVals, _stencilAlgorithm, 2);
 }
 
 
@@ -164,6 +164,7 @@ void FieldComputationShaderProg::record(
       _tensors[ShaderBuffers::BOUNDS],
       _field_out,
       stencil,
+      _tensors[ShaderBuffers::NUM_POINTS],
       _tensors[ShaderBuffers::UBO_FIELD]
   };
   _fieldAlgorithm = _mgr->algorithm(params, _shaderBinary, {}, {}, {});
@@ -372,10 +373,6 @@ void UpdateShaderProg::update(
   unsigned int momentum_switch,
   float final_momentum,
   float gain_mult) {
-  auto pushConsts = std::vector<float>({ 
-    eta, minimum_gain, 
-    float(iteration), float(momentum_switch),
-    momentum, final_momentum, gain_mult });
   updaterParams uboVals = {
     eta, minimum_gain,
     iteration, momentum_switch,
