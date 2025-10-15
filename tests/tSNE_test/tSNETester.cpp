@@ -205,4 +205,4 @@ int main(int argc, const char** argv) {
 // -p 30 -i 1000 -s 10000 -d 784 D:\Data\ML\MNIST\mnist_train.csv
 // -p 30 -i 1000 -s 500 -d 784 D:\Data\ML\MNIST\mnist_train.csv
 // -p 13 -i 500 -d 2 D:\Data\ML\xmas\data.csv
-// -b - p 30 - i 1000 - s 70000 - d 784 D:\Data\ML\MNIST\MNIST_70000.bin
+// -b -p 30 -i 1000 -s 70000 -d 784 D:\Data\ML\MNIST\MNIST_70000.bin
