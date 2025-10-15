@@ -18,18 +18,17 @@ const uint groupSize = gl_WorkGroupSize.x;
 const uint hgSize = groupSize / 2;
 shared vec3 reduction_array[hgSize];
 
-#ifdef SHADER_USE_PUSH_CONSTANTS
-layout(push_constant) uniform FieldPushConstants {
-    vec2 imageSize;
-    float support; 
-} pc;
-
-#else
+//#ifdef SHADER_USE_PUSH_CONSTANTS
+//layout(push_constant) uniform FieldPushConstants {
+//    vec2 imageSize;
+//    float support; 
+//} pc;
+//#else
 layout(scalar, binding = 5 ) uniform FieldPushConstants {
     vec2 imageSize;
     float support;  
 } pc;
-#endif
+//#endif
 
 void main() {
     uint x = gl_WorkGroupID.x;
