@@ -1,0 +1,2466 @@
+diff --git a/src/include/kompute/Manager.hpp b/src/include/kompute/Manager.hpp
+index cc02df8..5aa3bac 100644
+--- a/src/include/kompute/Manager.hpp
++++ b/src/include/kompute/Manager.hpp
+@@ -11,11 +11,10 @@
+ 
+ namespace kp {
+ 
+-/**
+-    Base orchestrator which creates and manages device and child components
+-*/
+-class Manager
+-{
++  /**
++      Base orchestrator which creates and manages device and child components
++  */
++  class Manager {
+   public:
+     /**
+         Base constructor and default used which creates the base resources
+@@ -34,8 +33,8 @@ class Manager
+      * physicalDevice
+      */
+     Manager(uint32_t physicalDeviceIndex,
+-            const std::vector<uint32_t>& familyQueueIndices = {},
+-            const std::vector<std::string>& desiredExtensions = {});
++      const std::vector<uint32_t>& familyQueueIndices = {},
++      const std::vector<std::string>& desiredExtensions = {});
+ 
+     /**
+      * Manager constructor which allows your own vulkan application to integrate
+@@ -47,8 +46,8 @@ class Manager
+      * @param physicalDeviceIndex Index for vulkan physical device used
+      */
+     Manager(std::shared_ptr<vk::Instance> instance,
+-            std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+-            std::shared_ptr<vk::Device> device);
++      std::shared_ptr<vk::PhysicalDevice> physicalDevice,
++      std::shared_ptr<vk::Device> device);
+ 
+ 
+     /**
+@@ -76,7 +75,7 @@ class Manager
+      * @returns Shared pointer with initialised sequence
+      */
+     std::shared_ptr<Sequence> sequence(uint32_t queueIndex = 0,
+-                                       uint32_t totalTimestamps = 0);
++      uint32_t totalTimestamps = 0);
+ 
+     /**
+      * Create a managed tensor that will be destroyed by this manager
+@@ -89,18 +88,17 @@ class Manager
+     template<typename T>
+     std::shared_ptr<TensorT<T>> tensorT(
+       const std::vector<T>& data,
+-      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice)
+-    {
+-        KP_LOG_DEBUG("Kompute Manager tensor creation triggered");
++      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice) {
++      KP_LOG_DEBUG("Kompute Manager tensor creation triggered");
+ 
+-        std::shared_ptr<TensorT<T>> tensor{ new kp::TensorT<T>(
+-          this->mPhysicalDevice, this->mDevice, data, tensorType) };
++      std::shared_ptr<TensorT<T>> tensor{ new kp::TensorT<T>(
++        this->mPhysicalDevice, this->mDevice, data, tensorType) };
+ 
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(tensor);
+-        }
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(tensor);
++      }
+ 
+-        return tensor;
++      return tensor;
+     }
+ 
+     /**
+@@ -114,24 +112,47 @@ class Manager
+     template<typename T>
+     std::shared_ptr<TensorT<T>> tensorT(
+       size_t size,
+-      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice)
+-    {
+-        KP_LOG_DEBUG("Kompute Manager tensor creation triggered");
++      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice) {
++      KP_LOG_DEBUG("Kompute Manager tensor creation triggered");
+ 
+-        std::shared_ptr<TensorT<T>> tensor{ new kp::TensorT<T>(
+-          this->mPhysicalDevice, this->mDevice, size, tensorType) };
++      std::shared_ptr<TensorT<T>> tensor{ new kp::TensorT<T>(
++        this->mPhysicalDevice, this->mDevice, size, tensorType) };
+ 
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(tensor);
+-        }
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(tensor);
++      }
+ 
+-        return tensor;
++      return tensor;
+     }
++
++    /**
++     * Create a managed ubo tensor that will be destroyed by this manager
++     * if it hasn't been destroyed by its reference count going to zero.
++     *
++     * @param data The data to initialize the tensor with
++     * @param tensorType The type of tensor to initialize
++     * @returns Shared pointer with initialised tensor
++     */
++    template<typename T>
++    std::shared_ptr<TensorT<T>> uboTensorT(
++      const std::vector<T>& data,
++      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice) {
++      KP_LOG_DEBUG("Kompute Manager tensor creation triggered");
++
++      std::shared_ptr<TensorT<T>> tensor{ new kp::TensorT<T>(
++        this->mPhysicalDevice, this->mDevice, data, tensorType, vk::DescriptorType::eUniformBuffer) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(tensor);
++      }
++
++      return tensor;
++    }
++
+     std::shared_ptr<TensorT<float>> tensor(
+       const std::vector<float>& data,
+-      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice)
+-    {
+-        return this->tensorT<float>(data, tensorType);
++      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice) {
++      return this->tensorT<float>(data, tensorType);
+     }
+ 
+     std::shared_ptr<Tensor> tensor(
+@@ -139,41 +160,39 @@ class Manager
+       uint32_t elementTotalCount,
+       uint32_t elementMemorySize,
+       const Memory::DataTypes& dataType,
+-      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice)
+-    {
+-        std::shared_ptr<Tensor> tensor{ new kp::Tensor(this->mPhysicalDevice,
+-                                                       this->mDevice,
+-                                                       data,
+-                                                       elementTotalCount,
+-                                                       elementMemorySize,
+-                                                       dataType,
+-                                                       tensorType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(tensor);
+-        }
+-
+-        return tensor;
++      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice) {
++      std::shared_ptr<Tensor> tensor{ new kp::Tensor(this->mPhysicalDevice,
++                                                     this->mDevice,
++                                                     data,
++                                                     elementTotalCount,
++                                                     elementMemorySize,
++                                                     dataType,
++                                                     tensorType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(tensor);
++      }
++
++      return tensor;
+     }
+ 
+     std::shared_ptr<Tensor> tensor(
+       uint32_t elementTotalCount,
+       uint32_t elementMemorySize,
+       const Memory::DataTypes& dataType,
+-      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice)
+-    {
+-        std::shared_ptr<Tensor> tensor{ new kp::Tensor(this->mPhysicalDevice,
+-                                                       this->mDevice,
+-                                                       elementTotalCount,
+-                                                       elementMemorySize,
+-                                                       dataType,
+-                                                       tensorType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(tensor);
+-        }
+-
+-        return tensor;
++      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice) {
++      std::shared_ptr<Tensor> tensor{ new kp::Tensor(this->mPhysicalDevice,
++                                                     this->mDevice,
++                                                     elementTotalCount,
++                                                     elementMemorySize,
++                                                     dataType,
++                                                     tensorType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(tensor);
++      }
++
++      return tensor;
+     }
+ 
+     /**
+@@ -191,25 +210,24 @@ class Manager
+       uint32_t height,
+       uint32_t numChannels,
+       vk::ImageTiling tiling,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        KP_LOG_DEBUG("Kompute Manager image creation triggered");
+-
+-        std::shared_ptr<ImageT<T>> image{ new kp::ImageT<T>(
+-          this->mPhysicalDevice,
+-          this->mDevice,
+-          data,
+-          width,
+-          height,
+-          numChannels,
+-          tiling,
+-          imageType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(image);
+-        }
+-
+-        return image;
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      KP_LOG_DEBUG("Kompute Manager image creation triggered");
++
++      std::shared_ptr<ImageT<T>> image{ new kp::ImageT<T>(
++        this->mPhysicalDevice,
++        this->mDevice,
++        data,
++        width,
++        height,
++        numChannels,
++        tiling,
++        imageType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(image);
++      }
++
++      return image;
+     }
+ 
+     template<typename T>
+@@ -218,24 +236,23 @@ class Manager
+       uint32_t width,
+       uint32_t height,
+       uint32_t numChannels,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        KP_LOG_DEBUG("Kompute Manager image creation triggered");
+-
+-        std::shared_ptr<ImageT<T>> image{ new kp::ImageT<T>(
+-          this->mPhysicalDevice,
+-          this->mDevice,
+-          data,
+-          width,
+-          height,
+-          numChannels,
+-          imageType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(image);
+-        }
+-
+-        return image;
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      KP_LOG_DEBUG("Kompute Manager image creation triggered");
++
++      std::shared_ptr<ImageT<T>> image{ new kp::ImageT<T>(
++        this->mPhysicalDevice,
++        this->mDevice,
++        data,
++        width,
++        height,
++        numChannels,
++        imageType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(image);
++      }
++
++      return image;
+     }
+ 
+     template<typename T>
+@@ -244,24 +261,23 @@ class Manager
+       uint32_t height,
+       uint32_t numChannels,
+       vk::ImageTiling tiling,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        KP_LOG_DEBUG("Kompute Manager image creation triggered");
+-
+-        std::shared_ptr<ImageT<T>> image{ new kp::ImageT<T>(
+-          this->mPhysicalDevice,
+-          this->mDevice,
+-          width,
+-          height,
+-          numChannels,
+-          tiling,
+-          imageType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(image);
+-        }
+-
+-        return image;
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      KP_LOG_DEBUG("Kompute Manager image creation triggered");
++
++      std::shared_ptr<ImageT<T>> image{ new kp::ImageT<T>(
++        this->mPhysicalDevice,
++        this->mDevice,
++        width,
++        height,
++        numChannels,
++        tiling,
++        imageType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(image);
++      }
++
++      return image;
+     }
+ 
+     template<typename T>
+@@ -269,23 +285,22 @@ class Manager
+       uint32_t width,
+       uint32_t height,
+       uint32_t numChannels,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        KP_LOG_DEBUG("Kompute Manager image creation triggered");
+-
+-        std::shared_ptr<ImageT<T>> image{ new kp::ImageT<T>(
+-          this->mPhysicalDevice,
+-          this->mDevice,
+-          width,
+-          height,
+-          numChannels,
+-          imageType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(image);
+-        }
+-
+-        return image;
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      KP_LOG_DEBUG("Kompute Manager image creation triggered");
++
++      std::shared_ptr<ImageT<T>> image{ new kp::ImageT<T>(
++        this->mPhysicalDevice,
++        this->mDevice,
++        width,
++        height,
++        numChannels,
++        imageType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(image);
++      }
++
++      return image;
+     }
+     std::shared_ptr<ImageT<float>> image(
+       const std::vector<float>& data,
+@@ -293,10 +308,9 @@ class Manager
+       uint32_t height,
+       uint32_t numChannels,
+       vk::ImageTiling tiling,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        return this->imageT<float>(
+-          data, width, height, numChannels, tiling, imageType);
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      return this->imageT<float>(
++        data, width, height, numChannels, tiling, imageType);
+     }
+ 
+     std::shared_ptr<ImageT<float>> image(
+@@ -304,9 +318,8 @@ class Manager
+       uint32_t width,
+       uint32_t height,
+       uint32_t numChannels,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        return this->imageT<float>(data, width, height, numChannels, imageType);
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      return this->imageT<float>(data, width, height, numChannels, imageType);
+     }
+ 
+     std::shared_ptr<ImageT<float>> image(
+@@ -314,19 +327,17 @@ class Manager
+       uint32_t height,
+       uint32_t numChannels,
+       vk::ImageTiling tiling,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        return this->imageT<float>(
+-          width, height, numChannels, tiling, imageType);
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      return this->imageT<float>(
++        width, height, numChannels, tiling, imageType);
+     }
+ 
+     std::shared_ptr<ImageT<float>> image(
+       uint32_t width,
+       uint32_t height,
+       uint32_t numChannels,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        return this->imageT<float>(width, height, numChannels, imageType);
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      return this->imageT<float>(width, height, numChannels, imageType);
+     }
+ 
+     std::shared_ptr<Image> image(
+@@ -337,24 +348,23 @@ class Manager
+       uint32_t numChannels,
+       const Image::DataTypes& dataType,
+       vk::ImageTiling tiling,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        std::shared_ptr<Image> image{ new kp::Image(this->mPhysicalDevice,
+-                                                    this->mDevice,
+-                                                    data,
+-                                                    dataSize,
+-                                                    width,
+-                                                    height,
+-                                                    numChannels,
+-                                                    dataType,
+-                                                    tiling,
+-                                                    imageType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(image);
+-        }
+-
+-        return image;
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      std::shared_ptr<Image> image{ new kp::Image(this->mPhysicalDevice,
++                                                  this->mDevice,
++                                                  data,
++                                                  dataSize,
++                                                  width,
++                                                  height,
++                                                  numChannels,
++                                                  dataType,
++                                                  tiling,
++                                                  imageType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(image);
++      }
++
++      return image;
+     }
+ 
+     std::shared_ptr<Image> image(
+@@ -364,23 +374,22 @@ class Manager
+       uint32_t height,
+       uint32_t numChannels,
+       const Memory::DataTypes& dataType,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        std::shared_ptr<Image> image{ new kp::Image(this->mPhysicalDevice,
+-                                                    this->mDevice,
+-                                                    data,
+-                                                    dataSize,
+-                                                    width,
+-                                                    height,
+-                                                    numChannels,
+-                                                    dataType,
+-                                                    imageType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(image);
+-        }
+-
+-        return image;
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      std::shared_ptr<Image> image{ new kp::Image(this->mPhysicalDevice,
++                                                  this->mDevice,
++                                                  data,
++                                                  dataSize,
++                                                  width,
++                                                  height,
++                                                  numChannels,
++                                                  dataType,
++                                                  imageType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(image);
++      }
++
++      return image;
+     }
+ 
+     std::shared_ptr<Image> image(
+@@ -389,22 +398,21 @@ class Manager
+       uint32_t numChannels,
+       const Memory::DataTypes& dataType,
+       vk::ImageTiling tiling,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        std::shared_ptr<Image> image{ new kp::Image(this->mPhysicalDevice,
+-                                                    this->mDevice,
+-                                                    width,
+-                                                    height,
+-                                                    numChannels,
+-                                                    dataType,
+-                                                    tiling,
+-                                                    imageType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(image);
+-        }
+-
+-        return image;
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      std::shared_ptr<Image> image{ new kp::Image(this->mPhysicalDevice,
++                                                  this->mDevice,
++                                                  width,
++                                                  height,
++                                                  numChannels,
++                                                  dataType,
++                                                  tiling,
++                                                  imageType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(image);
++      }
++
++      return image;
+     }
+ 
+     std::shared_ptr<Image> image(
+@@ -412,21 +420,20 @@ class Manager
+       uint32_t height,
+       uint32_t numChannels,
+       const Memory::DataTypes& dataType,
+-      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice)
+-    {
+-        std::shared_ptr<Image> image{ new kp::Image(this->mPhysicalDevice,
+-                                                    this->mDevice,
+-                                                    width,
+-                                                    height,
+-                                                    numChannels,
+-                                                    dataType,
+-                                                    imageType) };
+-
+-        if (this->mManageResources) {
+-            this->mManagedMemObjects.push_back(image);
+-        }
+-
+-        return image;
++      Memory::MemoryTypes imageType = Memory::MemoryTypes::eDevice) {
++      std::shared_ptr<Image> image{ new kp::Image(this->mPhysicalDevice,
++                                                  this->mDevice,
++                                                  width,
++                                                  height,
++                                                  numChannels,
++                                                  dataType,
++                                                  imageType) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(image);
++      }
++
++      return image;
+     }
+ 
+     /**
+@@ -450,10 +457,9 @@ class Manager
+       const std::vector<uint32_t>& spirv = {},
+       const Workgroup& workgroup = {},
+       const std::vector<float>& specializationConstants = {},
+-      const std::vector<float>& pushConstants = {})
+-    {
+-        return this->algorithm<>(
+-          memObjects, spirv, workgroup, specializationConstants, pushConstants);
++      const std::vector<float>& pushConstants = {}) {
++      return this->algorithm<>(
++        memObjects, spirv, workgroup, specializationConstants, pushConstants);
+     }
+ 
+     /**
+@@ -477,24 +483,23 @@ class Manager
+       const std::vector<uint32_t>& spirv,
+       const Workgroup& workgroup,
+       const std::vector<S>& specializationConstants,
+-      const std::vector<P>& pushConstants)
+-    {
++      const std::vector<P>& pushConstants) {
+ 
+-        KP_LOG_DEBUG("Kompute Manager algorithm creation triggered");
++      KP_LOG_DEBUG("Kompute Manager algorithm creation triggered");
+ 
+-        std::shared_ptr<Algorithm> algorithm{ new kp::Algorithm(
+-          this->mDevice,
+-          memObjects,
+-          spirv,
+-          workgroup,
+-          specializationConstants,
+-          pushConstants) };
++      std::shared_ptr<Algorithm> algorithm{ new kp::Algorithm(
++        this->mDevice,
++        memObjects,
++        spirv,
++        workgroup,
++        specializationConstants,
++        pushConstants) };
+ 
+-        if (this->mManageResources) {
+-            this->mManagedAlgorithms.push_back(algorithm);
+-        }
++      if (this->mManageResources) {
++        this->mManagedAlgorithms.push_back(algorithm);
++      }
+ 
+-        return algorithm;
++      return algorithm;
+     }
+ 
+     /**
+@@ -530,6 +535,17 @@ class Manager
+      **/
+     std::shared_ptr<vk::Instance> getVkInstance() const;
+ 
++    /**
++     * Get the logical device
++     * */
++    std::shared_ptr<vk::Device> getDevice() {
++      return this->mDevice;
++    }
++
++    std::shared_ptr<vk::PhysicalDevice> getPhysicalDevice() {
++      return this->mPhysicalDevice;
++    }
++
+   private:
+     // -------------- OPTIONALLY OWNED RESOURCES
+     std::shared_ptr<vk::Instance> mInstance = nullptr;
+@@ -548,20 +564,20 @@ class Manager
+ 
+     bool mManageResources = false;
+ 
+-#ifndef KOMPUTE_DISABLE_VK_DEBUG_LAYERS
++  #ifndef KOMPUTE_DISABLE_VK_DEBUG_LAYERS
+     vk::DebugReportCallbackEXT mDebugReportCallback;
+-#ifdef VK_VERSION_1_4
++  #ifdef VK_VERSION_1_4
+     vk::detail::DispatchLoaderDynamic mDebugDispatcher;
+-#else
++  #else
+     vk::DispatchLoaderDynamic mDebugDispatcher;
+-#endif // VK_VERSION_1_4
+-#endif // KOMPUTE_DISABLE_VK_DEBUG_LAYERS
++  #endif // VK_VERSION_1_4
++  #endif // KOMPUTE_DISABLE_VK_DEBUG_LAYERS
+ 
+     // Create functions
+     void createInstance();
+     void createDevice(const std::vector<uint32_t>& familyQueueIndices = {},
+-                      uint32_t hysicalDeviceIndex = 0,
+-                      const std::vector<std::string>& desiredExtensions = {});
+-};
++      uint32_t hysicalDeviceIndex = 0,
++      const std::vector<std::string>& desiredExtensions = {});
++  };
+ 
+ } // End namespace kp
+diff --git a/src/include/kompute/Tensor.hpp b/src/include/kompute/Tensor.hpp
+index 78814e3..4f533fa 100644
+--- a/src/include/kompute/Tensor.hpp
++++ b/src/include/kompute/Tensor.hpp
+@@ -9,18 +9,17 @@
+ 
+ namespace kp {
+ 
+-// Forward-declare the Image class
+-class Image;
+-/**
+- * Structured data used in GPU operations.
+- *
+- * Tensors are the base building block in Kompute to perform operations across
+- * GPUs. Each tensor would have a respective Vulkan memory and buffer, which
+- * would be used to store their respective data. The tensors can be used for GPU
+- * data storage or transfer.
+- */
+-class Tensor : public Memory
+-{
++  // Forward-declare the Image class
++  class Image;
++  /**
++   * Structured data used in GPU operations.
++   *
++   * Tensors are the base building block in Kompute to perform operations across
++   * GPUs. Each tensor would have a respective Vulkan memory and buffer, which
++   * would be used to store their respective data. The tensors can be used for GPU
++   * data storage or transfer.
++   */
++  class Tensor : public Memory {
+   public:
+     /**
+      *  Constructor with data provided which would be used to create the
+@@ -33,12 +32,13 @@ class Tensor : public Memory
+      *  @param tensorTypes Type for the tensor which is of type MemoryTypes
+      */
+     Tensor(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+-           std::shared_ptr<vk::Device> device,
+-           void* data,
+-           uint32_t elementTotalCount,
+-           uint32_t elementMemorySize,
+-           const DataTypes& dataType,
+-           const MemoryTypes& tensorType = MemoryTypes::eDevice);
++      std::shared_ptr<vk::Device> device,
++      void* data,
++      uint32_t elementTotalCount,
++      uint32_t elementMemorySize,
++      const DataTypes& dataType,
++      const MemoryTypes& tensorType = MemoryTypes::eDevice,
++      vk::DescriptorType descriptorType = vk::DescriptorType::eStorageBuffer);
+ 
+     /**
+      *  Constructor with size provided which would be used to create the
+@@ -51,11 +51,11 @@ class Tensor : public Memory
+      *  @param tensorTypes Type for the tensor which is of type TensorTypes
+      */
+     Tensor(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+-           std::shared_ptr<vk::Device> device,
+-           uint32_t elementTotalCount,
+-           uint32_t elementMemorySize,
+-           const DataTypes& dataType,
+-           const MemoryTypes& memoryType = MemoryTypes::eDevice);
++      std::shared_ptr<vk::Device> device,
++      uint32_t elementTotalCount,
++      uint32_t elementMemorySize,
++      const DataTypes& dataType,
++      const MemoryTypes& memoryType = MemoryTypes::eDevice);
+ 
+     /**
+      * @brief Make Tensor uncopyable
+@@ -93,7 +93,7 @@ class Tensor : public Memory
+      * @param copyFromTensor Tensor to copy the data from
+      */
+     void recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+-                        std::shared_ptr<Tensor> copyFromTensor) override;
++      std::shared_ptr<Tensor> copyFromTensor) override;
+ 
+     /**
+      * Records a copy from the memory of the image provided to the current
+@@ -104,7 +104,7 @@ class Tensor : public Memory
+      * @param copyFromImage Image to copy the data from
+      */
+     void recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+-                        std::shared_ptr<Image> copyFromImage) override;
++      std::shared_ptr<Image> copyFromImage) override;
+ 
+     /**
+      * Records a copy from the internal staging memory to the device memory
+@@ -176,6 +176,8 @@ class Tensor : public Memory
+ 
+     Type type() override { return Type::eTensor; }
+ 
++    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
++
+   protected:
+     // -------------- ALWAYS OWNED RESOURCES
+     vk::DescriptorBufferInfo mDescriptorBufferInfo;
+@@ -189,74 +191,71 @@ class Tensor : public Memory
+ 
+     void allocateMemoryCreateGPUResources(); // Creates the vulkan buffer
+     void createBuffer(std::shared_ptr<vk::Buffer> buffer,
+-                      vk::BufferUsageFlags bufferUsageFlags);
++      vk::BufferUsageFlags bufferUsageFlags);
+     void allocateBindMemory(std::shared_ptr<vk::Buffer> buffer,
+-                            std::shared_ptr<vk::DeviceMemory> memory,
+-                            vk::MemoryPropertyFlags memoryPropertyFlags);
++      std::shared_ptr<vk::DeviceMemory> memory,
++      vk::MemoryPropertyFlags memoryPropertyFlags);
+     void recordCopyBuffer(const vk::CommandBuffer& commandBuffer,
+-                          std::shared_ptr<vk::Buffer> bufferFrom,
+-                          std::shared_ptr<vk::Buffer> bufferTo,
+-                          vk::DeviceSize bufferSize,
+-                          vk::BufferCopy copyRegion);
++      std::shared_ptr<vk::Buffer> bufferFrom,
++      std::shared_ptr<vk::Buffer> bufferTo,
++      vk::DeviceSize bufferSize,
++      vk::BufferCopy copyRegion);
+     void recordCopyBufferFromImage(const vk::CommandBuffer& commandBuffer,
+-                                   std::shared_ptr<vk::Image> imageFrom,
+-                                   std::shared_ptr<vk::Buffer> bufferTo,
+-                                   vk::ImageLayout fromLayout,
+-                                   vk::DeviceSize /*bufferSize*/,
+-                                   vk::BufferImageCopy copyRegion);
++      std::shared_ptr<vk::Image> imageFrom,
++      std::shared_ptr<vk::Buffer> bufferTo,
++      vk::ImageLayout fromLayout,
++      vk::DeviceSize /*bufferSize*/,
++      vk::BufferImageCopy copyRegion);
+     void recordBufferMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+-                                   const vk::Buffer& buffer,
+-                                   vk::AccessFlagBits srcAccessMask,
+-                                   vk::AccessFlagBits dstAccessMask,
+-                                   vk::PipelineStageFlagBits srcStageMask,
+-                                   vk::PipelineStageFlagBits dstStageMask);
++      const vk::Buffer& buffer,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask);
+ 
+     // Private util functions
+     vk::BufferUsageFlags getPrimaryBufferUsageFlags();
+     vk::BufferUsageFlags getStagingBufferUsageFlags();
+ 
+-    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
+-
+     /**
+      * Function to reserve memory on the tensor. This does not copy any data, it
+      * just reserves memory, similarly to std::vector reserve() method.
+      */
+     void reserve();
+-};
++  };
+ 
+-template<typename T>
+-class TensorT : public Tensor
+-{
++  template<typename T>
++  class TensorT : public Tensor {
+   public:
+     TensorT(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+-            std::shared_ptr<vk::Device> device,
+-            const size_t size,
+-            const MemoryTypes& tensorType = MemoryTypes::eDevice)
++      std::shared_ptr<vk::Device> device,
++      const size_t size,
++      const MemoryTypes& tensorType = MemoryTypes::eDevice)
+       : Tensor(physicalDevice,
+-               device,
+-               size,
+-               sizeof(T),
+-               Memory::dataType<T>(),
+-               tensorType)
+-    {
+-        KP_LOG_DEBUG("Kompute TensorT constructor with data size {}", size);
++        device,
++        size,
++        sizeof(T),
++        Memory::dataType<T>(),
++        tensorType) {
++      KP_LOG_DEBUG("Kompute TensorT constructor with data size {}", size);
+     }
+ 
+     TensorT(
+       std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+       std::shared_ptr<vk::Device> device,
+       const std::vector<T>& data,
+-      const Memory::MemoryTypes& tensorType = Memory::MemoryTypes::eDevice)
++      const Memory::MemoryTypes& tensorType = Memory::MemoryTypes::eDevice,
++      vk::DescriptorType descriptorType = vk::DescriptorType::eStorageBuffer)
+       : Tensor(physicalDevice,
+-               device,
+-               (void*)data.data(),
+-               static_cast<uint32_t>(data.size()),
+-               sizeof(T),
+-               Memory::dataType<T>(),
+-               tensorType)
+-    {
+-        KP_LOG_DEBUG("Kompute TensorT filling constructor with data size {}",
+-                     data.size());
++        device,
++        (void*) data.data(),
++        static_cast<uint32_t>(data.size()),
++        sizeof(T),
++        Memory::dataType<T>(),
++        tensorType,
++        descriptorType) {
++      KP_LOG_DEBUG("Kompute TensorT filling constructor with data size {}",
++        data.size());
+     }
+ 
+     /**
+@@ -274,6 +273,6 @@ class TensorT : public Tensor
+     DataTypes dataType() { return Memory::dataType<T>(); }
+     std::vector<T> vector() { return Memory::vector<T>(); }
+     T* data() { return Memory::data<T>(); }
+-};
++  };
+ 
+ } // End namespace kp
+diff --git a/src/include/kompute/Algorithm.hpp b/src/include/kompute/Algorithm.hpp
+index c459bab..44b11b3 100644
+--- a/src/include/kompute/Algorithm.hpp
++++ b/src/include/kompute/Algorithm.hpp
+@@ -14,12 +14,11 @@
+ 
+ namespace kp {
+ 
+-/**
+-    Abstraction for compute shaders that are run on top of tensors grouped via
+-   ParameterGroups (which group descriptorsets)
+-*/
+-class Algorithm
+-{
++  /**
++      Abstraction for compute shaders that are run on top of tensors grouped via
++     ParameterGroups (which group descriptorsets)
++  */
++  class Algorithm {
+   public:
+     /**
+      *  Main constructor for algorithm with configuration parameters to create
+@@ -41,32 +40,31 @@ class Algorithm
+      */
+     template<typename S = float, typename P = float>
+     Algorithm(std::shared_ptr<vk::Device> device,
+-              const std::vector<std::shared_ptr<Memory>>& memObjects = {},
+-              const std::vector<uint32_t>& spirv = {},
+-              const Workgroup& workgroup = {},
+-              const std::vector<S>& specializationConstants = {},
+-              const std::vector<P>& pushConstants = {}) noexcept
+-    {
+-        KP_LOG_DEBUG("Kompute Algorithm Constructor with device");
+-
+-        this->mDevice = device;
+-
+-        if (memObjects.size() && spirv.size()) {
+-            KP_LOG_INFO(
+-              "Kompute Algorithm initialising with tensor size: {} and "
+-              "spirv size: {}",
+-              memObjects.size(),
+-              spirv.size());
+-            this->rebuild(memObjects,
+-                          spirv,
+-                          workgroup,
+-                          specializationConstants,
+-                          pushConstants);
+-        } else {
+-            KP_LOG_INFO(
+-              "Kompute Algorithm constructor with empty mem objects and or "
+-              "spirv so not rebuilding vulkan components");
+-        }
++      const std::vector<std::shared_ptr<Memory>>& memObjects = {},
++      const std::vector<uint32_t>& spirv = {},
++      const Workgroup& workgroup = {},
++      const std::vector<S>& specializationConstants = {},
++      const std::vector<P>& pushConstants = {}) noexcept {
++      KP_LOG_DEBUG("Kompute Algorithm Constructor with device");
++
++      this->mDevice = device;
++
++      if (memObjects.size() && spirv.size()) {
++        KP_LOG_INFO(
++          "Kompute Algorithm initialising with tensor size: {} and "
++          "spirv size: {}",
++          memObjects.size(),
++          spirv.size());
++        this->rebuild(memObjects,
++          spirv,
++          workgroup,
++          specializationConstants,
++          pushConstants);
++      } else {
++        KP_LOG_INFO(
++          "Kompute Algorithm constructor with empty mem objects and or "
++          "spirv so not rebuilding vulkan components");
++      }
+     }
+ 
+     /**
+@@ -87,58 +85,57 @@ class Algorithm
+      */
+     template<typename S = float, typename P = float>
+     void rebuild(const std::vector<std::shared_ptr<Memory>>& memObjects,
+-                 const std::vector<uint32_t>& spirv,
+-                 const Workgroup& workgroup = {},
+-                 const std::vector<S>& specializationConstants = {},
+-                 const std::vector<P>& pushConstants = {})
+-    {
+-        KP_LOG_DEBUG("Kompute Algorithm rebuild started");
+-
+-        this->mMemObjects = memObjects;
+-        this->mSpirv = spirv;
+-
+-        if (specializationConstants.size()) {
+-            if (this->mSpecializationConstantsData) {
+-                free(this->mSpecializationConstantsData);
+-            }
+-            uint32_t memorySize =
+-              sizeof(decltype(specializationConstants.back()));
+-            uint32_t size = specializationConstants.size();
+-            uint32_t totalSize = size * memorySize;
+-            this->mSpecializationConstantsData = malloc(totalSize);
+-            memcpy(this->mSpecializationConstantsData,
+-                   specializationConstants.data(),
+-                   totalSize);
+-            this->mSpecializationConstantsDataTypeMemorySize = memorySize;
+-            this->mSpecializationConstantsSize = size;
++      const std::vector<uint32_t>& spirv,
++      const Workgroup& workgroup = {},
++      const std::vector<S>& specializationConstants = {},
++      const std::vector<P>& pushConstants = {}) {
++      KP_LOG_DEBUG("Kompute Algorithm rebuild started");
++
++      this->mMemObjects = memObjects;
++      this->mSpirv = spirv;
++
++      if (specializationConstants.size()) {
++        if (this->mSpecializationConstantsData) {
++          free(this->mSpecializationConstantsData);
+         }
+-
+-        if (pushConstants.size()) {
+-            if (this->mPushConstantsData) {
+-                free(this->mPushConstantsData);
+-            }
+-            uint32_t memorySize = sizeof(decltype(pushConstants.back()));
+-            uint32_t size = pushConstants.size();
+-            uint32_t totalSize = size * memorySize;
+-            this->mPushConstantsData = malloc(totalSize);
+-            memcpy(this->mPushConstantsData, pushConstants.data(), totalSize);
+-            this->mPushConstantsDataTypeMemorySize = memorySize;
+-            this->mPushConstantsSize = size;
++        uint32_t memorySize =
++          sizeof(decltype(specializationConstants.back()));
++        uint32_t size = specializationConstants.size();
++        uint32_t totalSize = size * memorySize;
++        this->mSpecializationConstantsData = malloc(totalSize);
++        memcpy(this->mSpecializationConstantsData,
++          specializationConstants.data(),
++          totalSize);
++        this->mSpecializationConstantsDataTypeMemorySize = memorySize;
++        this->mSpecializationConstantsSize = size;
++      }
++
++      if (pushConstants.size()) {
++        if (this->mPushConstantsData) {
++          free(this->mPushConstantsData);
+         }
++        uint32_t memorySize = sizeof(decltype(pushConstants.back()));
++        uint32_t size = pushConstants.size();
++        uint32_t totalSize = size * memorySize;
++        this->mPushConstantsData = malloc(totalSize);
++        memcpy(this->mPushConstantsData, pushConstants.data(), totalSize);
++        this->mPushConstantsDataTypeMemorySize = memorySize;
++        this->mPushConstantsSize = size;
++      }
+ 
+-        this->setWorkgroup(
+-          workgroup,
+-          this->mMemObjects.size() ? this->mMemObjects[0]->size() : 1);
++      this->setWorkgroup(
++        workgroup,
++        this->mMemObjects.size() ? this->mMemObjects[0]->size() : 1);
+ 
+-        // Descriptor pool is created first so if available then destroy all
+-        // before rebuild
+-        if (this->isInit()) {
+-            this->destroy();
+-        }
++      // Descriptor pool is created first so if available then destroy all
++      // before rebuild
++      if (this->isInit()) {
++        this->destroy();
++      }
+ 
+-        this->createParameters();
+-        this->createShaderModule();
+-        this->createPipeline();
++      this->createParameters();
++      this->createShaderModule();
++      this->createPipeline();
+     }
+ 
+     /**
+@@ -209,12 +206,11 @@ class Algorithm
+      * must be of the same size as the ones created during initialization.
+      */
+     template<typename T>
+-    void setPushConstants(const std::vector<T>& pushConstants)
+-    {
+-        uint32_t memorySize = sizeof(decltype(pushConstants.back()));
+-        uint32_t size = pushConstants.size();
++    void setPushConstants(const std::vector<T>& pushConstants) {
++      uint32_t memorySize = sizeof(decltype(pushConstants.back()));
++      uint32_t size = pushConstants.size();
+ 
+-        this->setPushConstants(pushConstants.data(), size, memorySize);
++      this->setPushConstants(pushConstants.data(), size, memorySize);
+     }
+ 
+     /**
+@@ -226,28 +222,27 @@ class Algorithm
+      * @param size The number of data elements provided in the data
+      * @param memorySize The memory size of each of the data elements in bytes.
+      */
+-    void setPushConstants(void* data, uint32_t size, uint32_t memorySize)
+-    {
+-
+-        uint32_t totalSize = memorySize * size;
+-        uint32_t previousTotalSize =
+-          this->mPushConstantsDataTypeMemorySize * this->mPushConstantsSize;
+-
+-        if (totalSize != previousTotalSize) {
+-            throw std::runtime_error(fmt::format(
+-              "Kompute Algorithm push "
+-              "constant total memory size provided is {} but expected {} bytes",
+-              totalSize,
+-              previousTotalSize));
+-        }
+-        if (this->mPushConstantsData) {
+-            free(this->mPushConstantsData);
+-        }
+-
+-        this->mPushConstantsData = malloc(totalSize);
+-        memcpy(this->mPushConstantsData, data, totalSize);
+-        this->mPushConstantsDataTypeMemorySize = memorySize;
+-        this->mPushConstantsSize = size;
++    void setPushConstants(void* data, uint32_t size, uint32_t memorySize) {
++
++      uint32_t totalSize = memorySize * size;
++      uint32_t previousTotalSize =
++        this->mPushConstantsDataTypeMemorySize * this->mPushConstantsSize;
++
++      if (totalSize != previousTotalSize) {
++        throw std::runtime_error(fmt::format(
++          "Kompute Algorithm push "
++          "constant total memory size provided is {} but expected {} bytes",
++          totalSize,
++          previousTotalSize));
++      }
++      if (this->mPushConstantsData) {
++        free(this->mPushConstantsData);
++      }
++
++      this->mPushConstantsData = malloc(totalSize);
++      memcpy(this->mPushConstantsData, data, totalSize);
++      this->mPushConstantsDataTypeMemorySize = memorySize;
++      this->mPushConstantsSize = size;
+     }
+ 
+     /**
+@@ -265,11 +260,10 @@ class Algorithm
+      * constants
+      */
+     template<typename T>
+-    const std::vector<T> getSpecializationConstants()
+-    {
+-        return { (T*)this->mSpecializationConstantsData,
+-                 ((T*)this->mSpecializationConstantsData) +
+-                   this->mSpecializationConstantsSize };
++    const std::vector<T> getSpecializationConstants() {
++      return { (T*) this->mSpecializationConstantsData,
++               ((T*) this->mSpecializationConstantsData) +
++                 this->mSpecializationConstantsSize };
+     }
+     /**
+      * Gets the specialization constants of the current algorithm.
+@@ -277,10 +271,9 @@ class Algorithm
+      * @returns The std::vector<float> currently set for push constants
+      */
+     template<typename T>
+-    const std::vector<T> getPushConstants()
+-    {
+-        return { (T*)this->mPushConstantsData,
+-                 ((T*)this->mPushConstantsData) + this->mPushConstantsSize };
++    const std::vector<T> getPushConstants() {
++      return { (T*) this->mPushConstantsData,
++               ((T*) this->mPushConstantsData) + this->mPushConstantsSize };
+     }
+     /**
+      * Gets the current memory objects that are used in the algorithm.
+@@ -291,6 +284,11 @@ class Algorithm
+ 
+     void destroy();
+ 
++    /**
++     * Gets descriptor set used by the algorithm.
++     */
++    std::shared_ptr<vk::DescriptorSet> getDescriptorSet() { return this->mDescriptorSet; }
++
+   private:
+     // -------------- NEVER OWNED RESOURCES
+     std::shared_ptr<vk::Device> mDevice;
+@@ -328,6 +326,6 @@ class Algorithm
+ 
+     // Parameters
+     void createParameters();
+-};
++  };
+ 
+ } // End namespace kp
+diff --git a/src/Tensor.cpp b/src/Tensor.cpp
+index a1eaccf..b37c5b6 100644
+--- a/src/Tensor.cpp
++++ b/src/Tensor.cpp
+@@ -5,89 +5,84 @@
+ 
+ namespace kp {
+ 
+-Tensor::Tensor(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+-               std::shared_ptr<vk::Device> device,
+-               void* data,
+-               uint32_t elementTotalCount,
+-               uint32_t elementMemorySize,
+-               const DataTypes& dataType,
+-               const MemoryTypes& memoryType)
+-  : Memory(physicalDevice, device, dataType, memoryType, elementTotalCount, 1)
+-{
++  Tensor::Tensor(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
++    std::shared_ptr<vk::Device> device,
++    void* data,
++    uint32_t elementTotalCount,
++    uint32_t elementMemorySize,
++    const DataTypes& dataType,
++    const MemoryTypes& memoryType,
++    vk::DescriptorType descriptorType)
++    : Memory(physicalDevice, device, dataType, memoryType, elementTotalCount, 1) {
+     this->mSize = elementTotalCount;
+ 
+     // This is required if dataType is eCustom
+     this->mDataTypeMemorySize = elementMemorySize;
+ 
+     KP_LOG_DEBUG("Kompute Tensor constructor data length: {}, and type: {}",
+-                 elementTotalCount,
+-                 Memory::toString(memoryType));
++      elementTotalCount,
++      Memory::toString(memoryType));
+ 
+-    this->mDescriptorType = vk::DescriptorType::eStorageBuffer;
++    this->mDescriptorType = descriptorType;
+ 
+     this->reserve();
+     this->updateRawData(data);
+-}
+-
+-Tensor::Tensor(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+-               std::shared_ptr<vk::Device> device,
+-               uint32_t elementTotalCount,
+-               uint32_t elementMemorySize,
+-               const DataTypes& dataType,
+-               const MemoryTypes& memoryType)
+-  : Memory(physicalDevice, device, dataType, memoryType, elementTotalCount, 1)
+-{
++  }
++
++  Tensor::Tensor(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
++    std::shared_ptr<vk::Device> device,
++    uint32_t elementTotalCount,
++    uint32_t elementMemorySize,
++    const DataTypes& dataType,
++    const MemoryTypes& memoryType)
++    : Memory(physicalDevice, device, dataType, memoryType, elementTotalCount, 1) {
+     this->mSize = elementTotalCount;
+ 
+     // This is required if dataType is eCustom
+     this->mDataTypeMemorySize = elementMemorySize;
+ 
+     KP_LOG_DEBUG("Kompute Tensor constructor data length: {}, and type: {}",
+-                 elementTotalCount,
+-                 Memory::toString(memoryType));
++      elementTotalCount,
++      Memory::toString(memoryType));
+ 
+     this->mDescriptorType = vk::DescriptorType::eStorageBuffer;
+ 
+     this->reserve();
+-}
++  }
+ 
+-Tensor::~Tensor()
+-{
++  Tensor::~Tensor() {
+     KP_LOG_DEBUG("Kompute Tensor destructor started. Type: {}",
+-                 Memory::toString(this->memoryType()));
++      Memory::toString(this->memoryType()));
+ 
+     if (this->mDevice) {
+-        this->destroy();
++      this->destroy();
+     }
+ 
+     KP_LOG_DEBUG("Kompute Tensor destructor success");
+-}
++  }
+ 
+-void
+-Tensor::reserve()
+-{
++  void
++    Tensor::reserve() {
+     KP_LOG_DEBUG("Reserving {} bytes for memory",
+-                 this->mSize * this->mDataTypeMemorySize);
++      this->mSize * this->mDataTypeMemorySize);
+ 
+     if (this->mPrimaryBuffer || this->mPrimaryMemory) {
+-        KP_LOG_DEBUG(
+-          "Kompute Tensor destroying existing resources before rebuild");
+-        this->destroy();
++      KP_LOG_DEBUG(
++        "Kompute Tensor destroying existing resources before rebuild");
++      this->destroy();
+     }
+ 
+     this->allocateMemoryCreateGPUResources();
+-}
++  }
+ 
+-bool
+-Tensor::isInit()
+-{
++  bool
++    Tensor::isInit() {
+     return this->mDevice && this->mPrimaryBuffer && this->mPrimaryMemory;
+-}
++  }
+ 
+-void
+-Tensor::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+-                       std::shared_ptr<Tensor> copyFromTensor)
+-{
++  void
++    Tensor::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
++      std::shared_ptr<Tensor> copyFromTensor) {
+ 
+     vk::DeviceSize bufferSize(this->memorySize());
+     vk::BufferCopy copyRegion(0, 0, bufferSize);
+@@ -95,16 +90,15 @@ Tensor::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+     KP_LOG_DEBUG("Kompute Tensor recordCopyFrom data size {}.", bufferSize);
+ 
+     this->recordCopyBuffer(commandBuffer,
+-                           copyFromTensor->mPrimaryBuffer,
+-                           this->mPrimaryBuffer,
+-                           bufferSize,
+-                           copyRegion);
+-}
++      copyFromTensor->mPrimaryBuffer,
++      this->mPrimaryBuffer,
++      bufferSize,
++      copyRegion);
++  }
+ 
+-void
+-Tensor::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+-                       std::shared_ptr<Image> copyFromImage)
+-{
++  void
++    Tensor::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
++      std::shared_ptr<Image> copyFromImage) {
+ 
+     vk::DeviceSize bufferSize(this->memorySize());
+ 
+@@ -128,108 +122,101 @@ Tensor::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+       vk::ImageLayout::eTransferSrcOptimal);
+ 
+     this->recordCopyBufferFromImage(commandBuffer,
+-                                    copyFromImage->getPrimaryImage(),
+-                                    this->mPrimaryBuffer,
+-                                    copyFromImage->getPrimaryImageLayout(),
+-                                    bufferSize,
+-                                    copyRegion);
+-}
+-
+-void
+-Tensor::recordCopyFromStagingToDevice(const vk::CommandBuffer& commandBuffer)
+-{
++      copyFromImage->getPrimaryImage(),
++      this->mPrimaryBuffer,
++      copyFromImage->getPrimaryImageLayout(),
++      bufferSize,
++      copyRegion);
++  }
++
++  void
++    Tensor::recordCopyFromStagingToDevice(const vk::CommandBuffer& commandBuffer) {
+     vk::DeviceSize bufferSize(this->memorySize());
+     vk::BufferCopy copyRegion(0, 0, bufferSize);
+ 
+     KP_LOG_DEBUG("Kompute Tensor copying data size {}.", bufferSize);
+ 
+     this->recordCopyBuffer(commandBuffer,
+-                           this->mStagingBuffer,
+-                           this->mPrimaryBuffer,
+-                           bufferSize,
+-                           copyRegion);
+-}
+-
+-void
+-Tensor::recordCopyFromDeviceToStaging(const vk::CommandBuffer& commandBuffer)
+-{
++      this->mStagingBuffer,
++      this->mPrimaryBuffer,
++      bufferSize,
++      copyRegion);
++  }
++
++  void
++    Tensor::recordCopyFromDeviceToStaging(const vk::CommandBuffer& commandBuffer) {
+     vk::DeviceSize bufferSize(this->memorySize());
+     vk::BufferCopy copyRegion(0, 0, bufferSize);
+ 
+     KP_LOG_DEBUG("Kompute Tensor copying data size {}.", bufferSize);
+ 
+     this->recordCopyBuffer(commandBuffer,
+-                           this->mPrimaryBuffer,
+-                           this->mStagingBuffer,
+-                           bufferSize,
+-                           copyRegion);
+-}
+-
+-void
+-Tensor::recordCopyBuffer(const vk::CommandBuffer& commandBuffer,
+-                         std::shared_ptr<vk::Buffer> bufferFrom,
+-                         std::shared_ptr<vk::Buffer> bufferTo,
+-                         vk::DeviceSize /*bufferSize*/,
+-                         vk::BufferCopy copyRegion)
+-{
++      this->mPrimaryBuffer,
++      this->mStagingBuffer,
++      bufferSize,
++      copyRegion);
++  }
++
++  void
++    Tensor::recordCopyBuffer(const vk::CommandBuffer& commandBuffer,
++      std::shared_ptr<vk::Buffer> bufferFrom,
++      std::shared_ptr<vk::Buffer> bufferTo,
++      vk::DeviceSize /*bufferSize*/,
++      vk::BufferCopy copyRegion) {
+ 
+     commandBuffer.copyBuffer(*bufferFrom, *bufferTo, copyRegion);
+-}
+-
+-void
+-Tensor::recordCopyBufferFromImage(const vk::CommandBuffer& commandBuffer,
+-                                  std::shared_ptr<vk::Image> imageFrom,
+-                                  std::shared_ptr<vk::Buffer> bufferTo,
+-                                  vk::ImageLayout fromLayout,
+-                                  vk::DeviceSize /*bufferSize*/,
+-                                  vk::BufferImageCopy copyRegion)
+-{
++  }
++
++  void
++    Tensor::recordCopyBufferFromImage(const vk::CommandBuffer& commandBuffer,
++      std::shared_ptr<vk::Image> imageFrom,
++      std::shared_ptr<vk::Buffer> bufferTo,
++      vk::ImageLayout fromLayout,
++      vk::DeviceSize /*bufferSize*/,
++      vk::BufferImageCopy copyRegion) {
+     commandBuffer.copyImageToBuffer(
+       *imageFrom, fromLayout, *bufferTo, 1, &copyRegion);
+-}
+-
+-void
+-Tensor::recordPrimaryMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+-                                   vk::AccessFlagBits srcAccessMask,
+-                                   vk::AccessFlagBits dstAccessMask,
+-                                   vk::PipelineStageFlagBits srcStageMask,
+-                                   vk::PipelineStageFlagBits dstStageMask)
+-{
++  }
++
++  void
++    Tensor::recordPrimaryMemoryBarrier(const vk::CommandBuffer& commandBuffer,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask) {
+     KP_LOG_DEBUG("Kompute Tensor recording PRIMARY buffer memory barrier");
+ 
+     this->recordBufferMemoryBarrier(commandBuffer,
+-                                    *this->mPrimaryBuffer,
+-                                    srcAccessMask,
+-                                    dstAccessMask,
+-                                    srcStageMask,
+-                                    dstStageMask);
+-}
+-
+-void
+-Tensor::recordStagingMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+-                                   vk::AccessFlagBits srcAccessMask,
+-                                   vk::AccessFlagBits dstAccessMask,
+-                                   vk::PipelineStageFlagBits srcStageMask,
+-                                   vk::PipelineStageFlagBits dstStageMask)
+-{
++      *this->mPrimaryBuffer,
++      srcAccessMask,
++      dstAccessMask,
++      srcStageMask,
++      dstStageMask);
++  }
++
++  void
++    Tensor::recordStagingMemoryBarrier(const vk::CommandBuffer& commandBuffer,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask) {
+     KP_LOG_DEBUG("Kompute Tensor recording STAGING buffer memory barrier");
+ 
+     this->recordBufferMemoryBarrier(commandBuffer,
+-                                    *this->mStagingBuffer,
+-                                    srcAccessMask,
+-                                    dstAccessMask,
+-                                    srcStageMask,
+-                                    dstStageMask);
+-}
+-
+-void
+-Tensor::recordBufferMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+-                                  const vk::Buffer& buffer,
+-                                  vk::AccessFlagBits srcAccessMask,
+-                                  vk::AccessFlagBits dstAccessMask,
+-                                  vk::PipelineStageFlagBits srcStageMask,
+-                                  vk::PipelineStageFlagBits dstStageMask)
+-{
++      *this->mStagingBuffer,
++      srcAccessMask,
++      dstAccessMask,
++      srcStageMask,
++      dstStageMask);
++  }
++
++  void
++    Tensor::recordBufferMemoryBarrier(const vk::CommandBuffer& commandBuffer,
++      const vk::Buffer& buffer,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask) {
+     KP_LOG_DEBUG("Kompute Tensor recording buffer memory barrier");
+ 
+     vk::DeviceSize bufferSize = this->memorySize();
+@@ -243,30 +230,28 @@ Tensor::recordBufferMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+     bufferMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+ 
+     commandBuffer.pipelineBarrier(srcStageMask,
+-                                  dstStageMask,
+-                                  vk::DependencyFlags(),
+-                                  nullptr,
+-                                  bufferMemoryBarrier,
+-                                  nullptr);
+-}
+-
+-vk::DescriptorBufferInfo
+-Tensor::constructDescriptorBufferInfo()
+-{
++      dstStageMask,
++      vk::DependencyFlags(),
++      nullptr,
++      bufferMemoryBarrier,
++      nullptr);
++  }
++
++  vk::DescriptorBufferInfo
++    Tensor::constructDescriptorBufferInfo() {
+     KP_LOG_DEBUG("Kompute Tensor construct descriptor buffer info size {}",
+-                 this->memorySize());
++      this->memorySize());
+     vk::DeviceSize bufferSize = this->memorySize();
+     return vk::DescriptorBufferInfo(*this->mPrimaryBuffer,
+-                                    0, // offset
+-                                    bufferSize);
+-}
++      0, // offset
++      bufferSize);
++  }
+ 
+-vk::WriteDescriptorSet
+-Tensor::constructDescriptorSet(vk::DescriptorSet descriptorSet,
+-                               uint32_t binding)
+-{
++  vk::WriteDescriptorSet
++    Tensor::constructDescriptorSet(vk::DescriptorSet descriptorSet,
++      uint32_t binding) {
+     KP_LOG_DEBUG("Kompute Tensor construct descriptor set for binding {}",
+-                 binding);
++      binding);
+ 
+     mDescriptorBufferInfo = this->constructDescriptorBufferInfo();
+ 
+@@ -275,128 +260,131 @@ Tensor::constructDescriptorSet(vk::DescriptorSet descriptorSet,
+       binding, // Destination binding
+       0,       // Destination array element
+       1,       // Descriptor count
+-      vk::DescriptorType::eStorageBuffer,
++      this->mDescriptorType,
+       nullptr, // Descriptor image info
+       // Using a member variable here means the address is still valid later
+       &mDescriptorBufferInfo);
+ 
+     return writeDesciptorSet;
+-}
++  }
+ 
+-vk::BufferUsageFlags
+-Tensor::getPrimaryBufferUsageFlags()
+-{
++  vk::BufferUsageFlags
++    Tensor::getPrimaryBufferUsageFlags() {
++    vk::BufferUsageFlags usage;
+     switch (this->mMemoryType) {
+-        case MemoryTypes::eDevice:
+-        case MemoryTypes::eHost:
+-        case MemoryTypes::eDeviceAndHost:
+-            return vk::BufferUsageFlagBits::eStorageBuffer |
+-                   vk::BufferUsageFlagBits::eTransferSrc |
+-                   vk::BufferUsageFlagBits::eTransferDst;
+-            break;
+-        case MemoryTypes::eStorage:
+-            return vk::BufferUsageFlagBits::eStorageBuffer |
+-                   // You can still copy buffers to/from storage memory
+-                   // so set the transfer usage flags here.
+-                   vk::BufferUsageFlagBits::eTransferSrc |
+-                   vk::BufferUsageFlagBits::eTransferDst;
+-            break;
+-        default:
+-            throw std::runtime_error("Kompute Tensor invalid tensor type");
++    case MemoryTypes::eDevice:
++    case MemoryTypes::eHost:
++    case MemoryTypes::eDeviceAndHost:
++      usage =
++        vk::BufferUsageFlagBits::eTransferSrc |
++        vk::BufferUsageFlagBits::eTransferDst |
++        vk::BufferUsageFlagBits::eIndirectBuffer;
++      break;
++    case MemoryTypes::eStorage:
++      usage =
++        // You can still copy buffers to/from storage memory
++        // so set the transfer usage flags here.
++        vk::BufferUsageFlagBits::eTransferSrc |
++        vk::BufferUsageFlagBits::eTransferDst |
++        vk::BufferUsageFlagBits::eIndirectBuffer;
++      break;
++    default:
++      throw std::runtime_error("Kompute Tensor invalid tensor type");
+     }
+-}
++    if (this->mDescriptorType == vk::DescriptorType::eUniformBuffer) {
++      usage |= vk::BufferUsageFlagBits::eUniformBuffer;
++    } else {
++      usage |= vk::BufferUsageFlagBits::eStorageBuffer;
++    }
++    return usage;
++  }
+ 
+-vk::BufferUsageFlags
+-Tensor::getStagingBufferUsageFlags()
+-{
++  vk::BufferUsageFlags
++    Tensor::getStagingBufferUsageFlags() {
+     switch (this->mMemoryType) {
+-        case MemoryTypes::eDevice:
+-            return vk::BufferUsageFlagBits::eTransferSrc |
+-                   vk::BufferUsageFlagBits::eTransferDst;
+-            break;
+-        default:
+-            throw std::runtime_error("Kompute Tensor invalid tensor type");
++    case MemoryTypes::eDevice:
++      return vk::BufferUsageFlagBits::eTransferSrc |
++        vk::BufferUsageFlagBits::eTransferDst;
++      break;
++    default:
++      throw std::runtime_error("Kompute Tensor invalid tensor type");
+     }
+-}
++  }
+ 
+-std::shared_ptr<vk::Buffer>
+-Tensor::getPrimaryBuffer()
+-{
++  std::shared_ptr<vk::Buffer>
++    Tensor::getPrimaryBuffer() {
+     return this->mPrimaryBuffer;
+-}
++  }
+ 
+-void
+-Tensor::allocateMemoryCreateGPUResources()
+-{
++  void
++    Tensor::allocateMemoryCreateGPUResources() {
+     KP_LOG_DEBUG("Kompute Tensor creating buffer");
+ 
+     if (!this->mPhysicalDevice) {
+-        throw std::runtime_error("Kompute Tensor phyisical device is null");
++      throw std::runtime_error("Kompute Tensor phyisical device is null");
+     }
+     if (!this->mDevice) {
+-        throw std::runtime_error("Kompute Tensor device is null");
++      throw std::runtime_error("Kompute Tensor device is null");
+     }
+ 
+     KP_LOG_DEBUG("Kompute Tensor creating primary buffer and memory");
+ 
+     this->mPrimaryBuffer = std::make_shared<vk::Buffer>();
+     this->createBuffer(this->mPrimaryBuffer,
+-                       this->getPrimaryBufferUsageFlags());
++      this->getPrimaryBufferUsageFlags());
+     this->mFreePrimaryBuffer = true;
+     this->mPrimaryMemory = std::make_shared<vk::DeviceMemory>();
+     this->allocateBindMemory(this->mPrimaryBuffer,
+-                             this->mPrimaryMemory,
+-                             this->getPrimaryMemoryPropertyFlags());
++      this->mPrimaryMemory,
++      this->getPrimaryMemoryPropertyFlags());
+     this->mFreePrimaryMemory = true;
+ 
+     if (this->mMemoryType == MemoryTypes::eDevice) {
+-        KP_LOG_DEBUG("Kompute Tensor creating staging buffer and memory");
+-
+-        this->mStagingBuffer = std::make_shared<vk::Buffer>();
+-        this->createBuffer(this->mStagingBuffer,
+-                           this->getStagingBufferUsageFlags());
+-        this->mFreeStagingBuffer = true;
+-        this->mStagingMemory = std::make_shared<vk::DeviceMemory>();
+-        this->allocateBindMemory(this->mStagingBuffer,
+-                                 this->mStagingMemory,
+-                                 this->getStagingMemoryPropertyFlags());
+-        this->mFreeStagingMemory = true;
++      KP_LOG_DEBUG("Kompute Tensor creating staging buffer and memory");
++
++      this->mStagingBuffer = std::make_shared<vk::Buffer>();
++      this->createBuffer(this->mStagingBuffer,
++        this->getStagingBufferUsageFlags());
++      this->mFreeStagingBuffer = true;
++      this->mStagingMemory = std::make_shared<vk::DeviceMemory>();
++      this->allocateBindMemory(this->mStagingBuffer,
++        this->mStagingMemory,
++        this->getStagingMemoryPropertyFlags());
++      this->mFreeStagingMemory = true;
+     }
+ 
+     KP_LOG_DEBUG("Kompute Tensor buffer & memory creation successful");
+-}
++  }
+ 
+-void
+-Tensor::createBuffer(std::shared_ptr<vk::Buffer> buffer,
+-                     vk::BufferUsageFlags bufferUsageFlags)
+-{
++  void
++    Tensor::createBuffer(std::shared_ptr<vk::Buffer> buffer,
++      vk::BufferUsageFlags bufferUsageFlags) {
+ 
+     vk::DeviceSize bufferSize = this->memorySize();
+ 
+     if (bufferSize < 1) {
+-        throw std::runtime_error(
+-          "Kompute Tensor attempted to create a zero-sized buffer");
++      throw std::runtime_error(
++        "Kompute Tensor attempted to create a zero-sized buffer");
+     }
+ 
+     KP_LOG_DEBUG("Kompute Tensor creating buffer with memory size: {}, and "
+-                 "usage flags: {}",
+-                 bufferSize,
+-                 vk::to_string(bufferUsageFlags));
++      "usage flags: {}",
++      bufferSize,
++      vk::to_string(bufferUsageFlags));
+ 
+     // TODO: Explore having concurrent sharing mode (with option)
+     vk::BufferCreateInfo bufferInfo(vk::BufferCreateFlags(),
+-                                    bufferSize,
+-                                    bufferUsageFlags,
+-                                    vk::SharingMode::eExclusive);
++      bufferSize,
++      bufferUsageFlags,
++      vk::SharingMode::eExclusive);
+ 
+     this->mDevice->createBuffer(&bufferInfo, nullptr, buffer.get());
+-}
++  }
+ 
+-void
+-Tensor::allocateBindMemory(std::shared_ptr<vk::Buffer> buffer,
+-                           std::shared_ptr<vk::DeviceMemory> memory,
+-                           vk::MemoryPropertyFlags memoryPropertyFlags)
+-{
++  void
++    Tensor::allocateBindMemory(std::shared_ptr<vk::Buffer> buffer,
++      std::shared_ptr<vk::DeviceMemory> memory,
++      vk::MemoryPropertyFlags memoryPropertyFlags) {
+ 
+     KP_LOG_DEBUG("Kompute Tensor allocating and binding memory");
+ 
+@@ -409,18 +397,18 @@ Tensor::allocateBindMemory(std::shared_ptr<vk::Buffer> buffer,
+     uint32_t memoryTypeIndex = -1;
+     bool memoryTypeIndexFound = false;
+     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+-        if (memoryRequirements.memoryTypeBits & (1 << i)) {
+-            if (((memoryProperties.memoryTypes[i]).propertyFlags &
+-                 memoryPropertyFlags) == memoryPropertyFlags) {
+-                memoryTypeIndex = i;
+-                memoryTypeIndexFound = true;
+-                break;
+-            }
++      if (memoryRequirements.memoryTypeBits & (1 << i)) {
++        if (((memoryProperties.memoryTypes[i]).propertyFlags &
++          memoryPropertyFlags) == memoryPropertyFlags) {
++          memoryTypeIndex = i;
++          memoryTypeIndexFound = true;
++          break;
+         }
++      }
+     }
+     if (!memoryTypeIndexFound) {
+-        throw std::runtime_error(
+-          "Memory type index for buffer creation not found");
++      throw std::runtime_error(
++        "Memory type index for buffer creation not found");
+     }
+ 
+     KP_LOG_DEBUG(
+@@ -430,54 +418,53 @@ Tensor::allocateBindMemory(std::shared_ptr<vk::Buffer> buffer,
+       vk::to_string(memoryPropertyFlags));
+ 
+     vk::MemoryAllocateInfo memoryAllocateInfo(memoryRequirements.size,
+-                                              memoryTypeIndex);
++      memoryTypeIndex);
+ 
+     this->mDevice->allocateMemory(&memoryAllocateInfo, nullptr, memory.get());
+ 
+     this->mDevice->bindBufferMemory(*buffer, *memory, 0);
+-}
++  }
+ 
+-void
+-Tensor::destroy()
+-{
++  void
++    Tensor::destroy() {
+     KP_LOG_DEBUG("Kompute Tensor started destroy()");
+ 
+     if (!this->mDevice) {
+-        KP_LOG_WARN(
+-          "Kompute Tensor destructor reached with null Device pointer");
+-        return;
++      KP_LOG_WARN(
++        "Kompute Tensor destructor reached with null Device pointer");
++      return;
+     }
+ 
+     if (this->mFreePrimaryBuffer) {
+-        if (!this->mPrimaryBuffer) {
+-            KP_LOG_WARN("Kompose Tensor expected to destroy primary buffer "
+-                        "but got null buffer");
+-        } else {
+-            KP_LOG_DEBUG("Kompose Tensor destroying primary buffer");
+-            this->mDevice->destroy(
+-              *this->mPrimaryBuffer,
+-              (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-            this->mPrimaryBuffer = nullptr;
+-            this->mFreePrimaryBuffer = false;
+-        }
++      if (!this->mPrimaryBuffer) {
++        KP_LOG_WARN("Kompose Tensor expected to destroy primary buffer "
++          "but got null buffer");
++      } else {
++        KP_LOG_DEBUG("Kompose Tensor destroying primary buffer");
++        this->mDevice->destroy(
++          *this->mPrimaryBuffer,
++          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++        this->mPrimaryBuffer = nullptr;
++        this->mFreePrimaryBuffer = false;
++      }
+     }
+ 
+     if (this->mFreeStagingBuffer) {
+-        if (!this->mStagingBuffer) {
+-            KP_LOG_WARN("Kompose Tensor expected to destroy staging buffer "
+-                        "but got null buffer");
+-        } else {
+-            KP_LOG_DEBUG("Kompose Tensor destroying staging buffer");
+-            this->mDevice->destroy(
+-              *this->mStagingBuffer,
+-              (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-            this->mStagingBuffer = nullptr;
+-            this->mFreeStagingBuffer = false;
+-        }
++      if (!this->mStagingBuffer) {
++        KP_LOG_WARN("Kompose Tensor expected to destroy staging buffer "
++          "but got null buffer");
++      } else {
++        KP_LOG_DEBUG("Kompose Tensor destroying staging buffer");
++        this->mDevice->destroy(
++          *this->mStagingBuffer,
++          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++        this->mStagingBuffer = nullptr;
++        this->mFreeStagingBuffer = false;
++      }
+     }
+ 
+     Memory::destroy();
+ 
+     KP_LOG_DEBUG("Kompute Tensor successful destroy()");
+-}
++  }
+ }
+diff --git a/src/Algorithm.cpp b/src/Algorithm.cpp
+index af12e09..5d7eb08 100644
+--- a/src/Algorithm.cpp
++++ b/src/Algorithm.cpp
+@@ -6,24 +6,21 @@
+ 
+ namespace kp {
+ 
+-Algorithm::~Algorithm() noexcept
+-{
++  Algorithm::~Algorithm() noexcept {
+     KP_LOG_DEBUG("Kompute Algorithm Destructor started");
+ 
+     this->destroy();
+-}
++  }
+ 
+-bool
+-Algorithm::isInit()
+-{
++  bool
++    Algorithm::isInit() {
+     return this->mPipeline && this->mPipelineCache && this->mPipelineLayout &&
+-           this->mDescriptorPool && this->mDescriptorSet &&
+-           this->mDescriptorSetLayout && this->mShaderModule;
+-}
++      this->mDescriptorPool && this->mDescriptorSet &&
++      this->mDescriptorSetLayout && this->mShaderModule;
++  }
+ 
+-void
+-Algorithm::destroy()
+-{
++  void
++    Algorithm::destroy() {
+     // We don't have to free memory on destroy as it's freed by the
+     // commandBuffer destructor if (this->mPushConstantsData) {
+     //     free(this->mPushConstantsData);
+@@ -33,57 +30,57 @@ Algorithm::destroy()
+     // }
+ 
+     if (!this->mDevice) {
+-        KP_LOG_WARN("Kompute Algorithm destroy function reached with null "
+-                    "Device pointer");
+-        return;
++      KP_LOG_WARN("Kompute Algorithm destroy function reached with null "
++        "Device pointer");
++      return;
+     }
+ 
+     if (this->mFreePipeline && this->mPipeline) {
+-        KP_LOG_DEBUG("Kompute Algorithm Destroying pipeline");
+-        if (!this->mPipeline) {
+-            KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
+-                        "pipeline but it is null");
+-        }
+-        this->mDevice->destroy(
+-          *this->mPipeline,
+-          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-        this->mPipeline = nullptr;
++      KP_LOG_DEBUG("Kompute Algorithm Destroying pipeline");
++      if (!this->mPipeline) {
++        KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
++          "pipeline but it is null");
++      }
++      this->mDevice->destroy(
++        *this->mPipeline,
++        (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++      this->mPipeline = nullptr;
+     }
+ 
+     if (this->mFreePipelineCache && this->mPipelineCache) {
+-        KP_LOG_DEBUG("Kompute Algorithm Destroying pipeline cache");
+-        if (!this->mPipelineCache) {
+-            KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
+-                        "pipeline cache but it is null");
+-        }
+-        this->mDevice->destroy(
+-          *this->mPipelineCache,
+-          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-        this->mPipelineCache = nullptr;
++      KP_LOG_DEBUG("Kompute Algorithm Destroying pipeline cache");
++      if (!this->mPipelineCache) {
++        KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
++          "pipeline cache but it is null");
++      }
++      this->mDevice->destroy(
++        *this->mPipelineCache,
++        (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++      this->mPipelineCache = nullptr;
+     }
+ 
+     if (this->mFreePipelineLayout && this->mPipelineLayout) {
+-        KP_LOG_DEBUG("Kompute Algorithm Destroying pipeline layout");
+-        if (!this->mPipelineLayout) {
+-            KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
+-                        "pipeline layout but it is null");
+-        }
+-        this->mDevice->destroy(
+-          *this->mPipelineLayout,
+-          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-        this->mPipelineLayout = nullptr;
++      KP_LOG_DEBUG("Kompute Algorithm Destroying pipeline layout");
++      if (!this->mPipelineLayout) {
++        KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
++          "pipeline layout but it is null");
++      }
++      this->mDevice->destroy(
++        *this->mPipelineLayout,
++        (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++      this->mPipelineLayout = nullptr;
+     }
+ 
+     if (this->mFreeShaderModule && this->mShaderModule) {
+-        KP_LOG_DEBUG("Kompute Algorithm Destroying shader module");
+-        if (!this->mShaderModule) {
+-            KP_LOG_WARN("Kompute Algorithm Error requested to destroy shader "
+-                        "module but it is null");
+-        }
+-        this->mDevice->destroy(
+-          *this->mShaderModule,
+-          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-        this->mShaderModule = nullptr;
++      KP_LOG_DEBUG("Kompute Algorithm Destroying shader module");
++      if (!this->mShaderModule) {
++        KP_LOG_WARN("Kompute Algorithm Error requested to destroy shader "
++          "module but it is null");
++      }
++      this->mDevice->destroy(
++        *this->mShaderModule,
++        (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++      this->mShaderModule = nullptr;
+     }
+ 
+     // We don't call freeDescriptorSet as the descriptor pool is not created
+@@ -101,60 +98,72 @@ Algorithm::destroy()
+     //}
+ 
+     if (this->mFreeDescriptorSetLayout && this->mDescriptorSetLayout) {
+-        KP_LOG_DEBUG("Kompute Algorithm Destroying Descriptor Set Layout");
+-        if (!this->mDescriptorSetLayout) {
+-            KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
+-                        "descriptor set layout but it is null");
+-        }
+-        this->mDevice->destroy(
+-          *this->mDescriptorSetLayout,
+-          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-        this->mDescriptorSetLayout = nullptr;
++      KP_LOG_DEBUG("Kompute Algorithm Destroying Descriptor Set Layout");
++      if (!this->mDescriptorSetLayout) {
++        KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
++          "descriptor set layout but it is null");
++      }
++      this->mDevice->destroy(
++        *this->mDescriptorSetLayout,
++        (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++      this->mDescriptorSetLayout = nullptr;
+     }
+ 
+     if (this->mFreeDescriptorPool && this->mDescriptorPool) {
+-        KP_LOG_DEBUG("Kompute Algorithm Destroying Descriptor Pool");
+-        if (!this->mDescriptorPool) {
+-            KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
+-                        "descriptor pool but it is null");
+-        }
+-        this->mDevice->destroy(
+-          *this->mDescriptorPool,
+-          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-        this->mDescriptorPool = nullptr;
++      KP_LOG_DEBUG("Kompute Algorithm Destroying Descriptor Pool");
++      if (!this->mDescriptorPool) {
++        KP_LOG_WARN("Kompute Algorithm Error requested to destroy "
++          "descriptor pool but it is null");
++      }
++      this->mDevice->destroy(
++        *this->mDescriptorPool,
++        (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++      this->mDescriptorPool = nullptr;
+     }
+-}
++  }
+ 
+-void
+-Algorithm::createParameters()
+-{
++  void
++    Algorithm::createParameters() {
+     uint32_t numImages = 0;
+     uint32_t numTensors = 0;
++    uint32_t numUboTensors = 0;
+ 
+     KP_LOG_DEBUG("Kompute Algorithm createParameters started");
+ 
+     for (const std::shared_ptr<Memory>& mem : this->mMemObjects) {
+-        if (mem->type() == Memory::Type::eImage) {
+-            numImages++;
++      if (mem->type() == Memory::Type::eImage) {
++        numImages++;
++      } else {
++        auto tensor = std::dynamic_pointer_cast<Tensor>(mem);
++        if (tensor->getDescriptorType() == vk::DescriptorType::eUniformBuffer) {
++          numUboTensors++;
+         } else {
+-            numTensors++;
++          numTensors++;
+         }
++      }
+     }
+ 
+     std::vector<vk::DescriptorPoolSize> descriptorPoolSizes;
+ 
+     if (numTensors > 0) {
+-        descriptorPoolSizes.push_back(vk::DescriptorPoolSize(
+-          vk::DescriptorType::eStorageBuffer,
+-          static_cast<uint32_t>(numTensors) // Descriptor count
+-          ));
++      descriptorPoolSizes.push_back(vk::DescriptorPoolSize(
++        vk::DescriptorType::eStorageBuffer,
++        static_cast<uint32_t>(numTensors) // Descriptor count
++      ));
++    }
++
++    if (numUboTensors > 0) {
++      descriptorPoolSizes.push_back(vk::DescriptorPoolSize(
++        vk::DescriptorType::eUniformBuffer,
++        static_cast<uint32_t>(numUboTensors) // Descriptor count
++      ));
+     }
+ 
+     if (numImages > 0) {
+-        descriptorPoolSizes.push_back(vk::DescriptorPoolSize(
+-          vk::DescriptorType::eStorageImage,
+-          static_cast<uint32_t>(numImages) // Descriptor count
+-          ));
++      descriptorPoolSizes.push_back(vk::DescriptorPoolSize(
++        vk::DescriptorType::eStorageImage,
++        static_cast<uint32_t>(numImages) // Descriptor count
++      ));
+     };
+ 
+     vk::DescriptorPoolCreateInfo descriptorPoolInfo(
+@@ -171,11 +180,11 @@ Algorithm::createParameters()
+ 
+     std::vector<vk::DescriptorSetLayoutBinding> descriptorSetBindings;
+     for (size_t i = 0; i < this->mMemObjects.size(); i++) {
+-        descriptorSetBindings.push_back(
+-          vk::DescriptorSetLayoutBinding(i, // Binding index
+-                                         mMemObjects[i]->getDescriptorType(),
+-                                         1, // Descriptor count
+-                                         vk::ShaderStageFlagBits::eCompute));
++      descriptorSetBindings.push_back(
++        vk::DescriptorSetLayoutBinding(i, // Binding index
++        mMemObjects[i]->getDescriptorType(),
++        1, // Descriptor count
++        vk::ShaderStageFlagBits::eCompute));
+     }
+ 
+     // This is the component that is fed into the pipeline
+@@ -198,38 +207,37 @@ Algorithm::createParameters()
+     KP_LOG_DEBUG("Kompute Algorithm allocating descriptor sets");
+     this->mDescriptorSet = std::make_shared<vk::DescriptorSet>();
+     this->mDevice->allocateDescriptorSets(&descriptorSetAllocateInfo,
+-                                          this->mDescriptorSet.get());
++      this->mDescriptorSet.get());
+     this->mFreeDescriptorSet = true;
+ 
+     KP_LOG_DEBUG("Kompute Algorithm updating descriptor sets");
+     for (size_t i = 0; i < this->mMemObjects.size(); i++) {
+-        std::vector<vk::WriteDescriptorSet> computeWriteDescriptorSets;
++      std::vector<vk::WriteDescriptorSet> computeWriteDescriptorSets;
+ 
+-        vk::WriteDescriptorSet descriptorSet =
+-          this->mMemObjects[i]->constructDescriptorSet(*this->mDescriptorSet,
+-                                                       i);
++      vk::WriteDescriptorSet descriptorSet =
++        this->mMemObjects[i]->constructDescriptorSet(*this->mDescriptorSet,
++          i);
+ 
+-        computeWriteDescriptorSets.push_back(descriptorSet);
++      computeWriteDescriptorSets.push_back(descriptorSet);
+ 
+-        this->mDevice->updateDescriptorSets(computeWriteDescriptorSets,
+-                                            nullptr);
++      this->mDevice->updateDescriptorSets(computeWriteDescriptorSets,
++        nullptr);
+     }
+ 
+     KP_LOG_DEBUG("Kompute Algorithm successfully run init");
+-}
++  }
+ 
+-void
+-Algorithm::createShaderModule()
+-{
++  void
++    Algorithm::createShaderModule() {
+     KP_LOG_DEBUG("Kompute Algorithm createShaderModule started");
+ 
+     vk::ShaderModuleCreateInfo shaderModuleInfo(vk::ShaderModuleCreateFlags(),
+-                                                sizeof(uint32_t) *
+-                                                  this->mSpirv.size(),
+-                                                this->mSpirv.data());
++      sizeof(uint32_t) *
++      this->mSpirv.size(),
++      this->mSpirv.data());
+ 
+     KP_LOG_DEBUG("Kompute Algorithm Creating shader module. ShaderFileSize: {}",
+-                 this->mSpirv.size());
++      this->mSpirv.size());
+     this->mFreeShaderModule = true;
+     this->mShaderModule = std::make_shared<vk::ShaderModule>();
+     this->mDevice->createShaderModule(
+@@ -237,11 +245,10 @@ Algorithm::createShaderModule()
+     this->mFreeShaderModule = true;
+ 
+     KP_LOG_DEBUG("Kompute Algorithm create shader module success");
+-}
++  }
+ 
+-void
+-Algorithm::createPipeline()
+-{
++  void
++    Algorithm::createPipeline() {
+     KP_LOG_DEBUG("Kompute Algorithm calling create Pipeline");
+ 
+     vk::PipelineLayoutCreateInfo pipelineLayoutInfo(
+@@ -251,13 +258,13 @@ Algorithm::createPipeline()
+ 
+     vk::PushConstantRange pushConstantRange;
+     if (this->mPushConstantsSize) {
+-        pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+-        pushConstantRange.setOffset(0);
+-        pushConstantRange.setSize(this->mPushConstantsDataTypeMemorySize *
+-                                  this->mPushConstantsSize);
++      pushConstantRange.setStageFlags(vk::ShaderStageFlagBits::eCompute);
++      pushConstantRange.setOffset(0);
++      pushConstantRange.setSize(this->mPushConstantsDataTypeMemorySize *
++        this->mPushConstantsSize);
+ 
+-        pipelineLayoutInfo.setPushConstantRangeCount(1);
+-        pipelineLayoutInfo.setPPushConstantRanges(&pushConstantRange);
++      pipelineLayoutInfo.setPushConstantRangeCount(1);
++      pipelineLayoutInfo.setPPushConstantRanges(&pushConstantRange);
+     }
+ 
+     this->mPipelineLayout = std::make_shared<vk::PipelineLayout>();
+@@ -268,13 +275,13 @@ Algorithm::createPipeline()
+     std::vector<vk::SpecializationMapEntry> specializationEntries;
+ 
+     for (uint32_t i = 0; i < this->mSpecializationConstantsSize; i++) {
+-        vk::SpecializationMapEntry specializationEntry(
+-          static_cast<uint32_t>(i),
+-          static_cast<uint32_t>(
+-            this->mSpecializationConstantsDataTypeMemorySize * i),
+-          this->mSpecializationConstantsDataTypeMemorySize);
++      vk::SpecializationMapEntry specializationEntry(
++        static_cast<uint32_t>(i),
++        static_cast<uint32_t>(
++        this->mSpecializationConstantsDataTypeMemorySize * i),
++        this->mSpecializationConstantsDataTypeMemorySize);
+ 
+-        specializationEntries.push_back(specializationEntry);
++      specializationEntries.push_back(specializationEntry);
+     }
+ 
+     // This passes ownership of the memory so we remove ownership from
+@@ -283,7 +290,7 @@ Algorithm::createPipeline()
+       static_cast<uint32_t>(specializationEntries.size()),
+       specializationEntries.data(),
+       this->mSpecializationConstantsDataTypeMemorySize *
+-        this->mSpecializationConstantsSize,
++      this->mSpecializationConstantsSize,
+       this->mSpecializationConstantsData);
+ 
+     vk::PipelineShaderStageCreateInfo shaderStage(
+@@ -294,10 +301,10 @@ Algorithm::createPipeline()
+       &specializationInfo);
+ 
+     vk::ComputePipelineCreateInfo pipelineInfo(vk::PipelineCreateFlags(),
+-                                               shaderStage,
+-                                               *this->mPipelineLayout,
+-                                               vk::Pipeline(),
+-                                               0);
++      shaderStage,
++      *this->mPipelineLayout,
++      vk::Pipeline(),
++      0);
+ 
+     vk::PipelineCacheCreateInfo pipelineCacheInfo =
+       vk::PipelineCacheCreateInfo();
+@@ -306,25 +313,25 @@ Algorithm::createPipeline()
+       &pipelineCacheInfo, nullptr, this->mPipelineCache.get());
+     this->mFreePipelineCache = true;
+ 
+-#ifdef KOMPUTE_CREATE_PIPELINE_RESULT_VALUE
++  #ifdef KOMPUTE_CREATE_PIPELINE_RESULT_VALUE
+     vk::ResultValue<vk::Pipeline> pipelineResult =
+       this->mDevice->createComputePipeline(*this->mPipelineCache, pipelineInfo);
+ 
+     if (pipelineResult.result != vk::Result::eSuccess) {
+-        throw std::runtime_error("Failed to create pipeline result: " +
+-                                 vk::to_string(pipelineResult.result));
++      throw std::runtime_error("Failed to create pipeline result: " +
++        vk::to_string(pipelineResult.result));
+     }
+ 
+     vk::Pipeline& pipeline = pipelineResult.value;
+     this->mPipeline = std::make_shared<vk::Pipeline>(pipeline);
+     this->mFreePipeline = true;
+-#else
++  #else
+     vk::Pipeline pipeline =
+       this->mDevice->createComputePipeline(*this->mPipelineCache, pipelineInfo)
+-        .value;
++      .value;
+     this->mPipeline = std::make_shared<vk::Pipeline>(pipeline);
+     this->mFreePipeline = true;
+-#endif
++  #endif
+ 
+     // TODO: Update to consistent
+     // this->mPipeline = std::make_shared<vk::Pipeline>();
+@@ -333,86 +340,80 @@ Algorithm::createPipeline()
+     //         this->mPipeline.get());
+ 
+     KP_LOG_DEBUG("Kompute Algorithm Create Pipeline Success");
+-}
++  }
+ 
+-void
+-Algorithm::recordBindCore(const vk::CommandBuffer& commandBuffer)
+-{
++  void
++    Algorithm::recordBindCore(const vk::CommandBuffer& commandBuffer) {
+     KP_LOG_DEBUG("Kompute Algorithm binding pipeline");
+ 
+     commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute,
+-                               *this->mPipeline);
++      *this->mPipeline);
+ 
+     KP_LOG_DEBUG("Kompute Algorithm binding descriptor sets");
+ 
+     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute,
+-                                     *this->mPipelineLayout,
+-                                     0, // First set
+-                                     *this->mDescriptorSet,
+-                                     nullptr // Dispatcher
++      *this->mPipelineLayout,
++      0, // First set
++      *this->mDescriptorSet,
++      nullptr // Dispatcher
+     );
+-}
++  }
+ 
+-void
+-Algorithm::recordBindPush(const vk::CommandBuffer& commandBuffer)
+-{
++  void
++    Algorithm::recordBindPush(const vk::CommandBuffer& commandBuffer) {
+     if (this->mPushConstantsSize) {
+-        KP_LOG_DEBUG("Kompute Algorithm binding push constants memory size: {}",
+-                     this->mPushConstantsSize *
+-                       this->mPushConstantsDataTypeMemorySize);
+-
+-        commandBuffer.pushConstants(*this->mPipelineLayout,
+-                                    vk::ShaderStageFlagBits::eCompute,
+-                                    0,
+-                                    this->mPushConstantsSize *
+-                                      this->mPushConstantsDataTypeMemorySize,
+-                                    this->mPushConstantsData);
++      KP_LOG_DEBUG("Kompute Algorithm binding push constants memory size: {}",
++        this->mPushConstantsSize *
++        this->mPushConstantsDataTypeMemorySize);
++
++      commandBuffer.pushConstants(*this->mPipelineLayout,
++        vk::ShaderStageFlagBits::eCompute,
++        0,
++        this->mPushConstantsSize *
++        this->mPushConstantsDataTypeMemorySize,
++        this->mPushConstantsData);
+     }
+-}
++  }
+ 
+-void
+-Algorithm::recordDispatch(const vk::CommandBuffer& commandBuffer)
+-{
++  void
++    Algorithm::recordDispatch(const vk::CommandBuffer& commandBuffer) {
+     KP_LOG_DEBUG("Kompute Algorithm recording dispatch");
+ 
+     commandBuffer.dispatch(
+       this->mWorkgroup[0], this->mWorkgroup[1], this->mWorkgroup[2]);
+-}
++  }
+ 
+-void
+-Algorithm::setWorkgroup(const Workgroup& workgroup, uint32_t minSize)
+-{
++  void
++    Algorithm::setWorkgroup(const Workgroup& workgroup, uint32_t minSize) {
+ 
+     KP_LOG_INFO("Kompute OpAlgoCreate setting dispatch size");
+ 
+     // The dispatch size is set up based on either explicitly provided template
+     // parameters or by default it would take the shape and size of the tensors
+     if (workgroup[0] > 0) {
+-        // If at least the x value is provided we use mainly the parameters
+-        // provided
+-        this->mWorkgroup = { workgroup[0],
+-                             workgroup[1] > 0 ? workgroup[1] : 1,
+-                             workgroup[2] > 0 ? workgroup[2] : 1 };
++      // If at least the x value is provided we use mainly the parameters
++      // provided
++      this->mWorkgroup = { workgroup[0],
++                           workgroup[1] > 0 ? workgroup[1] : 1,
++                           workgroup[2] > 0 ? workgroup[2] : 1 };
+     } else {
+-        this->mWorkgroup = { minSize, 1, 1 };
++      this->mWorkgroup = { minSize, 1, 1 };
+     }
+ 
+     KP_LOG_INFO("Kompute OpAlgoCreate set dispatch size X: {}, Y: {}, Z: {}",
+-                this->mWorkgroup[0],
+-                this->mWorkgroup[1],
+-                this->mWorkgroup[2]);
+-}
++      this->mWorkgroup[0],
++      this->mWorkgroup[1],
++      this->mWorkgroup[2]);
++  }
+ 
+-const Workgroup&
+-Algorithm::getWorkgroup()
+-{
++  const Workgroup&
++    Algorithm::getWorkgroup() {
+     return this->mWorkgroup;
+-}
++  }
+ 
+-const std::vector<std::shared_ptr<Memory>>&
+-Algorithm::getMemObjects()
+-{
++  const std::vector<std::shared_ptr<Memory>>&
++    Algorithm::getMemObjects() {
+     return this->mMemObjects;
+-}
++  }
+ 
+ }

@@ -5,10 +5,7 @@ vcpkg_from_github(
     SHA512 2F3B83DC3455A1BCBE5D8DD407FD81C3BC2F23CCEA6A6F76626F8E36F541D230F88CDAFFC6B34A0DD34586B5DE6098D6779DC425807152577D52F8D9CF0EBEF4
     HEAD_REF master
     PATCHES 
-        make_constructor_buffer_info_public.patch
-        add_indirect_buffer_flag_to_tensor.patch
-        get_algorithm_descriptor_set.patch
-        get_manager_devices.patch
+        ubo_support.patch
         permit_descriptor_type_update.patch
 )
 
