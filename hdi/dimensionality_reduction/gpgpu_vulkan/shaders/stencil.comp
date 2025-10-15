@@ -7,32 +7,30 @@
 
 layout(local_size_x = 1) in;
 
-// Uniforms
+// Storage Buffers SSBO
 layout(std430, binding = 0) buffer Points {
     vec2 points[]; // Input points
 };
 
-// Output image
-layout(rgba32f, binding = 1) writeonly uniform image2D outImage;
-
-//layout(std430, binding = 2) buffer Dbg { vec2 Bug[]; };
-
-#ifdef SHADER_USE_PUSH_CONSTANTS
+//#ifdef SHADER_USE_PUSH_CONSTANTS
 // Push constants for rectangle bounds and image dimensions
-layout (push_constant) uniform stencilParams {
-    vec2 rect_min; // min bounds of the points rectangle
-    vec2 rect_max; // max bounds of the points rectangle
-    vec2 imageSize; // dimensions of the output image
-} sp;
+//layout (push_constant) uniform stencilParams {
+//    vec2 rect_min; // min bounds of the points rectangle
+//    vec2 rect_max; // max bounds of the points rectangle
+//    vec2 imageSize; // dimensions of the output image
+//} sp;
 
-#else
-// If not using push constants, use a uniform buffer object
-layout(scalar, binding = 3 ) uniform stencilParams {
+//#else
+// If not using push constants, use a uniform buffer object UBO
+layout(scalar, binding = 1 ) uniform stencilParams {
     vec2 rect_min; // min bounds of the points rectangle
     vec2 rect_max; // max bounds of the points rectangle
     vec2 imageSize; // dimensions of the output image
 } sp;
-#endif
+//#endif
+
+// Output image
+layout(rgba32f, binding = 2) writeonly uniform image2D outImage;
 
 
 
