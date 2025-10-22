@@ -2,13 +2,27 @@
 
 // record() will be called by kp::Sequence with a vk::CommandBuffer
 void OpIndirectDispatch::record(const vk::CommandBuffer& commandBuffer) {
+  ;
+  for (auto& mem : mAlgorithm->getMemObjects()) {
+    // Only for images
+    if (auto img = dynamic_cast<kp::Image*>(mem.get())) {
+      img->recordPrimaryImageBarrier(
+        commandBuffer,
+        vk::AccessFlagBits::eTransferWrite,              // previous writes
+        vk::AccessFlagBits::eShaderWrite,
+        vk::PipelineStageFlagBits::eTransfer,            // or TOP_OF_PIPE if new
+        vk::PipelineStageFlagBits::eComputeShader,       // shader stage that uses it
+        vk::ImageLayout::eGeneral
+      );
+    }
+  }
   // Ensure the indirect buffer is visible to the indirect-read stage.
   // (use access/stage masks appropriate for indirect commands)
   mDispatchTensor->recordPrimaryMemoryBarrier(
     commandBuffer,
-    vk::AccessFlagBits::eHostWrite,          // srcAccessMask
+    vk::AccessFlagBits::eTransferWrite,          // srcAccessMask
     vk::AccessFlagBits::eIndirectCommandRead,// dstAccessMask
-    vk::PipelineStageFlagBits::eHost,       // srcStageMask
+    vk::PipelineStageFlagBits::eTransfer,       // srcStageMask
     vk::PipelineStageFlagBits::eDrawIndirect// dstStageMask (indirect read)
   );
 

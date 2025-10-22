@@ -202,7 +202,9 @@ int main(int argc, const char** argv) {
     return 0;
 }
 
-// -p 30 -i 1000 -s 10000 -d 784 D:\Data\ML\MNIST\mnist_train.csv
-// -p 30 -i 1000 -s 500 -d 784 D:\Data\ML\MNIST\mnist_train.csv
+// Xmas tree small test
 // -p 13 -i 500 -d 2 D:\Data\ML\xmas\data.csv
+// Full MNIST
 // -b -p 30 -i 1000 -s 70000 -d 784 D:\Data\ML\MNIST\MNIST_70000.bin
+// Small MNIST
+// -b -p 30 -i 1000 -s 1000 -d 784 D:\Data\ML\MNIST\MNIST_70000.bin
