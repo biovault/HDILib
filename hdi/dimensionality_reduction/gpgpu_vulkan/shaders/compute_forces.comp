@@ -27,15 +27,15 @@ shared float sum_norm_qij[group_size];
 
 //layout(rg32f) uniform image2D point_tex;
 
-#ifdef SHADER_USE_PUSH_CONSTANTS
-layout (push_constant) uniform ForcesPushConstants {
-    float exaggeration;
-} pc;
-#else
+//#ifdef SHADER_USE_PUSH_CONSTANTS
+//layout (push_constant) uniform ForcesPushConstants {
+//    float exaggeration;
+//} pc;
+//#else
 layout(scalar, binding = 9 ) uniform ForcesPushConstants {
     float exaggeration;
 } pc;
-#endif
+//#endif
 
 
   void main() {

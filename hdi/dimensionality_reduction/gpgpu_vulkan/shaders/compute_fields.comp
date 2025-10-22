@@ -8,15 +8,9 @@
 layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
 layout(std430, binding = 1) readonly buffer BoundsInterface { vec2 Bounds[]; };
-
-
-layout(binding = 2, rgba32f) writeonly uniform image2D Fields;
-layout(binding = 3, rgba32f) readonly uniform image2D Stencil;
+layout(rgba32f, binding = 2) writeonly uniform image2D Fields;
+layout(rgba32f, binding = 3) readonly uniform image2D Stencil;
 layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
-
-const uint groupSize = gl_WorkGroupSize.x;
-const uint hgSize = groupSize / 2;
-shared vec3 reduction_array[hgSize];
 
 //#ifdef SHADER_USE_PUSH_CONSTANTS
 //layout(push_constant) uniform FieldPushConstants {
@@ -29,6 +23,10 @@ layout(scalar, binding = 5 ) uniform FieldPushConstants {
     float support;  
 } pc;
 //#endif
+
+const uint groupSize = gl_WorkGroupSize.x;
+const uint hgSize = groupSize / 2;
+shared vec3 reduction_array[hgSize];
 
 void main() {
     uint x = gl_WorkGroupID.x;
@@ -76,17 +74,20 @@ void main() {
     if (lid >= hgSize) {
         reduction_array[lid - hgSize] = value.xyz;
     }
+    memoryBarrierShared();
     barrier();
     if (lid < hgSize) {
         reduction_array[lid] += value.xyz;
     }
     for (uint reduceSize = hgSize/2; reduceSize > 1; reduceSize /= 2)
     {
+        memoryBarrierShared();
         barrier();
         if (lid < reduceSize) {
         reduction_array[lid] += reduction_array[lid + reduceSize];
         }
     }
+    memoryBarrierShared();
     barrier();
     if (lid < 1) {
         imageStore(Fields, ivec2(x, y), vec4(reduction_array[0] + reduction_array[1], 0));

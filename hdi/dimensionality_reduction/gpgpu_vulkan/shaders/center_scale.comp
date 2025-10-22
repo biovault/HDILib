@@ -4,24 +4,24 @@
 
 #include "config/shader_defines.glsl"
 
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 layout(std430, binding = 0) buffer Pos { vec2 Positions[]; };
 layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
 layout(std430, binding = 2) readonly buffer NumPoints { uint NP[]; };
 // for debugging
 // layout(std430, binding = 2) buffer Dbg { vec2 Bug[]; };
-layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
-#ifdef SHADER_USE_PUSH_CONSTANTS
+/*#ifdef SHADER_USE_PUSH_CONSTANTS
 layout (push_constant) uniform ForcesPushConstants {
     float scale;
     float diameter;
 } pc;
-#else
+#else*/
 layout(scalar, binding = 3 ) uniform ForcesPushConstants {
     float scale;
     float diameter;
 } pc;
-#endif
+//#endif
 
 void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;

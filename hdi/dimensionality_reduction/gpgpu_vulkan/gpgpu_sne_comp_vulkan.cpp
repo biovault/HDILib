@@ -293,13 +293,28 @@ namespace hdi {
       }
      // _stencilSeq->eval();
       _seq->eval();
-      /*
-      auto stencil = static_cast<kp::Image*>(_stencilProg->_stencil_out.get())->vector<float>();
-      auto field = static_cast<kp::Image*>(_fieldCompProg->_field_out.get())->vector<float>();
-      auto sum_q = _interpProg->getSumQ();
-      auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
-      auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
-      */
+      
+      // for debug purposes only - get the values locally
+      //auto syncSeq = _mgr->sequence();
+      //syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
+        //_stencilProg->_stencil_out,
+        //_fieldCompProg->_field_out,
+        //_tensors[ShaderBuffers::SUM_Q],
+        //_tensors[ShaderBuffers::INTERP_FIELDS],
+        //_tensors[ShaderBuffers::GRADIENTS],
+        //_tensors[ShaderBuffers::KLDIV],
+        //_tensors[ShaderBuffers::PREV_GRADIENTS],
+        //_tensors[ShaderBuffers::GAIN],
+        //_tensors[ShaderBuffers::POSITION],
+      //})->eval();
+      //auto stencil = static_cast<kp::Image*>(_stencilProg->_stencil_out.get())->vector<float>();
+      //auto field = static_cast<kp::Image*>(_fieldCompProg->_field_out.get())->vector<float>();
+      //auto sum_q = _interpProg->getSumQ();
+      //auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
+      //auto grads = _tensors[ShaderBuffers::GRADIENTS]->vector<float>();
+      //auto prevGrads = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
+      //auto gain = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
+      /**/
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
       kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
