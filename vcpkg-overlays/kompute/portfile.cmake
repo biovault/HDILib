@@ -7,6 +7,7 @@ vcpkg_from_github(
     PATCHES 
         ubo_support.patch
         permit_descriptor_type_update.patch
+        fix_memory_barriers.patch
 )
 
 vcpkg_cmake_configure(
