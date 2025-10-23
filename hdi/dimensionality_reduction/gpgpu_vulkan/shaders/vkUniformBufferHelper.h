@@ -42,6 +42,14 @@ public:
     mMgr->getDevice()->updateDescriptorSets(writes, nullptr);
   }
 
+  template <typename T>
+  void modifyData(const T& data, std::shared_ptr<kp::Algorithm> algo, uint32_t bind_location) {
+    void* mapped;
+    mapped = mVkDevice->mapMemory(mVkDeviceMemory, 0, sizeof(T));
+    std::memcpy(mapped, &data, sizeof(T));
+    mVkDevice->unmapMemory(mVkDeviceMemory);
+  }
+
   // Return VkDescriptorBufferInfo for binding manually or via Kompute algorithm
   vk::DescriptorBufferInfo descriptorVkInfo() const {
     vk::DescriptorBufferInfo info{};

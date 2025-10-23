@@ -155,7 +155,7 @@ void StencilShaderProg::update(
   std::fill(_stencil_array.begin(), _stencil_array.end(), 0.0f);
   _stencil_out->setData(_stencil_array);
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
-  _ubo.setData(uboVals, _stencilAlgorithm, 2);
+  _ubo.modifyData(uboVals, _stencilAlgorithm, 1);
 }
 
 
@@ -268,7 +268,7 @@ void FieldComputationShaderProg::update(
   std::fill(_field_array.begin(), _field_array.end(), 0.0f);
   _field_out->setData(_field_array);
   fieldParams uboVals = { {(float)width, (float)height}, _function_support };
-  _ubo.setData(uboVals, _fieldAlgorithm, 5);
+  _ubo.modifyData(uboVals, _fieldAlgorithm, 5);
   
 }
 
@@ -334,7 +334,7 @@ void InterpolationShaderProg::update(
   uint32_t width,
   uint32_t height) {
   interpParams uboVals = { {(float)width, (float)height} };
-  _ubo.setData(uboVals, _interpAlgorithm, 6);
+  _ubo.modifyData(uboVals, _interpAlgorithm, 6);
 }
 
 float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
@@ -410,7 +410,7 @@ void ForcesShaderProg::record(
 void ForcesShaderProg::update(
   float exaggeration) {
   forcesParams uboVals = { {exaggeration} };
-  _ubo.setData(uboVals, _forcesAlgorithm, 9);
+  _ubo.modifyData(uboVals, _forcesAlgorithm, 9);
 }
 
 void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentum, unsigned int momentum_switch, float final_momentum, float gain_mult) {
@@ -500,7 +500,7 @@ void UpdateShaderProg::update(
     iteration, momentum_switch,
     momentum, final_momentum,
     gain_mult };
-  _ubo.setData(uboVals, _updateAlgorithm, 5);
+  _ubo.modifyData(uboVals, _updateAlgorithm, 5);
 }
 
 std::vector<float> CenterScaleShaderProg::compute(unsigned int num_points, float exaggeration) {
@@ -585,7 +585,7 @@ void CenterScaleShaderProg::update(
     diameter = 0.1;
   }
   centerScaleParams uboVals = { scale, diameter };
-  _ubo.setData(uboVals, _centerScaleAlgorithm, 3);
+  _ubo.modifyData(uboVals, _centerScaleAlgorithm, 3);
 
 }
 
