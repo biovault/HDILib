@@ -4,6 +4,11 @@
 #include <memory>
 #include <kompute/Kompute.hpp>
 
+// PushConstant structs
+struct boundsPushConstants {
+  float padding;
+  uint32_t num_points;
+};
 
 // The UBO structs used to create the buffers
 struct stencilParams {
@@ -13,19 +18,23 @@ struct stencilParams {
 };
 
 struct fieldParams {
+  uint32_t num_points;
   float image_size[2];
   float support;
 };
 
 struct interpParams {
+  uint32_t num_points;
   float image_size[2];
 };
 
 struct forcesParams {
+  uint32_t num_points;
   float exaggeration;
 };
 
 struct updaterParams {
+  uint32_t num_points;
   float eta;
   float minGain;
   float iter;
@@ -36,6 +45,7 @@ struct updaterParams {
 };
 
 struct centerScaleParams {
+  uint32_t num_points;
   float scale;
   float diameter;
 };
