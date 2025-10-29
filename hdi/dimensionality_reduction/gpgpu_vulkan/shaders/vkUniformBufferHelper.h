@@ -22,8 +22,7 @@ public:
   // Update UBO contents in algorithm
   template <typename T>
   void setData(const T& data, std::shared_ptr<kp::Algorithm> algo, uint32_t bind_location) {
-    void* mapped;
-    mapped = mVkDevice->mapMemory(mVkDeviceMemory, 0, sizeof(T));
+    void *mapped = mVkDevice->mapMemory(mVkDeviceMemory, 0, sizeof(T));
     std::memcpy(mapped, &data, sizeof(T));
     mVkDevice->unmapMemory(mVkDeviceMemory);
     vk::DescriptorBufferInfo uboInfo = descriptorVkInfo();
@@ -44,8 +43,7 @@ public:
 
   template <typename T>
   void modifyData(const T& data, std::shared_ptr<kp::Algorithm> algo, uint32_t bind_location) {
-    void* mapped;
-    mapped = mVkDevice->mapMemory(mVkDeviceMemory, 0, sizeof(T));
+    void *mapped = mVkDevice->mapMemory(mVkDeviceMemory, 0, sizeof(T));
     std::memcpy(mapped, &data, sizeof(T));
     mVkDevice->unmapMemory(mVkDeviceMemory);
   }
@@ -70,6 +68,7 @@ private:
   vk::Buffer mVkBuffer;
   vk::DeviceMemory mVkDeviceMemory;
   vk::DeviceSize mSize = 0;
+  const vk::MemoryPropertyFlags mMemPropsDesired = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
 
   void createUniformBuffer() {
     mVkDevice = mMgr->getDevice();
@@ -91,7 +90,7 @@ private:
     uint32_t memTypeIndex = findMemoryTypeIndex(
       *(mVkPhysicalDevice.get()),
       vk_memReq.memoryTypeBits,
-      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+      mMemPropsDesired
     );
 
     VkMemoryAllocateInfo allocInfo{};
