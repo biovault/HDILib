@@ -10,7 +10,7 @@ layout(std430, binding = 0) buffer Pos{ float Positions[]; };
 layout(std430, binding = 1) buffer GradientLayout { float Gradients[]; };
 layout(std430, binding = 2) buffer PrevGradientLayout { float PrevGradients[]; };
 layout(std430, binding = 3) buffer GainLayout { float Gain[]; };
-layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
+//layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
 
 /*#ifdef SHADER_USE_PUSH_CONSTANTS
 layout(push_constant) uniform FieldPushConstants {
@@ -23,7 +23,8 @@ layout(push_constant) uniform FieldPushConstants {
     float mult;      // Multiplier for position update
 } pc;
 #else*/
-layout(scalar, binding = 5 ) uniform FieldPushConstants {    
+layout(scalar, binding = 4 ) uniform FieldPushConstants {  
+    uint num_points;  
     float eta;        // Learning rate
     float minGain;   // Minimum gain value
     float iter;      // Current iteration number
@@ -37,7 +38,7 @@ layout(scalar, binding = 5 ) uniform FieldPushConstants {
 void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
     uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    if (i >= NP[0] * 2)
+    if (i >= pc.num_points * 2)
         return;
 
     float grad = Gradients[i];

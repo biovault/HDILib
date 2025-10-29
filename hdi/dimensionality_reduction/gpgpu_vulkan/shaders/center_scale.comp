@@ -7,7 +7,7 @@
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 layout(std430, binding = 0) buffer Pos { vec2 Positions[]; };
 layout(std430, binding = 1) buffer BoundsInterface { vec2 Bounds[]; };
-layout(std430, binding = 2) readonly buffer NumPoints { uint NP[]; };
+//layout(std430, binding = 2) readonly buffer NumPoints { uint NP[]; };
 // for debugging
 // layout(std430, binding = 2) buffer Dbg { vec2 Bug[]; };
 
@@ -17,7 +17,8 @@ layout (push_constant) uniform ForcesPushConstants {
     float diameter;
 } pc;
 #else*/
-layout(scalar, binding = 3 ) uniform ForcesPushConstants {
+layout(scalar, binding = 2 ) uniform ForcesPushConstants {
+    uint num_points;
     float scale;
     float diameter;
 } pc;
@@ -26,7 +27,7 @@ layout(scalar, binding = 3 ) uniform ForcesPushConstants {
 void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
     uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    if (i >= NP[0])
+    if (i >= pc.num_points)
       return;
     vec2 center = (Bounds[0] + Bounds[1]) * 0.5;
 

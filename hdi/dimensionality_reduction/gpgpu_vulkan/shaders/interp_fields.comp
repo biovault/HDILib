@@ -15,14 +15,15 @@ layout(std430, binding = 1) readonly buffer BoundsInterface { vec2 Bounds[]; };
 layout(std430, binding = 2) buffer ValBuf { vec4 Values[]; };
 layout(std430, binding = 3) buffer SumBuf { float Sum[]; };
 layout(binding = 4, rgba32f) readonly uniform image2D inputFields;
-layout(std430, binding = 5) readonly buffer NumPoints { uint NP[]; };
+//layout(std430, binding = 5) readonly buffer NumPoints { uint NP[]; };
 
 //#ifdef SHADER_USE_PUSH_CONSTANTS
 //layout(push_constant) uniform FieldPushConstants {
 //    vec2 imageSize; // scaled image size used for fields image
 //} pc;
 //#else
-    layout(scalar, binding = 6 ) uniform FieldPushConstants {
+    layout(scalar, binding = 5 ) uniform FieldPushConstants {
+        uint num_points; 
         vec2 imageSize; // scaled image size used for fields image
     } pc;
 //#endif
@@ -90,7 +91,7 @@ void main() {
     vec2 inv_range = 1.0 / range;
 
     float sum_Q = 0;
-    for (uint i = lid; i < NP[0]; i += groupSize)
+    for (uint i = lid; i < pc.num_points; i += groupSize)
     {
         // Normalized position of point in range [0,0] to [1.0, 1.0]
         vec2 normPos = (Positions[i] - min_bounds) / range;
@@ -98,13 +99,12 @@ void main() {
         // Bilinearly sample the input texture 
         // using GPU native texture operation
         // see https://arxiv.org/pdf/1805.10817 5.1.2
-        vec4 v = bilinearSample2(normPos);
+        vec4 v = bilinearSample(normPos);
         // SumQ (Z-hat) is the sum of the (static field -1)
         // that is used as the normalization factor for 
         // the repulsive forces.
         sum_Q += max(v.x - 1.0, 0.0);
         Values[i] = v;
-        //Values[i] = vec4(99.9);
     }
   
     // Reduce add sum_Q to a single value
@@ -112,37 +112,37 @@ void main() {
     if (lid >= 64) {
         reduction_array[lid - 64] = sum_Q;
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 64) {
         reduction_array[lid] += sum_Q;
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 32) {
         reduction_array[lid] += reduction_array[lid + 32];
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 16) {
         reduction_array[lid] += reduction_array[lid + 16];
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 8) {
         reduction_array[lid] += reduction_array[lid + 8];
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 4) {
         reduction_array[lid] += reduction_array[lid + 4];
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 2) {
         reduction_array[lid] += reduction_array[lid + 2];
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 1) {
         Sum[0] = reduction_array[0] + reduction_array[1];
