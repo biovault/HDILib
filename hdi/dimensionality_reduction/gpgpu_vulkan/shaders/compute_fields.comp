@@ -10,7 +10,7 @@ layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
 layout(std430, binding = 1) readonly buffer BoundsInterface { vec2 Bounds[]; };
 layout(rgba32f, binding = 2) writeonly uniform image2D Fields;
 layout(rgba32f, binding = 3) readonly uniform image2D Stencil;
-layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
+//layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
 
 //#ifdef SHADER_USE_PUSH_CONSTANTS
 //layout(push_constant) uniform FieldPushConstants {
@@ -18,7 +18,8 @@ layout(std430, binding = 4) readonly buffer NumPoints { uint NP[]; };
 //    float support; 
 //} pc;
 //#else
-layout(scalar, binding = 5 ) uniform FieldPushConstants {
+layout(scalar, binding = 4 ) uniform FieldPushConstants {
+    uint num_points;
     vec2 imageSize;
     float support;  
 } pc;
@@ -53,7 +54,7 @@ void main() {
     // Stride over the point positions by the group size
     // calculating field (vector and scalar) contribution
     // at this pixel position based on the point distance.
-    for (uint i = lid; i < NP[0]; i += groupSize)
+    for (uint i = lid; i < pc.num_points; i += groupSize)
     {
         // Distance between pixel and kernel center in domain units
         vec2 t = pixel_pos - Positions[i];
@@ -74,7 +75,7 @@ void main() {
     if (lid >= hgSize) {
         reduction_array[lid - hgSize] = value.xyz;
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < hgSize) {
         reduction_array[lid] += value.xyz;
@@ -87,14 +88,9 @@ void main() {
         reduction_array[lid] += reduction_array[lid + reduceSize];
         }
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 1) {
         imageStore(Fields, ivec2(x, y), vec4(reduction_array[0] + reduction_array[1], 0));
     } 
-    // field fiducials
-    // imageStore(Fields, ivec2(0,0), vec4(255.0));
-    // imageStore(Fields, ivec2(0, pc.imageSize.y - 1),  vec4(255.0)); 
-    // imageStore(Fields, ivec2(pc.imageSize.x - 1, 0),  vec4(255.0));
-    // imageStore(Fields, ivec2(pc.imageSize) - ivec2(1,1),  vec4(255.0));
 }

@@ -46,7 +46,6 @@ void main() {
     ivec2 pxCoord = ivec2(round(norm * sp.imageSize));
     
     // Draw a 3x3 region around the point
-    //Bug[id] = pxCoord;
     for (int dy = -1; dy <= 1; ++dy) {
         for (int dx = -1; dx <= 1; ++dx) {
             ivec2 target = pxCoord + ivec2(dx, dy);
@@ -57,15 +56,4 @@ void main() {
             }
         }
     }
-    // // stencil fiducials
-    // imageStore(outImage, ivec2(0,0), ivec4(1));
-    // imageStore(outImage, ivec2(sp.imageSize.x - 1,sp.imageSize.y -1), ivec4(1));
-    // imageStore(outImage, ivec2(0,sp.imageSize.y -1), ivec4(1));
-    // imageStore(outImage, ivec2(sp.imageSize.x - 1,0), ivec4(1));
-    // // aligned image fiducials
-    // ivec2 outSize = imageSize(outImage);
-    // imageStore(outImage, ivec2(0,0), ivec4(1));
-    // imageStore(outImage, ivec2(outSize.x - 1,outSize.y -1), ivec4(1));
-    // imageStore(outImage, ivec2(0,outSize.y -1), ivec4(1));
-    // imageStore(outImage, ivec2(outSize.x - 1,0), ivec4(1));
 }

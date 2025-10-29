@@ -15,9 +15,9 @@ layout(std430, binding = 2) buffer Ind { uint Indices[]; };
 layout(std430, binding = 3) buffer Prob { float Probabilities[]; };
 layout(std430, binding = 4) buffer Fiel { vec4 Fields[]; };
 layout(std430, binding = 5) buffer Grad { vec2 Gradients[]; };
-layout(std430, binding = 6) readonly buffer NumPoints { uint NP[]; };
-layout(std430, binding = 7) readonly buffer SumQ { float SQ[]; };
-layout(std430, binding = 8) writeonly buffer SumBuf { float KL[]; };
+//layout(std430, binding = 6) readonly buffer NumPoints { uint NP[]; };
+layout(std430, binding = 6) readonly buffer SumQ { float SQ[]; };
+layout(std430, binding = 7) writeonly buffer SumBuf { float KL[]; };
 layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 const uint group_size = 64;
@@ -32,7 +32,8 @@ shared float sum_norm_qij[group_size];
 //    float exaggeration;
 //} pc;
 //#else
-layout(scalar, binding = 9 ) uniform ForcesPushConstants {
+layout(scalar, binding = 8 ) uniform ForcesPushConstants {
+    uint num_points;
     float exaggeration;
 } pc;
 //#endif
@@ -44,10 +45,10 @@ layout(scalar, binding = 9 ) uniform ForcesPushConstants {
     uint groupSize = gl_WorkGroupSize.x;
     uint lid = gl_LocalInvocationID.x;
 
-    float inv_num_points = 1.0 / float(NP[0]);
+    float inv_num_points = 1.0 / float(pc.num_points);
     float inv_sum_Q = 1.0 / SQ[0];
 
-    if (i >= NP[0])
+    if (i >= pc.num_points)
       return;
 
     // Get the point coordinates
@@ -65,10 +66,6 @@ layout(scalar, binding = 9 ) uniform ForcesPushConstants {
     // Start computing positive forces
     // for all the (size) nearest neighbours
     for (uint j = lid; j < size; j += group_size) {
-      //uint ni = Neighbours[index + j];
-      //if (ni == i) {
-      //  continue;
-      //}
       // Get other point coordinates
       vec2 point_j = Positions[Neighbours[index + j]];
       // The high dimensional probabilities provided are symmetrized 
@@ -93,7 +90,7 @@ layout(scalar, binding = 9 ) uniform ForcesPushConstants {
       sum_positive_red[lid - 32] = positive_force;
       sum_kl_divergence[lid - 32] = kl_divergence;
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 32) {
       sum_positive_red[lid] += positive_force;
@@ -102,14 +99,14 @@ layout(scalar, binding = 9 ) uniform ForcesPushConstants {
     // Reduce 16, 8, 4, and 2 
     for (uint reduceSize = group_size/4; reduceSize > 1; reduceSize /= 2)
     {
-      memoryBarrierShared();
+      //memoryBarrierShared();
       barrier();
       if (lid < reduceSize) {
         sum_positive_red[lid] += sum_positive_red[lid + reduceSize];
         sum_kl_divergence[lid] += sum_kl_divergence[lid + reduceSize];
       }
     }
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
     if (lid < 1) {
       sum_positive = sum_positive_red[0] + sum_positive_red[1];

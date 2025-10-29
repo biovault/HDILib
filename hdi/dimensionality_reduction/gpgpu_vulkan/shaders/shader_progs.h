@@ -6,6 +6,50 @@
 #include <vector>
 #include "vkUniformBufferHelper.h"
 
+class ShaderImageHelper {
+  public:
+  ShaderImageHelper() {};
+
+  void createBuffers(
+    std::shared_ptr<kp::Manager> mgr, 
+    uint32_t fields_buffer_size) {
+    _stencil_array = std::vector<float>(fields_buffer_size * fields_buffer_size * 4, 0.0);
+    _stencil_out = mgr->imageT<float>(_stencil_array, fields_buffer_size, fields_buffer_size, 4, vk::ImageTiling::eOptimal);
+    _field_array = std::vector<float>(fields_buffer_size * fields_buffer_size * 4, 0.0f);
+    _field_out = mgr->imageT<float>(_field_array, fields_buffer_size, fields_buffer_size, 4, vk::ImageTiling::eOptimal);
+  };
+  std::shared_ptr<kp::ImageT<float>> getStencilImage() const {
+    return _stencil_out;
+  };
+  std::vector<float>& getStencilArray() {
+    return _stencil_array;
+  };
+  std::shared_ptr<kp::ImageT<float>> getFieldImage() const {
+    return _field_out;
+  };
+  std::vector<float>& getFieldArray() {
+    return _field_array;
+  };
+
+  void clearBuffers() {
+    #pragma omp for
+    for (int i = 0; i < static_cast<int>(_stencil_array.size()); ++i) {
+      _stencil_array[i] = 0.0f;
+    }
+    _stencil_out->setData(_stencil_array);
+    #pragma omp for
+    for (int i = 0; i < static_cast<int>(_field_array.size()); ++i) {
+      _field_array[i] = 0.0f;
+    }
+    _field_out->setData(_field_array);
+  };
+
+private:
+  std::shared_ptr<kp::ImageT<float>> _stencil_out;
+  std::vector<float> _stencil_array;
+  std::shared_ptr<kp::ImageT<float>> _field_out;
+  std::vector<float> _field_array;
+};
 
 // The shader programs present two separate APIS:
 // 1) compute() function that runs the shader program immediately and returns the result
@@ -24,10 +68,12 @@ public:
 
   void record_padded(
     std::shared_ptr<kp::Sequence> seq,
+    uint32_t num_points,
     float padding = 0.1);
 
   void record_unpadded(
-    std::shared_ptr<kp::Sequence> seq);
+    std::shared_ptr<kp::Sequence> seq,
+    uint32_t num_points);
 
 private:
   std::vector<uint32_t>& _shaderBinary;
@@ -44,7 +90,6 @@ public:
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::STENCIL]),
     _fields_buffer_size(0),
-    _stencil_array(std::vector<float>(0)),
     _ubo(mgr, sizeof(stencilParams))
   {
   };
@@ -57,6 +102,7 @@ public:
   void record(
     std::shared_ptr<kp::Sequence> seq,
     uint32_t width, uint32_t height,
+    std::shared_ptr<kp::ImageT<float>> stencil,
     unsigned int num_points,
     std::vector<float> bounds,
     unsigned int new_fields_buffer_size = 0);
@@ -66,18 +112,12 @@ public:
     std::vector<float> bounds,
     unsigned int new_fields_buffer_size = 0);
 
-  std::shared_ptr<kp::ImageT<float>> getStencil() const {
-    return _stencil_out;
-  };
-
-  std::shared_ptr<kp::ImageT<float>> _stencil_out;
 private:
   std::vector<uint32_t>& _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _stencilAlgorithm;
   TensorMap& _tensors;
   unsigned int _fields_buffer_size;
-  std::vector<float> _stencil_array;
   UniformBufferHelper _ubo;
 
 };
@@ -89,7 +129,6 @@ public:
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS]),
     _fields_buffer_size(0),
-    _field_array(std::vector<float>(0)),
     _ubo(mgr, sizeof(fieldParams))
   {
   };
@@ -100,15 +139,16 @@ public:
 
   void record(
     std::shared_ptr<kp::Sequence> seq,
-    std::shared_ptr<kp::ImageT<float>> stencil,
+    uint32_t num_points,
     uint32_t width, uint32_t height,
+    std::shared_ptr<kp::ImageT<float>> field,
+    std::shared_ptr<kp::ImageT<float>> stencil,
     unsigned int new_fields_buffer_size = 0);
 
   void update(
+    uint32_t num_points,
     uint32_t width, uint32_t height,
     unsigned int new_fields_buffer_size = 0);
-
-  std::shared_ptr<kp::ImageT<float>> _field_out;
 private:
   std::vector<uint32_t>& _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
@@ -116,7 +156,6 @@ private:
   TensorMap& _tensors;
   const float _function_support = 6.5f;
   unsigned int _fields_buffer_size;
-  std::vector<float> _field_array;
   UniformBufferHelper _ubo;
 };
 
@@ -133,11 +172,13 @@ public:
   void compute(std::shared_ptr<kp::ImageT<float>> fields, uint32_t width, uint32_t height);
   void record(
     std::shared_ptr<kp::Sequence> seq,
+    uint32_t num_points,
     std::shared_ptr<kp::ImageT<float>> fields,
     uint32_t width,
     uint32_t height);
 
   void update(
+    uint32_t num_points,
     uint32_t width,
     uint32_t height);
 
@@ -170,6 +211,7 @@ public:
     float exaggeration);
 
   void update(
+    uint32_t num_points,
     float exaggeration);
 
 private:
@@ -192,7 +234,7 @@ public:
   void compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentumn, unsigned int momentum_switch, float final_momentum, float gain_mult);
   void record(
     std::shared_ptr<kp::Sequence> seq, 
-    unsigned int num_points, 
+    uint32_t num_points, 
     float eta, 
     float minimum_gain, 
     float iteration, 
@@ -202,6 +244,7 @@ public:
     float gain_mult);
 
   void update(
+    uint32_t num_points,
     float eta,
     float minimum_gain,
     float iteration,
@@ -231,10 +274,11 @@ public:
 
   void record(
     std::shared_ptr<kp::Sequence> seq, 
-    unsigned int num_points, 
+    uint32_t num_points,
     float exaggeration);
 
   void update(
+    uint32_t num_points,
     float exaggeration);
 
 private:

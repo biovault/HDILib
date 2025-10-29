@@ -36,15 +36,17 @@ std::vector<float> BoundsShaderProg::compute(float padding) {
 /// <param name="padding">The padding to apply</param>
 void BoundsShaderProg::record_padded(
   std::shared_ptr<kp::Sequence> seq,
+  uint32_t num_points,
   float padding) {
+  std::cout << "bounds padded\n";
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::BOUNDS],
       _tensors[ShaderBuffers::POSITION],
-      _tensors[ShaderBuffers::NUM_POINTS]
+      //_tensors[ShaderBuffers::NUM_POINTS]
   };
 
 
-  _boundsAlgorithmPadded = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ 1,1,1 }), {}, std::vector<float>({ padding }));
+  _boundsAlgorithmPadded = _mgr->algorithm<float, boundsPushConstants>(algoParams, _shaderBinary, kp::Workgroup({ 1,1,1 }), {}, { {padding, num_points} });
     seq
       //->record<kp::OpSyncDevice>(std::vector<std::shared_ptr<kp::Memory>>({ _tensors[ShaderBuffers::BOUNDS] }))
       ->record<kp::OpAlgoDispatch>(_boundsAlgorithmPadded)
@@ -60,11 +62,13 @@ void BoundsShaderProg::record_padded(
 /// </summary>
 /// <param name="seq">The kp::Sequence being recorded</param>
 void BoundsShaderProg::record_unpadded(
-  std::shared_ptr<kp::Sequence> seq) {
+  std::shared_ptr<kp::Sequence> seq,
+  uint32_t num_points) {
+  std::cout << "bounds unpadded\n";
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::BOUNDS],
       _tensors[ShaderBuffers::POSITION],
-      _tensors[ShaderBuffers::NUM_POINTS]
+      //_tensors[ShaderBuffers::NUM_POINTS]
   };
 
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
@@ -74,7 +78,11 @@ void BoundsShaderProg::record_unpadded(
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
 
-  _boundsAlgorithmUnpadded = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ 1,1,1 }), {}, std::vector<float>({ 0.0f }));
+  {
+    {
+      _boundsAlgorithmUnpadded = _mgr->algorithm<float, boundsPushConstants>(algoParams, _shaderBinary, kp::Workgroup({ 1,1,1 }), {}, { {0.0, num_points} });
+    }
+  }
   seq
     //->record<kp::OpSyncDevice>(std::vector<std::shared_ptr<kp::Memory>>({ _tensors[ShaderBuffers::BOUNDS] }))
     ->record<kp::OpAlgoDispatch>(_boundsAlgorithmUnpadded)
@@ -112,16 +120,15 @@ void StencilShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
   uint32_t width,
   uint32_t height,
+  std::shared_ptr<kp::ImageT<float>> stencil,
   unsigned int num_points,
   std::vector<float> bounds,
   unsigned int new_fields_buffer_size) {
 
   _fields_buffer_size = new_fields_buffer_size;
-  _stencil_array = std::vector<float>(_fields_buffer_size * _fields_buffer_size * 4, 0.0);
-  _stencil_out = _mgr->imageT<float>(_stencil_array, _fields_buffer_size, _fields_buffer_size, 4);
   // Needs patch in Sequence.hpp
   auto cmdBuf = seq->getCommandBuffer();
-  _stencil_out->recordPrimaryImageBarrier(
+  stencil->recordPrimaryImageBarrier(
     *(cmdBuf.get()),
     vk::AccessFlagBits::eNone,
     vk::AccessFlagBits::eShaderWrite,
@@ -130,9 +137,9 @@ void StencilShaderProg::record(
     vk::ImageLayout::eGeneral);
 
   const std::vector<std::shared_ptr<kp::Memory>> params = { 
-    _tensors[ShaderBuffers::POSITION], _tensors[ShaderBuffers::UBO_STENCIL], _stencil_out};
+    _tensors[ShaderBuffers::POSITION], _tensors[ShaderBuffers::UBO_STENCIL], stencil};
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
-    std::vector<std::shared_ptr<kp::Memory>>({ _stencil_out }),
+    std::vector<std::shared_ptr<kp::Memory>>({ stencil }),
     vk::AccessFlagBits::eShaderWrite,
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
@@ -152,8 +159,8 @@ void StencilShaderProg::update(
   std::vector<float> bounds,
   unsigned int new_fields_buffer_size) {
   assert(new_fields_buffer_size == _fields_buffer_size);
-  std::fill(_stencil_array.begin(), _stencil_array.end(), 0.0f);
-  _stencil_out->setData(_stencil_array);
+  //std::fill(_stencil_array.begin(), _stencil_array.end(), 0.0f);
+  //_stencil_out->setData(_stencil_array);
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
   _ubo.modifyData(uboVals, _stencilAlgorithm, 1);
 }
@@ -190,60 +197,48 @@ std::shared_ptr<kp::ImageT<float>> FieldComputationShaderProg::compute(
 
 void FieldComputationShaderProg::record(
   std::shared_ptr<kp::Sequence> seq, 
-  std::shared_ptr<kp::ImageT<float>> stencil,
+  uint32_t num_points,
   uint32_t width, 
   uint32_t height,
+  std::shared_ptr<kp::ImageT<float>> field,
+  std::shared_ptr<kp::ImageT<float>> stencil,
   unsigned int new_fields_buffer_size) {
   _fields_buffer_size = new_fields_buffer_size;
-  _field_array = std::vector<float>(_fields_buffer_size * _fields_buffer_size * 4, 0.0f);
-  _field_out = _mgr->image(_field_array, _fields_buffer_size, _fields_buffer_size, 4); // npwidth
+  //_field_array = std::vector<float>(_fields_buffer_size * _fields_buffer_size * 4, 0.0f);
+  //_field_out = _mgr->image(_field_array, _fields_buffer_size, _fields_buffer_size, 4); // npwidth
   // requires patch in Sequence.hpp
   auto cmdBuf = seq->getCommandBuffer();
-  _field_out->recordPrimaryImageBarrier(
+  field->recordPrimaryImageBarrier(
     *(cmdBuf.get()),
     vk::AccessFlagBits::eNone,
     vk::AccessFlagBits::eShaderWrite,
     vk::PipelineStageFlagBits::eTopOfPipe,
     vk::PipelineStageFlagBits::eComputeShader,
     vk::ImageLayout::eGeneral);
-  /*_field_out->recordPrimaryImageBarrier(
-    *(cmdBuf.get()),
-    vk::AccessFlagBits::eTransferRead,
-    vk::AccessFlagBits::eShaderWrite,
-    vk::PipelineStageFlagBits::eTransfer,
-    vk::PipelineStageFlagBits::eComputeShader,
-    vk::ImageLayout::eGeneral);*/
 
-  //stencil->recordPrimaryImageBarrier(
-  //  *(cmdBuf.get()),
-  //  vk::AccessFlagBits::eTransferWrite,
-  //  vk::AccessFlagBits::eShaderRead,
-  //  vk::PipelineStageFlagBits::eTransfer,
-  //  vk::PipelineStageFlagBits::eComputeShader,
-  //  vk::ImageLayout::eGeneral);
   auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
   uint32_t dispatchData[3] = { width, height, 1 };
   dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
-      _field_out,
+      field,
       stencil,
-      _tensors[ShaderBuffers::NUM_POINTS],
+      //_tensors[ShaderBuffers::NUM_POINTS],
       _tensors[ShaderBuffers::UBO_FIELD]
   };
   _fieldAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, {}, {}, {});
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
       _tensors[ShaderBuffers::BOUNDS],
-      _field_out,
-      _tensors[ShaderBuffers::NUM_POINTS],
+      field,
+      //_tensors[ShaderBuffers::NUM_POINTS],
       _tensors[ShaderBuffers::UBO_FIELD]
   };
-  fieldParams uboVals = { {(float)width, (float)height}, _function_support };
-  _ubo.setData(uboVals, _fieldAlgorithm, 5);
+  fieldParams uboVals = {num_points, {(float)width, (float)height}, _function_support };
+  _ubo.setData(uboVals, _fieldAlgorithm, 4);
   const vk::AccessFlags readWriteFlags = vk::AccessFlags(vk::AccessFlagBits::eShaderWrite) | vk::AccessFlags(vk::AccessFlagBits::eShaderRead);
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
-    std::vector<std::shared_ptr<kp::Memory>>({ _field_out }),
+    std::vector<std::shared_ptr<kp::Memory>>({ field }),
     vk::AccessFlagBits::eShaderWrite,
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
@@ -257,6 +252,7 @@ void FieldComputationShaderProg::record(
 }
 
 void FieldComputationShaderProg::update(
+  uint32_t num_points,
   uint32_t width,
   uint32_t height,
   unsigned int new_fields_buffer_size) {
@@ -265,10 +261,10 @@ void FieldComputationShaderProg::update(
   auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
   uint32_t dispatchData[3] = { width, height, 1 };
   dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
-  std::fill(_field_array.begin(), _field_array.end(), 0.0f);
-  _field_out->setData(_field_array);
-  fieldParams uboVals = { {(float)width, (float)height}, _function_support };
-  _ubo.modifyData(uboVals, _fieldAlgorithm, 5);
+  //std::fill(_field_array.begin(), _field_array.end(), 0.0f);
+  //_field_out->setData(_field_array);
+  fieldParams uboVals = { num_points, {(float)width, (float)height}, _function_support };
+  _ubo.modifyData(uboVals, _fieldAlgorithm, 4);
   
 }
 
@@ -296,6 +292,7 @@ void InterpolationShaderProg::compute(
 
 void InterpolationShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
+  uint32_t num_points,
   std::shared_ptr<kp::ImageT<float>> fields,
   uint32_t width,
   uint32_t height) {
@@ -305,12 +302,12 @@ void InterpolationShaderProg::record(
       _tensors[ShaderBuffers::INTERP_FIELDS],
       _tensors[ShaderBuffers::SUM_Q],
       fields,
-      _tensors[ShaderBuffers::NUM_POINTS],
+      //_tensors[ShaderBuffers::NUM_POINTS],
       _tensors[ShaderBuffers::UBO_INTERP]
   };
   _interpAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ 1, 1, 1 }), {}, {});
-  interpParams uboVals = { {(float)width, (float)height} };
-  _ubo.setData(uboVals, _interpAlgorithm, 6);
+  interpParams uboVals = {num_points, {(float)width, (float)height} };
+  _ubo.setData(uboVals, _interpAlgorithm, 5);
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
       _tensors[ShaderBuffers::INTERP_FIELDS],
       _tensors[ShaderBuffers::SUM_Q],
@@ -331,10 +328,11 @@ void InterpolationShaderProg::record(
 }
 
 void InterpolationShaderProg::update(
+  uint32_t num_points,
   uint32_t width,
   uint32_t height) {
-  interpParams uboVals = { {(float)width, (float)height} };
-  _ubo.modifyData(uboVals, _interpAlgorithm, 6);
+  interpParams uboVals = {num_points, {(float)width, (float)height} };
+  _ubo.modifyData(uboVals, _interpAlgorithm, 5);
 }
 
 float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
@@ -367,7 +365,7 @@ float ForcesShaderProg::compute(unsigned int num_points, float exaggeration) {
 
 void ForcesShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
-  unsigned int num_points,
+  uint32_t num_points,
   float exaggeration) {
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
     _tensors[ShaderBuffers::POSITION],
@@ -376,15 +374,15 @@ void ForcesShaderProg::record(
     _tensors[ShaderBuffers::PROBABILITIES],
     _tensors[ShaderBuffers::INTERP_FIELDS],
     _tensors[ShaderBuffers::GRADIENTS],
-    _tensors[ShaderBuffers::NUM_POINTS],
+    //_tensors[ShaderBuffers::NUM_POINTS],
     _tensors[ShaderBuffers::SUM_Q],
     _tensors[ShaderBuffers::KLDIV],
     _tensors[ShaderBuffers::UBO_FORCES]
   };
   auto grid_size = unsigned int(sqrt(num_points) + 1);
   _forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, {});
-  forcesParams uboVals = { {exaggeration} };
-  _ubo.setData(uboVals, _forcesAlgorithm, 9);
+  forcesParams uboVals = { num_points, exaggeration };
+  _ubo.setData(uboVals, _forcesAlgorithm, 8);
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
     _tensors[ShaderBuffers::NEIGHBOUR],
     _tensors[ShaderBuffers::INDEX],
@@ -408,9 +406,10 @@ void ForcesShaderProg::record(
 }
 
 void ForcesShaderProg::update(
+  uint32_t num_points,
   float exaggeration) {
-  forcesParams uboVals = { {exaggeration} };
-  _ubo.modifyData(uboVals, _forcesAlgorithm, 9);
+  forcesParams uboVals = { num_points, exaggeration};
+  _ubo.modifyData(uboVals, _forcesAlgorithm, 8);
 }
 
 void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentum, unsigned int momentum_switch, float final_momentum, float gain_mult) {
@@ -442,7 +441,7 @@ void UpdateShaderProg::compute(unsigned int num_points, float eta, float minimum
 
 void UpdateShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
-  unsigned int num_points,
+  uint32_t num_points,
   float eta,
   float minimum_gain,
   float iteration,
@@ -455,7 +454,7 @@ void UpdateShaderProg::record(
         _tensors[ShaderBuffers::GRADIENTS],
         _tensors[ShaderBuffers::PREV_GRADIENTS],
         _tensors[ShaderBuffers::GAIN],
-        _tensors[ShaderBuffers::NUM_POINTS],
+        //_tensors[ShaderBuffers::NUM_POINTS],
         _tensors[ShaderBuffers::UBO_UPDATE]
     };
     auto num_workgroups = unsigned int((num_points * 2 / 64) + 1);
@@ -465,11 +464,12 @@ void UpdateShaderProg::record(
       _shaderBinary, 
       kp::Workgroup({ grid_size, grid_size, 1 }), {}, {});
     updaterParams uboVals = { 
+      num_points,
       eta, minimum_gain, 
       iteration, momentum_switch, 
       momentum, final_momentum, 
       gain_mult };
-    _ubo.setData(uboVals, _updateAlgorithm, 5);
+    _ubo.setData(uboVals, _updateAlgorithm, 4);
     const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
         _tensors[ShaderBuffers::UBO_UPDATE]
     };
@@ -488,6 +488,7 @@ void UpdateShaderProg::record(
   }
 
 void UpdateShaderProg::update(
+  uint32_t num_points,
   float eta,
   float minimum_gain,
   float iteration,
@@ -496,11 +497,12 @@ void UpdateShaderProg::update(
   float final_momentum,
   float gain_mult) {
   updaterParams uboVals = {
+    num_points,
     eta, minimum_gain,
     iteration, momentum_switch,
     momentum, final_momentum,
     gain_mult };
-  _ubo.modifyData(uboVals, _updateAlgorithm, 5);
+  _ubo.modifyData(uboVals, _updateAlgorithm, 4);
 }
 
 std::vector<float> CenterScaleShaderProg::compute(unsigned int num_points, float exaggeration) {
@@ -536,12 +538,12 @@ std::vector<float> CenterScaleShaderProg::compute(unsigned int num_points, float
 
 void CenterScaleShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
-  unsigned int num_points,
+  uint32_t num_points,
   float exaggeration) {
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
-      _tensors[ShaderBuffers::NUM_POINTS],
+      //_tensors[ShaderBuffers::NUM_POINTS],
       _tensors[ShaderBuffers::UBO_CENTER_SCALE]
   };
   auto scale = 0.0f;
@@ -558,8 +560,8 @@ void CenterScaleShaderProg::record(
     algoParams,
     _shaderBinary, 
     kp::Workgroup({ grid_size, grid_size, 1 }), {}, {});
-  centerScaleParams uboVals = { scale, diameter};
-  _ubo.setData(uboVals, _centerScaleAlgorithm, 3);
+  centerScaleParams uboVals = {num_points, scale, diameter};
+  _ubo.setData(uboVals, _centerScaleAlgorithm, 2);
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
       _tensors[ShaderBuffers::UBO_CENTER_SCALE]
   };
@@ -576,6 +578,7 @@ void CenterScaleShaderProg::record(
 }
 
 void CenterScaleShaderProg::update(
+  uint32_t num_points,
   float exaggeration) {
   auto scale = 0.0f;
   auto diameter = 0.0f;
@@ -584,8 +587,8 @@ void CenterScaleShaderProg::update(
     scale = 1.0f;
     diameter = 0.1;
   }
-  centerScaleParams uboVals = { scale, diameter };
-  _ubo.modifyData(uboVals, _centerScaleAlgorithm, 3);
+  centerScaleParams uboVals = {num_points, scale, diameter };
+  _ubo.modifyData(uboVals, _centerScaleAlgorithm, 2);
 
 }
 
