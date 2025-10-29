@@ -16,6 +16,7 @@
 #include "hdi/dimensionality_reduction/tsne.h"
 #include "hdi/dimensionality_reduction/gradient_descent_tsne_texture.h"
 #include <kompute/logger/Logger.hpp>
+#include <algorithm>
 
 
 void save_to_csv(std::vector<float> embedding, std::string output, int iter = -1) {
@@ -176,23 +177,39 @@ int main(int argc, const char** argv) {
         }
     }
     else {
+
         std::ifstream fileCheck(csvpath.string(), std::ios::binary);
         fileCheck.seekg(0, std::ios::end);
         std::streampos fileSize = fileCheck.tellg();
         fileCheck.close();
-        num_points = fileSize / dim;
-        std::cout << "Loading: " << num_points << " binary points" << std::endl;
+        std::cout << "subset num points: " << subset << "\n";
+        if (subset != -1) {
+            num_points = subset;
+        }
+        else {
+            num_points = fileSize / (dim * sizeof(float));
+        }
+        
+        std::cout << "Loading: " << num_points << " float binary points" << std::endl;
         std::ifstream file(csvpath.string(), std::ios::binary);
+        auto count = size_t(0);
         if (file) {
             data = std::vector<float>(fileSize, 0.0);
-            auto count = size_t(0);
-            std::uint8_t pnt;
+            float pnt;
+            auto point_count = 0;
             while (count < fileSize) {
                 file.read(reinterpret_cast<char*>(&pnt), sizeof(pnt));
-                data[count] = float(pnt);
+                data[count] = pnt;
                 ++count;
+                ++point_count;
             }
         }
+        if (count > num_points) {
+            std::vector<float> sample;
+            std::sample(data.begin(), data.end(), std::back_inserter(sample), num_points, std::mt19937{ std::random_device{}() });
+            data = sample;
+        }
+
 
     }
 
