@@ -6,6 +6,7 @@
 #include <cmath> // for sqrt
 #include <memory>
 #include <sstream>
+#include <chrono>
 #include "tensor_config.h"
 #include "shaders/shaders.h"
 
@@ -23,7 +24,7 @@ namespace hdi {
     GpgpuSneVulkan::GpgpuSneVulkan() :
       _initialized(false),
       _adaptive_resolution(true),
-      _resolutionScaling(PIXEL_RATIO),
+      _resolutionScaling(RESOLUTION_SCALING),
       kl_divergence(-1.0f) // Initialize KL divergence to -1.0f
     {
 
@@ -68,6 +69,12 @@ namespace hdi {
       _params = params;
 
       unsigned int num_points = embedding->numDataPoints();
+      if (num_points < 10000) {
+        _resolutionScaling = 3;
+      }
+      else if (num_points < 1000) {
+        _resolutionScaling = 7;
+      }
 
       // Linearize sparse probability matrix
       LinearProbabilityMatrix linear_P;
@@ -94,7 +101,8 @@ namespace hdi {
 
     void GpgpuSneVulkan::initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P) {
       // Create the manager with debug extensions
-      _mgr = std::make_shared<kp::Manager>(0); //"VK_LAYER_NV_nsight", "VK_LAYER_KHRONOS_validation"  "VK_LAYER_NV_GPU_Trace_release_public_2025_4_1"
+      _mgr = std::make_shared<kp::Manager>(0); //, std::vector<uint32_t>(), std::vector<std::string>({ "VK_EXT_memory_priority" }));
+
       _tensors[ShaderBuffers::POSITION] = _mgr->tensorT(std::vector<float>(num_pnts * 2, 0.0f));
       _tensors[ShaderBuffers::INTERP_FIELDS] = _mgr->tensorT(std::vector<float>(num_pnts * 4, 0.0f));
       _tensors[ShaderBuffers::SUM_Q] = _mgr->tensorT(std::vector<float>(1, 0.0f));
@@ -153,8 +161,8 @@ namespace hdi {
       std::cout << "Range X: " << range_x << " Range Y: " << range_y << std::endl;
 
       // assume adaptive resolution(scales with points range) with a minimum size
-      auto width = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_x, float(MINIMUM_FIELDS_SIZE))));
-      auto height = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_y, float(MINIMUM_FIELDS_SIZE))));
+      auto width = static_cast<uint32_t>(std::floor(std::max(_resolutionScaling * range_x, float(MINIMUM_FIELDS_SIZE))));
+      auto height = static_cast<uint32_t>(std::floor(std::max(_resolutionScaling * range_y, float(MINIMUM_FIELDS_SIZE))));
 
       float* points = embedding->getContainer().data();
       unsigned int num_points = embedding->numDataPoints();
@@ -205,45 +213,48 @@ namespace hdi {
     }
 
     void GpgpuSneVulkan::record_compute_sequence(
-      float iteration, 
-      uint32_t width, 
-      uint32_t height, 
-      uint32_t num_points, 
-      float* bounds, 
-      float exaggeration, 
+      float iteration,
+      uint32_t width,
+      uint32_t height,
+      uint32_t num_points,
+      float* bounds,
+      float exaggeration,
       float mult) {
-      // for testing only - record stencil only and eval it later
-      //_stencilSeq = _mgr->sequence();
-      //_stencilSeq->begin();
-      //_stencilProg->record(_stencilSeq, width, height, num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
-      //_stencilSeq->end();
 
-      _seq = _mgr->sequence();
-      _seq->begin();
-      _stencilProg->record(_seq, width, height, num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
-      _fieldCompProg->record(_seq, _stencilProg->_stencil_out, width, height, _fields_buffer_size);
-      _interpProg->record(_seq, _fieldCompProg->_field_out, width, height);
-      _forcesProg->record(_seq, num_points, exaggeration);
-      _updateProg->record(_seq, num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
-      _boundsProg->record_unpadded(_seq);
-      _centerScaleProg->record(_seq, num_points, exaggeration);
-      _boundsProg->record_padded(_seq, 0.1f);
-      _seq->end();
+      _seq0 = _mgr->sequence();
+      _shaderImageHelper.createBuffers(_mgr, _fields_buffer_size);
+      _seq0->begin();
+      _stencilProg->record(_seq0, width, height, _shaderImageHelper.getStencilImage(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
+      _fieldCompProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldImage(), _shaderImageHelper.getStencilImage(), _fields_buffer_size);
+      _interpProg->record(_seq0, num_points, _shaderImageHelper.getFieldImage(), width, height);
+      _seq0->end();
+      if (_seq1.get() == nullptr) {
+        _seq1 = _mgr->sequence();
+        _seq1->begin();
+        _forcesProg->record(_seq1, num_points, exaggeration);
+        _updateProg->record(_seq1, num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
+        _boundsProg->record_unpadded(_seq1, num_points);
+        _centerScaleProg->record(_seq1, num_points, exaggeration);
+        _boundsProg->record_padded(_seq1, num_points, 0.1f);
+        _seq1->end();
+      }
     }
 
     void GpgpuSneVulkan::update_compute_sequence(
-      float iteration, 
+      float iteration,
+      uint32_t num_points,
       uint32_t width, 
       uint32_t height, 
       float* bounds, 
       float exaggeration, 
       float mult) {
+      _shaderImageHelper.clearBuffers();
       _stencilProg->update(width, height, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
-      _fieldCompProg->update(width, height, _fields_buffer_size);
-      _interpProg->update(width, height);
-      _forcesProg->update(exaggeration);
-      _updateProg->update(_params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
-      _centerScaleProg->update(exaggeration);
+      _fieldCompProg->update(num_points, width, height, _fields_buffer_size);
+      _interpProg->update(num_points, width, height);
+      _forcesProg->update(num_points, exaggeration);
+      _updateProg->update(num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
+      _centerScaleProg->update(num_points, exaggeration);
     }
 
     void GpgpuSneVulkan::compute_sequence(embedding_type* embedding, float exaggeration, float iteration, float mult) {
@@ -262,9 +273,9 @@ namespace hdi {
       float* points = embedding->getContainer().data();
       unsigned int num_points = embedding->numDataPoints();
       bool new_field_buf = false;
-      if (iteration < 0.5) { // only on the first iteration
+      if ((int)iteration == 0) { // only on the first iteration
         _tensors[ShaderBuffers::POSITION]->setData(embedding->getContainer());
-        _tensors[ShaderBuffers::NUM_POINTS]->setData(std::vector<unsigned int>({ num_points }));
+        //_tensors[ShaderBuffers::NUM_POINTS]->setData(std::vector<unsigned int>({ num_points }));
         // on first iteration the bound were calculated on the CPU so load them to the tensor
         _tensors[ShaderBuffers::BOUNDS]->setData(_bounds);
         _fields_buffer_size = 8;
@@ -278,37 +289,57 @@ namespace hdi {
           _fields_buffer_size = std::min(2 * _fields_buffer_size, 2048u);
         new_field_buf = true;
       }
-      else if (width < _fields_buffer_size / 2 && height < _fields_buffer_size / 2) {
-        _fields_buffer_size = std::max(_fields_buffer_size/2, 8u);
-        new_field_buf = true;
-      }
+      //else if (width < _fields_buffer_size / 4 && height < _fields_buffer_size / 4) {
+      //  _fields_buffer_size = std::max(_fields_buffer_size/4, 8u);
+      //  new_field_buf = true;
+      //}
 
+      auto tu0 = std::chrono::high_resolution_clock::now();
       if (new_field_buf) {
+        std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
         // rerecord the computer buffer sequence with the new field size
         ; // at most 1024 (should this be an exception?)
         record_compute_sequence(iteration, width, height, num_points, _bounds.data(), exaggeration, mult);
       } else {
         // simply update the push constants of the sequence
-        update_compute_sequence(iteration, width, height, _bounds.data(), exaggeration, mult);
+        update_compute_sequence(iteration, num_points, width, height, _bounds.data(), exaggeration, mult);
       }
-     // _stencilSeq->eval();
-      _seq->eval();
-      
+      auto tu1 = std::chrono::high_resolution_clock::now();
+      double cpu_ms_tu = std::chrono::duration<double, std::milli>(tu1 - tu0).count();
+
+      // With the correct memory barriers we can parallelize this
+      //#pragma omp parallel sections 
+      //{
+        //#pragma omp section 
+        auto t0 = std::chrono::high_resolution_clock::now();
+        { _seq0->eval();}
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double cpu_ms_0 = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        //#pragma omp section 
+        auto t2 = std::chrono::high_resolution_clock::now();
+        { _seq1->eval();}
+        auto t3 = std::chrono::high_resolution_clock::now();
+        double cpu_ms_1 = std::chrono::duration<double, std::milli>(t3 - t2).count();
+      //}
+        _totalTime += cpu_ms_0 + cpu_ms_1 + cpu_ms_tu;
+        double texsize = (_bounds[2] - _bounds[0]) * (_bounds[3] - _bounds[1]);
+        double ms_per_texel = cpu_ms_0 / texsize;
+        //printf("%u, cpu_eval_ms0=%.3f, cpu_eval_ms1=%.3f, cpu_eval_ms_tu=%.3f, total=%.3f, TexSize=%.0f, ms per texel=%0.7f \n", int(iteration), cpu_ms_0, cpu_ms_1, cpu_ms_tu, _totalTime, texsize, ms_per_texel);
       // for debug purposes only - get the values locally
       //auto syncSeq = _mgr->sequence();
       //syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
-        //_stencilProg->_stencil_out,
-        //_fieldCompProg->_field_out,
-        //_tensors[ShaderBuffers::SUM_Q],
-        //_tensors[ShaderBuffers::INTERP_FIELDS],
-        //_tensors[ShaderBuffers::GRADIENTS],
-        //_tensors[ShaderBuffers::KLDIV],
-        //_tensors[ShaderBuffers::PREV_GRADIENTS],
-        //_tensors[ShaderBuffers::GAIN],
-        //_tensors[ShaderBuffers::POSITION],
+      //  _shaderImageHelper.getStencilImage(),
+      //  _shaderImageHelper.getFieldImage(),
+      //  _tensors[ShaderBuffers::SUM_Q],
+      //  _tensors[ShaderBuffers::INTERP_FIELDS],
+      //  _tensors[ShaderBuffers::GRADIENTS],
+      //  _tensors[ShaderBuffers::KLDIV],
+      //  _tensors[ShaderBuffers::PREV_GRADIENTS],
+      //  _tensors[ShaderBuffers::GAIN],
+      //  _tensors[ShaderBuffers::POSITION],
       //})->eval();
-      //auto stencil = static_cast<kp::Image*>(_stencilProg->_stencil_out.get())->vector<float>();
-      //auto field = static_cast<kp::Image*>(_fieldCompProg->_field_out.get())->vector<float>();
+      //auto stencil = static_cast<kp::Image*>(_shaderImageHelper.getStencilImage().get())->vector<float>();
+      //auto field = static_cast<kp::Image*>(_shaderImageHelper.getFieldImage().get())->vector<float>();
       //auto sum_q = _interpProg->getSumQ();
       //auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
       //auto grads = _tensors[ShaderBuffers::GRADIENTS]->vector<float>();
@@ -318,7 +349,7 @@ namespace hdi {
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
       kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
-      if (kl_divergence < 0) {  
+      if (kl_divergence < 0) {
         std::cout << "Sequence KL Divergence is negative, at iteration: " << iteration;
       }
       memcpy(points, positions.data(), 2*num_points*sizeof(float));

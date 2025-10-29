@@ -44,30 +44,32 @@ namespace hdi {
       bool isInitialized() const { return _initialized == true; }
 
     private:
-      const unsigned int FIXED_FIELDS_SIZE = 40;
+      //const unsigned int FIXED_FIELDS_SIZE = 40;
       const unsigned int MINIMUM_FIELDS_SIZE = 5;
-      const float PIXEL_RATIO = 2;
-      const float RESOLUTION_SCALING = 2.0;
+      //const float PIXEL_RATIO = 2;
+      const float RESOLUTION_SCALING = 1.41421;
 
       void initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P);
 
       std::vector<float> computeInitialBounds(const embedding_type* embedding, float padding);
       void record_compute_sequence(float iteration, uint32_t width, uint32_t height, uint32_t num_points, float* bounds, float exaggeration, float mult);
-      void update_compute_sequence(float iteration, uint32_t width, uint32_t height, float* bounds, float exaggeration, float mult);
+      void update_compute_sequence(float iteration, uint32_t num_points, uint32_t width, uint32_t height, float* bounds, float exaggeration, float mult);
 
       bool _initialized = false;
+      double _totalTime = 0.0;
       float _resolutionScaling = 1.0f;
       TsneParameters _params;
       bool _adaptive_resolution;
       // Embedding bounds
       std::vector<float> _bounds;
       unsigned int _fields_buffer_size;
+      ShaderImageHelper _shaderImageHelper;
 
       // kompute manager context
       std::shared_ptr <kp::Manager> _mgr;
       // recorded sequence for the compute shader version
-      std::shared_ptr<kp::Sequence> _seq;
-      std::shared_ptr<kp::Sequence> _stencilSeq;
+      std::shared_ptr<kp::Sequence> _seq0;
+      std::shared_ptr<kp::Sequence> _seq1;
       // kompute tensor buffers
       std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> _tensors;
       // kompute compute shaders
