@@ -87,6 +87,14 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
     return embedding.getContainer();
 }
 
+template<typename T>
+std::vector<T> flatten(const std::vector<std::vector<T>>& vec2d) {
+    std::vector<T> result;
+    for (const auto& v : vec2d)
+        result.insert(result.end(), v.begin(), v.end());
+    return result;
+}
+
 int main(int argc, const char** argv) {
     argparse::ArgumentParser program("tsne_tester", "<local-build>");
 
@@ -183,34 +191,49 @@ int main(int argc, const char** argv) {
         std::streampos fileSize = fileCheck.tellg();
         fileCheck.close();
         std::cout << "subset num points: " << subset << "\n";
+        auto all_points = fileSize / (dim * sizeof(float));
         if (subset != -1) {
             num_points = subset;
         }
         else {
-            num_points = fileSize / (dim * sizeof(float));
+            num_points = all_points;
         }
+        // each point is a vector of float dimensions
+        auto data2D = std::vector<std::vector<float>>();
+        data2D.resize(all_points);
         
         std::cout << "Loading: " << num_points << " float binary points" << std::endl;
         std::ifstream file(csvpath.string(), std::ios::binary);
         auto count = size_t(0);
+        auto point_count = 0;
         if (file) {
-            data = std::vector<float>(fileSize, 0.0);
             float pnt;
-            auto point_count = 0;
             while (count < fileSize) {
-                file.read(reinterpret_cast<char*>(&pnt), sizeof(pnt));
-                data[count] = pnt;
-                ++count;
+                auto point_vec = std::vector<float>();
+                point_vec.resize(dim);
+                for (auto d = 0; d < dim; d++) {
+                    file.read(reinterpret_cast<char*>(&pnt), sizeof(pnt));
+                    point_vec[d] = pnt;
+                    count += sizeof(float);
+                }
+                data2D[point_count] = point_vec;
                 ++point_count;
             }
         }
-        if (count > num_points) {
-            std::vector<float> sample;
-            std::sample(data.begin(), data.end(), std::back_inserter(sample), num_points, std::mt19937{ std::random_device{}() });
-            data = sample;
+        // if a subset is required sample it randomly
+        if (all_points > num_points) {
+            std::vector<std::vector<float>> sample;
+            auto randdev = std::mt19937{}; //std::random_device{}()
+            std::sample(
+                data2D.begin(), 
+                data2D.end(), 
+                std::back_inserter(sample), 
+                num_points, 
+                randdev);  
+            data2D = sample;
         }
-
-
+        // flatten the end result
+        data = flatten(data2D);
     }
 
     auto embedding = perform_tSNE(num_points, dim, data, output, stepsoutput, iterations, perplexity);
