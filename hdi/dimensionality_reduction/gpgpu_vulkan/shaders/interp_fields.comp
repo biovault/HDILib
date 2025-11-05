@@ -14,7 +14,8 @@ layout(std430, binding = 0) readonly buffer PosBuf{ vec2 Positions[]; };
 layout(std430, binding = 1) readonly buffer BoundsInterface { vec2 Bounds[]; };
 layout(std430, binding = 2) buffer ValBuf { vec4 Values[]; };
 layout(std430, binding = 3) buffer SumBuf { float Sum[]; };
-layout(binding = 4, rgba32f) readonly uniform image2D inputFields;
+//(binding = 4, rgba32f) readonly uniform image2D inputFields;
+layout(set = 0, binding = 4) uniform sampler2D inputSampler;
 //layout(std430, binding = 5) readonly buffer NumPoints { uint NP[]; };
 
 //#ifdef SHADER_USE_PUSH_CONSTANTS
@@ -31,7 +32,7 @@ shared float reduction_array[64];
 
 // sample field based on the range [0,0] -> [1.0,1.0]
 // equivalent to texture(fields, point) call 
-vec4 bilinearSample(vec2 uv) {
+/*vec4 bilinearSample(vec2 uv) {
     vec2 pixelCoord = (uv * pc.imageSize) - vec2(0.5); 
 
     ivec2 p0 = ivec2(floor(pixelCoord));
@@ -79,7 +80,12 @@ vec4 bilinearSample2(vec2 uv) {
     vec4 top_mix    = mix(c01, c11, t.x);
     //return vec4(pc.imageSize[0], pc.imageSize[1], 0, 0);
     return mix(bottom_mix, top_mix, t.y);
+}*/
+
+vec4 sampleField(vec2 uv) {
+    return texture(inputSampler, uv);
 }
+
 
 void main() {
     uint lid = gl_LocalInvocationIndex.x;
@@ -94,12 +100,13 @@ void main() {
     for (uint i = lid; i < pc.num_points; i += groupSize)
     {
         // Normalized position of point in range [0,0] to [1.0, 1.0]
-        vec2 normPos = (Positions[i] - min_bounds) / range;
+        vec2 normPos = (Positions[i] + vec2(0.5) - min_bounds) / range;
 
         // Bilinearly sample the input texture 
         // using GPU native texture operation
         // see https://arxiv.org/pdf/1805.10817 5.1.2
-        vec4 v = bilinearSample(normPos);
+        //vec4 v = bilinearSample(normPos);
+        vec4 v = sampleField(normPos);
         // SumQ (Z-hat) is the sum of the (static field -1)
         // that is used as the normalization factor for 
         // the repulsive forces.

@@ -147,6 +147,8 @@ void StencilShaderProg::record(
   _stencilAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
   _ubo.setData(uboVals, _stencilAlgorithm, 1);
+
+
   seq->record<kp::OpSyncDevice>(params)
     ->record<kp::OpAlgoDispatch>(_stencilAlgorithm)
     ->record(shaderBarrier);
@@ -244,11 +246,18 @@ void FieldComputationShaderProg::record(
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
 
+  auto layoutTransition = std::make_shared<OpImageLayoutTransition>(
+    field,
+    vk::ImageLayout::eGeneral,
+    vk::ImageLayout::eShaderReadOnlyOptimal);
+
   seq->record<kp::OpSyncDevice>({ dispatchTensor })
     //->record(dispatchBarrier)
     ->record<kp::OpSyncDevice>(syncParams)
     ->record<OpIndirectDispatch>(_fieldAlgorithm, dispatchTensor)
-    ->record(shaderBarrier);
+    //->record(shaderBarrier)
+    ->record(layoutTransition);
+  field->enableSampling();
 }
 
 void FieldComputationShaderProg::update(
@@ -322,9 +331,16 @@ void InterpolationShaderProg::record(
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
+
+auto layoutTransition = std::make_shared<OpImageLayoutTransition>(
+  fields,
+  vk::ImageLayout::eShaderReadOnlyOptimal,
+  vk::ImageLayout::eGeneral);
   seq->record<kp::OpSyncDevice>(syncParams)
     ->record<kp::OpAlgoDispatch>(_interpAlgorithm)
-    ->record(shaderBarrier);
+    ->record(shaderBarrier)
+    ->record(layoutTransition);
+  fields->disableSampling();
 }
 
 void InterpolationShaderProg::update(
