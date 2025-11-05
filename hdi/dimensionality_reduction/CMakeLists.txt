@@ -16,6 +16,7 @@ if(USE_VULKAN_KOMPUTE)
     find_package(kompute CONFIG REQUIRED)
     # choose the algorithm implementation slow PUSH_CONSTANTS or fast UBOs 
     set(SHADER_USE_PUSH_CONSTANTS FALSE)
+    target_compile_definitions(${PROJECT} PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 else()
     file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
     message(STATUS "################# ${HeaderFiles} ##############")
