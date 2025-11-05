@@ -17,7 +17,9 @@
 #include "hdi/dimensionality_reduction/gradient_descent_tsne_texture.h"
 #include <kompute/logger/Logger.hpp>
 #include <algorithm>
+#include <vulkan/vulkan.hpp>
 
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 void save_to_csv(std::vector<float> embedding, std::string output, int iter = -1) {
     auto outname = (iter == -1) ? output + ".csv" : output + "_" + std::to_string(iter) + ".csv";
@@ -245,6 +247,6 @@ int main(int argc, const char** argv) {
 // Xmas tree small test
 // -p 13 -i 500 -d 2 D:\Data\ML\xmas\data.csv
 // Full MNIST
-// -b -p 30 -i 1000 -s 70000 -d 784 D:\Data\ML\MNIST\MNIST_70000.bin
+// -b -p 30 -i 1000 -n 70000 -d 784 D:\Data\ML\MNIST\MNIST_70000.bin
 // Small MNIST
-// -b -p 30 -i 1000 -s 1000 -d 784 D:\Data\ML\MNIST\MNIST_70000.bin
+// -b -p 30 -i 1000 -n 1000 -d 784 D:\Data\ML\MNIST\MNIST_70000.bin
