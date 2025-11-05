@@ -31,6 +31,10 @@ class ShaderImageHelper {
     return _field_array;
   };
 
+  void setFieldArraySampler(vk::Sampler sampler) {
+    _field_out->setSampler(sampler);
+  };
+
   void clearBuffers() {
     #pragma omp for
     for (int i = 0; i < static_cast<int>(_stencil_array.size()); ++i) {
