@@ -10,6 +10,7 @@
 #include "tensor_config.h"
 #include "shaders/shaders.h"
 
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace hdi {
   namespace dr {
@@ -101,7 +102,37 @@ namespace hdi {
 
     void GpgpuSneVulkan::initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P) {
       // Create the manager with debug extensions
-      _mgr = std::make_shared<kp::Manager>(0); //, std::vector<uint32_t>(), std::vector<std::string>({ "VK_EXT_memory_priority" }));
+      _mgr = std::make_shared<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({ "VK_KHR_synchronization2" }));
+      // <DEBUG output physical device info>
+      vk::PhysicalDeviceSynchronization2FeaturesKHR sync2Features{};
+      vk::PhysicalDeviceFeatures2 features2{};
+      features2.pNext = &sync2Features;
+
+      _mgr->getPhysicalDevice()->getFeatures2(&features2);
+      std::cout << "Synchronization2 supported: "
+        << (sync2Features.synchronization2 ? "YES" : "NO") << std::endl;
+
+      auto pprops = _mgr->getPhysicalDevice()->getProperties();
+      printf("Physical device API version: %u.%u.%u\n",
+        VK_VERSION_MAJOR(pprops.apiVersion),
+        VK_VERSION_MINOR(pprops.apiVersion),
+        VK_VERSION_PATCH(pprops.apiVersion));
+
+      vk::PhysicalDeviceSynchronization2FeaturesKHR sync2{};
+
+      vk::PhysicalDeviceFeatures2 qfeatures2;
+      qfeatures2.pNext = &sync2;
+      _mgr->getPhysicalDevice()->getFeatures2(&qfeatures2);
+      printf("sync2 feature supported/enabled = %u\n", sync2.synchronization2);
+      auto p_khr = (void*)vkGetDeviceProcAddr(*_mgr->getDevice().get(), "vkCmdPipelineBarrier2KHR");
+      auto p_core = (void*)vkGetDeviceProcAddr(*_mgr->getDevice().get(), "vkCmdPipelineBarrier2");
+      printf("vkCmdPipelineBarrier2KHR = %p\n", p_khr);
+      printf("vkCmdPipelineBarrier2     = %p\n", p_core);
+
+      auto props = _mgr->getPhysicalDevice()->enumerateDeviceExtensionProperties();
+      for (auto& p : props)
+        std::cout << p.extensionName << std::endl;
+      // </DEBUG output physical device info>
 
       _tensors[ShaderBuffers::POSITION] = _mgr->tensorT(std::vector<float>(num_pnts * 2, 0.0f));
       _tensors[ShaderBuffers::INTERP_FIELDS] = _mgr->tensorT(std::vector<float>(num_pnts * 4, 0.0f));
@@ -223,6 +254,7 @@ namespace hdi {
 
       _seq0 = _mgr->sequence();
       _shaderImageHelper.createBuffers(_mgr, _fields_buffer_size);
+      _shaderImageHelper.setFieldArraySampler(_mgr->createLinearSampler());
       _seq0->begin();
       _stencilProg->record(_seq0, width, height, _shaderImageHelper.getStencilImage(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldImage(), _shaderImageHelper.getStencilImage(), _fields_buffer_size);
@@ -326,26 +358,26 @@ namespace hdi {
         double ms_per_texel = cpu_ms_0 / texsize;
         //printf("%u, cpu_eval_ms0=%.3f, cpu_eval_ms1=%.3f, cpu_eval_ms_tu=%.3f, total=%.3f, TexSize=%.0f, ms per texel=%0.7f \n", int(iteration), cpu_ms_0, cpu_ms_1, cpu_ms_tu, _totalTime, texsize, ms_per_texel);
       // for debug purposes only - get the values locally
-      //auto syncSeq = _mgr->sequence();
-      //syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
-      //  _shaderImageHelper.getStencilImage(),
-      //  _shaderImageHelper.getFieldImage(),
-      //  _tensors[ShaderBuffers::SUM_Q],
-      //  _tensors[ShaderBuffers::INTERP_FIELDS],
-      //  _tensors[ShaderBuffers::GRADIENTS],
-      //  _tensors[ShaderBuffers::KLDIV],
-      //  _tensors[ShaderBuffers::PREV_GRADIENTS],
-      //  _tensors[ShaderBuffers::GAIN],
-      //  _tensors[ShaderBuffers::POSITION],
-      //})->eval();
-      //auto stencil = static_cast<kp::Image*>(_shaderImageHelper.getStencilImage().get())->vector<float>();
-      //auto field = static_cast<kp::Image*>(_shaderImageHelper.getFieldImage().get())->vector<float>();
-      //auto sum_q = _interpProg->getSumQ();
-      //auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
-      //auto grads = _tensors[ShaderBuffers::GRADIENTS]->vector<float>();
-      //auto prevGrads = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
-      //auto gain = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
-      /**/
+      /*auto syncSeq = _mgr->sequence();
+      syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
+        _shaderImageHelper.getStencilImage(),
+        _shaderImageHelper.getFieldImage(),
+        _tensors[ShaderBuffers::SUM_Q],
+        _tensors[ShaderBuffers::INTERP_FIELDS],
+        _tensors[ShaderBuffers::GRADIENTS],
+        _tensors[ShaderBuffers::KLDIV],
+        _tensors[ShaderBuffers::PREV_GRADIENTS],
+        _tensors[ShaderBuffers::GAIN],
+        _tensors[ShaderBuffers::POSITION],
+      })->eval();
+      auto stencil = static_cast<kp::Image*>(_shaderImageHelper.getStencilImage().get())->vector<float>();
+      auto field = static_cast<kp::Image*>(_shaderImageHelper.getFieldImage().get())->vector<float>();
+      auto sum_q = _interpProg->getSumQ();
+      auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
+      auto grads = _tensors[ShaderBuffers::GRADIENTS]->vector<float>();
+      auto prevGrads = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
+      auto gain = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
+      */
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
       kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
