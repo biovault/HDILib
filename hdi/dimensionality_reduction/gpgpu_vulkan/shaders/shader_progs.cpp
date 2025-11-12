@@ -161,8 +161,6 @@ void StencilShaderProg::update(
   std::vector<float> bounds,
   unsigned int new_fields_buffer_size) {
   assert(new_fields_buffer_size == _fields_buffer_size);
-  //std::fill(_stencil_array.begin(), _stencil_array.end(), 0.0f);
-  //_stencil_out->setData(_stencil_array);
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
   _ubo.modifyData(uboVals, _stencilAlgorithm, 1);
 }
@@ -202,15 +200,14 @@ void FieldComputationShaderProg::record(
   uint32_t num_points,
   uint32_t width, 
   uint32_t height,
-  std::shared_ptr<kp::ImageT<float>> field,
+  std::shared_ptr<kp::ImageT<float>> sampleFields,
+  std::shared_ptr<kp::ImageT<float>> fields,
   std::shared_ptr<kp::ImageT<float>> stencil,
   unsigned int new_fields_buffer_size) {
   _fields_buffer_size = new_fields_buffer_size;
-  //_field_array = std::vector<float>(_fields_buffer_size * _fields_buffer_size * 4, 0.0f);
-  //_field_out = _mgr->image(_field_array, _fields_buffer_size, _fields_buffer_size, 4); // npwidth
-  // requires patch in Sequence.hpp
   auto cmdBuf = seq->getCommandBuffer();
-  field->recordPrimaryImageBarrier(
+
+  fields->recordPrimaryImageBarrier(
     *(cmdBuf.get()),
     vk::AccessFlagBits::eNone,
     vk::AccessFlagBits::eShaderWrite,
@@ -221,43 +218,48 @@ void FieldComputationShaderProg::record(
   auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
   uint32_t dispatchData[3] = { width, height, 1 };
   dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
+
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
-      field,
+      fields,
       stencil,
-      //_tensors[ShaderBuffers::NUM_POINTS],
       _tensors[ShaderBuffers::UBO_FIELD]
   };
+
   _fieldAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, {}, {}, {});
+
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
       _tensors[ShaderBuffers::BOUNDS],
-      field,
-      //_tensors[ShaderBuffers::NUM_POINTS],
+      fields,
       _tensors[ShaderBuffers::UBO_FIELD]
   };
+
   fieldParams uboVals = {num_points, {(float)width, (float)height}, _function_support };
   _ubo.setData(uboVals, _fieldAlgorithm, 4);
-  const vk::AccessFlags readWriteFlags = vk::AccessFlags(vk::AccessFlagBits::eShaderWrite) | vk::AccessFlags(vk::AccessFlagBits::eShaderRead);
+  const vk::AccessFlags readWriteFlags = 
+    vk::AccessFlags(vk::AccessFlagBits::eShaderWrite) | vk::AccessFlags(vk::AccessFlagBits::eShaderRead);
+ 
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
-    std::vector<std::shared_ptr<kp::Memory>>({ field }),
+    std::vector<std::shared_ptr<kp::Memory>>({ fields }),
     vk::AccessFlagBits::eShaderWrite,
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
 
-  auto layoutTransition = std::make_shared<OpImageLayoutTransition>(
-    field,
+  auto fieldTransition = std::make_shared<OpImageLayoutTransition>(
+    fields,
+    sampleFields,
+    vk::ImageLayout::eUndefined,
+    vk::AccessFlagBits2::eShaderRead,
     vk::ImageLayout::eGeneral,
-    vk::ImageLayout::eShaderReadOnlyOptimal);
+    vk::AccessFlagBits2::eShaderWrite);
 
   seq->record<kp::OpSyncDevice>({ dispatchTensor })
-    //->record(dispatchBarrier)
     ->record<kp::OpSyncDevice>(syncParams)
+    ->record(fieldTransition)
     ->record<OpIndirectDispatch>(_fieldAlgorithm, dispatchTensor)
-    //->record(shaderBarrier)
-    ->record(layoutTransition);
-  field->enableSampling();
+    ->record(shaderBarrier);
 }
 
 void FieldComputationShaderProg::update(
@@ -302,17 +304,20 @@ void InterpolationShaderProg::compute(
 void InterpolationShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
   uint32_t num_points,
+  std::shared_ptr<kp::ImageT<float>> sampleFields,
   std::shared_ptr<kp::ImageT<float>> fields,
   uint32_t width,
   uint32_t height) {
+  // resync layouts between the two views
+  sampleFields->setPrimaryImageLayout(fields->getPrimaryImageLayout());
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
       _tensors[ShaderBuffers::INTERP_FIELDS],
       _tensors[ShaderBuffers::SUM_Q],
-      fields,
-      //_tensors[ShaderBuffers::NUM_POINTS],
-      _tensors[ShaderBuffers::UBO_INTERP]
+      sampleFields,
+      _tensors[ShaderBuffers::UBO_INTERP],
+      _tensors[ShaderBuffers::DEBUG]
   };
   _interpAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ 1, 1, 1 }), {}, {});
   interpParams uboVals = {num_points, {(float)width, (float)height} };
@@ -326,21 +331,25 @@ void InterpolationShaderProg::record(
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
     std::vector<std::shared_ptr<kp::Memory>>(
       { _tensors[ShaderBuffers::INTERP_FIELDS], 
-        _tensors[ShaderBuffers::SUM_Q]}),
+        _tensors[ShaderBuffers::SUM_Q],
+        _tensors[ShaderBuffers::DEBUG] }),
     vk::AccessFlagBits::eShaderWrite,
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
 
-auto layoutTransition = std::make_shared<OpImageLayoutTransition>(
-  fields,
-  vk::ImageLayout::eShaderReadOnlyOptimal,
-  vk::ImageLayout::eGeneral);
+  auto sampleTransition = std::make_shared<OpImageLayoutTransition>(
+    fields,
+    sampleFields,
+    vk::ImageLayout::eGeneral,
+    vk::AccessFlagBits2::eShaderWrite,
+    vk::ImageLayout::eShaderReadOnlyOptimal,
+    vk::AccessFlagBits2::eShaderRead );
+
   seq->record<kp::OpSyncDevice>(syncParams)
+    ->record(sampleTransition)
     ->record<kp::OpAlgoDispatch>(_interpAlgorithm)
-    ->record(shaderBarrier)
-    ->record(layoutTransition);
-  fields->disableSampling();
+    ->record(shaderBarrier);
 }
 
 void InterpolationShaderProg::update(

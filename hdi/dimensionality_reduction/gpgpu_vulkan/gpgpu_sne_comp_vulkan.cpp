@@ -147,6 +147,7 @@ namespace hdi {
       _tensors[ShaderBuffers::BOUNDS] = _mgr->tensorT(std::vector<float>(4, 1.0f));
       _tensors[ShaderBuffers::NUM_POINTS] = _mgr->tensorT(std::vector<unsigned int>(1, num_pnts));
       _tensors[ShaderBuffers::IMAGE_WORKGROUP] = _mgr->tensorT(std::vector<unsigned int>(3, 1u));
+      _tensors[ShaderBuffers::DEBUG] = _mgr->tensorT(std::vector<float>(num_pnts * 4, 0.0f));
 #ifndef SHADER_USE_PUSH_CONSTANTS
       // These tensors will be used as UBOs
       _tensors[ShaderBuffers::UBO_STENCIL] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(stencilParams), 0));
@@ -257,8 +258,8 @@ namespace hdi {
       _shaderImageHelper.setFieldArraySampler(_mgr->createLinearSampler());
       _seq0->begin();
       _stencilProg->record(_seq0, width, height, _shaderImageHelper.getStencilImage(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
-      _fieldCompProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldImage(), _shaderImageHelper.getStencilImage(), _fields_buffer_size);
-      _interpProg->record(_seq0, num_points, _shaderImageHelper.getFieldImage(), width, height);
+      _fieldCompProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), _shaderImageHelper.getStencilImage(), _fields_buffer_size);
+      _interpProg->record(_seq0, num_points, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), width, height);
       _seq0->end();
       if (_seq1.get() == nullptr) {
         _seq1 = _mgr->sequence();
@@ -326,7 +327,7 @@ namespace hdi {
       //  new_field_buf = true;
       //}
 
-      auto tu0 = std::chrono::high_resolution_clock::now();
+      //auto tu0 = std::chrono::high_resolution_clock::now();
       if (new_field_buf) {
         std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
         // rerecord the computer buffer sequence with the new field size
@@ -336,48 +337,51 @@ namespace hdi {
         // simply update the push constants of the sequence
         update_compute_sequence(iteration, num_points, width, height, _bounds.data(), exaggeration, mult);
       }
-      auto tu1 = std::chrono::high_resolution_clock::now();
-      double cpu_ms_tu = std::chrono::duration<double, std::milli>(tu1 - tu0).count();
+      //auto tu1 = std::chrono::high_resolution_clock::now();
+      //double cpu_ms_tu = std::chrono::duration<double, std::milli>(tu1 - tu0).count();
 
       // With the correct memory barriers we can parallelize this
       //#pragma omp parallel sections 
       //{
         //#pragma omp section 
-        auto t0 = std::chrono::high_resolution_clock::now();
+        //auto t0 = std::chrono::high_resolution_clock::now();
         { _seq0->eval();}
-        auto t1 = std::chrono::high_resolution_clock::now();
-        double cpu_ms_0 = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        //auto t1 = std::chrono::high_resolution_clock::now();
+        //double cpu_ms_0 = std::chrono::duration<double, std::milli>(t1 - t0).count();
         //#pragma omp section 
-        auto t2 = std::chrono::high_resolution_clock::now();
+        //auto t2 = std::chrono::high_resolution_clock::now();
         { _seq1->eval();}
-        auto t3 = std::chrono::high_resolution_clock::now();
-        double cpu_ms_1 = std::chrono::duration<double, std::milli>(t3 - t2).count();
+        //auto t3 = std::chrono::high_resolution_clock::now();
+        //double cpu_ms_1 = std::chrono::duration<double, std::milli>(t3 - t2).count();
       //}
-        _totalTime += cpu_ms_0 + cpu_ms_1 + cpu_ms_tu;
+        //_totalTime += cpu_ms_0 + cpu_ms_1 + cpu_ms_tu;
         double texsize = (_bounds[2] - _bounds[0]) * (_bounds[3] - _bounds[1]);
-        double ms_per_texel = cpu_ms_0 / texsize;
+        //double ms_per_texel = cpu_ms_0 / texsize;
         //printf("%u, cpu_eval_ms0=%.3f, cpu_eval_ms1=%.3f, cpu_eval_ms_tu=%.3f, total=%.3f, TexSize=%.0f, ms per texel=%0.7f \n", int(iteration), cpu_ms_0, cpu_ms_1, cpu_ms_tu, _totalTime, texsize, ms_per_texel);
       // for debug purposes only - get the values locally
-      /*auto syncSeq = _mgr->sequence();
+      auto syncSeq = _mgr->sequence();
       syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
-        _shaderImageHelper.getStencilImage(),
-        _shaderImageHelper.getFieldImage(),
-        _tensors[ShaderBuffers::SUM_Q],
-        _tensors[ShaderBuffers::INTERP_FIELDS],
-        _tensors[ShaderBuffers::GRADIENTS],
-        _tensors[ShaderBuffers::KLDIV],
-        _tensors[ShaderBuffers::PREV_GRADIENTS],
-        _tensors[ShaderBuffers::GAIN],
+        _tensors[ShaderBuffers::BOUNDS],
         _tensors[ShaderBuffers::POSITION],
+        _tensors[ShaderBuffers::KLDIV]
+        //_shaderImageHelper.getStencilImage(),
+        //_shaderImageHelper.getFieldImage(),
+        //_tensors[ShaderBuffers::SUM_Q],
+        //_tensors[ShaderBuffers::INTERP_FIELDS],
+        //_tensors[ShaderBuffers::GRADIENTS],
+        //_tensors[ShaderBuffers::PREV_GRADIENTS],
+        //_tensors[ShaderBuffers::GAIN],
+        //_tensors[ShaderBuffers::DEBUG],
       })->eval();
-      auto stencil = static_cast<kp::Image*>(_shaderImageHelper.getStencilImage().get())->vector<float>();
+      /*auto stencil = static_cast<kp::Image*>(_shaderImageHelper.getStencilImage().get())->vector<float>();
       auto field = static_cast<kp::Image*>(_shaderImageHelper.getFieldImage().get())->vector<float>();
       auto sum_q = _interpProg->getSumQ();
       auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
       auto grads = _tensors[ShaderBuffers::GRADIENTS]->vector<float>();
       auto prevGrads = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
       auto gain = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
-      */
+      auto debug = _tensors[ShaderBuffers::DEBUG]->vector<float>();*/
+      
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
       kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];

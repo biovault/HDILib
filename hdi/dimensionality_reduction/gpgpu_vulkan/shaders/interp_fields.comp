@@ -1,4 +1,4 @@
-#version 450
+#version 430
 
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_ARB_shading_language_include : enable
@@ -27,6 +27,7 @@ layout(set = 0, binding = 4) uniform sampler2D inputSampler;
         uint num_points; 
         vec2 imageSize; // scaled image size used for fields image
     } pc;
+layout(std430, binding = 6) buffer Debug { vec4 Dbg[]; };
 //#endif
 shared float reduction_array[64];
 
@@ -82,11 +83,6 @@ vec4 bilinearSample2(vec2 uv) {
     return mix(bottom_mix, top_mix, t.y);
 }*/
 
-vec4 sampleField(vec2 uv) {
-    return texture(inputSampler, uv);
-}
-
-
 void main() {
     uint lid = gl_LocalInvocationIndex.x;
     uint groupSize = gl_WorkGroupSize.x;
@@ -97,16 +93,23 @@ void main() {
     vec2 inv_range = 1.0 / range;
 
     float sum_Q = 0;
+    ivec2 samplerSize = textureSize(inputSampler, 0);
+    // The inputSampler is larger than the actual image used for fields
+    // so shrink the sampling range to the subrange as given by imageSize
+    vec2 sampleScale = inv_range * vec2(
+        float(pc.imageSize[0])/float(samplerSize[0]),
+        float(pc.imageSize[1])/float(samplerSize[1])
+    );
+    float step = 1.0/samplerSize[0];
     for (uint i = lid; i < pc.num_points; i += groupSize)
     {
         // Normalized position of point in range [0,0] to [1.0, 1.0]
-        vec2 normPos = (Positions[i] + vec2(0.5) - min_bounds) / range;
-
+        vec2 normPos = (Positions[i] - min_bounds) * sampleScale;
         // Bilinearly sample the input texture 
         // using GPU native texture operation
         // see https://arxiv.org/pdf/1805.10817 5.1.2
         //vec4 v = bilinearSample(normPos);
-        vec4 v = sampleField(normPos);
+        vec4 v = texture(inputSampler, normPos);
         // SumQ (Z-hat) is the sum of the (static field -1)
         // that is used as the normalization factor for 
         // the repulsive forces.
