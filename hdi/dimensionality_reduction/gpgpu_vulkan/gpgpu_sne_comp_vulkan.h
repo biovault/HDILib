@@ -47,7 +47,7 @@ namespace hdi {
       //const unsigned int FIXED_FIELDS_SIZE = 40;
       const unsigned int MINIMUM_FIELDS_SIZE = 5;
       //const float PIXEL_RATIO = 2;
-      const float RESOLUTION_SCALING = 1.41421;
+      const float RESOLUTION_SCALING = 2;
 
       void initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P);
 

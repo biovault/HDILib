@@ -69,7 +69,8 @@ enum class ShaderBuffers {
   UBO_INTERP = 15,
   UBO_FORCES = 16,
   UBO_UPDATE = 17,
-  UBO_CENTER_SCALE = 18
+  UBO_CENTER_SCALE = 18,
+  DEBUG = 19 // For any debug output buffers
 };
 
 typedef std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> TensorMap;

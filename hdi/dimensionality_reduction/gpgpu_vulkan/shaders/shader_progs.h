@@ -17,6 +17,7 @@ class ShaderImageHelper {
     _stencil_out = mgr->imageT<float>(_stencil_array, fields_buffer_size, fields_buffer_size, 4, vk::ImageTiling::eOptimal);
     _field_array = std::vector<float>(fields_buffer_size * fields_buffer_size * 4, 0.0f);
     _field_out = mgr->imageT<float>(_field_array, fields_buffer_size, fields_buffer_size, 4, vk::ImageTiling::eOptimal);
+    _field_sample = _field_out->createSampledView();
   };
   std::shared_ptr<kp::ImageT<float>> getStencilImage() const {
     return _stencil_out;
@@ -27,12 +28,15 @@ class ShaderImageHelper {
   std::shared_ptr<kp::ImageT<float>> getFieldImage() const {
     return _field_out;
   };
+  std::shared_ptr<kp::ImageT<float>> getFieldSamplerImage() const {
+    return _field_sample;
+  };
   std::vector<float>& getFieldArray() {
     return _field_array;
   };
 
   void setFieldArraySampler(vk::Sampler sampler) {
-    _field_out->setSampler(sampler);
+    _field_sample->setSampler(sampler);
   };
 
   void clearBuffers() {
@@ -53,6 +57,7 @@ private:
   std::vector<float> _stencil_array;
   std::shared_ptr<kp::ImageT<float>> _field_out;
   std::vector<float> _field_array;
+  std::shared_ptr<kp::ImageT<float>> _field_sample;
 };
 
 // The shader programs present two separate APIS:
@@ -145,7 +150,8 @@ public:
     std::shared_ptr<kp::Sequence> seq,
     uint32_t num_points,
     uint32_t width, uint32_t height,
-    std::shared_ptr<kp::ImageT<float>> field,
+    std::shared_ptr<kp::ImageT<float>> sampleFields,
+    std::shared_ptr<kp::ImageT<float>> fields,
     std::shared_ptr<kp::ImageT<float>> stencil,
     unsigned int new_fields_buffer_size = 0);
 
@@ -177,6 +183,7 @@ public:
   void record(
     std::shared_ptr<kp::Sequence> seq,
     uint32_t num_points,
+    std::shared_ptr<kp::ImageT<float>> sampleFields,
     std::shared_ptr<kp::ImageT<float>> fields,
     uint32_t width,
     uint32_t height);
