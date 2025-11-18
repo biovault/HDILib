@@ -148,20 +148,27 @@ namespace hdi {
       _tensors[ShaderBuffers::NUM_POINTS] = _mgr->tensorT(std::vector<unsigned int>(1, num_pnts));
       _tensors[ShaderBuffers::IMAGE_WORKGROUP] = _mgr->tensorT(std::vector<unsigned int>(3, 1u));
       _tensors[ShaderBuffers::DEBUG] = _mgr->tensorT(std::vector<float>(num_pnts * 4, 0.0f));
-#ifndef SHADER_USE_PUSH_CONSTANTS
+      _numInterpWorkgroups = uint32_t((num_pnts + 127) / 128);
+      std::cout << "Interoplat using " << _numInterpWorkgroups << " workgroups\n";
+      _tensors[ShaderBuffers::PARTIAL_SUM] = _mgr->tensor(std::vector<float>(_numInterpWorkgroups, 0.0f));
+      _tensors[ShaderBuffers::ATOMIC_COUNTER] = _mgr->tensorT(std::vector<uint32_t>(1, 0u));
       // These tensors will be used as UBOs
       _tensors[ShaderBuffers::UBO_STENCIL] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(stencilParams), 0));
       _tensors[ShaderBuffers::UBO_FIELD] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(fieldParams), 0));
       _tensors[ShaderBuffers::UBO_INTERP] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(interpParams), 0));
+      _tensors[ShaderBuffers::UBO_INTERP2] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(interp2Params), 0));
       _tensors[ShaderBuffers::UBO_FORCES] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(forcesParams), 0));
       _tensors[ShaderBuffers::UBO_UPDATE] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(updaterParams), 0));
       _tensors[ShaderBuffers::UBO_CENTER_SCALE] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(centerScaleParams), 0));
-#endif
+
 
       _boundsProg = std::make_shared<BoundsShaderProg>(_mgr, _tensors);
       _stencilProg = std::make_shared<StencilShaderProg>(_mgr, _tensors);
+      _stencil2ListProg = std::make_shared<Stencil2ListShaderProg>(_mgr, _tensors);
       _fieldCompProg = std::make_shared<FieldComputationShaderProg>(_mgr, _tensors);
+      _fieldCompEnhProg = std::make_shared<FieldComputationEnhShaderProg>(_mgr, _tensors);
       _interpProg = std::make_shared<InterpolationShaderProg>(_mgr, _tensors);
+      _interpEnhProg = std::make_shared<InterpolationEnhShaderProg>(_mgr, _tensors);
       _forcesProg = std::make_shared<ForcesShaderProg>(_mgr, _tensors);
       _updateProg = std::make_shared<UpdateShaderProg>(_mgr, _tensors);
       _centerScaleProg = std::make_shared<CenterScaleShaderProg>(_mgr, _tensors);
@@ -183,67 +190,6 @@ namespace hdi {
 
     }
 
-    void GpgpuSneVulkan::compute_stepwise(embedding_type* embedding, float exaggeration, float iteration, float mult) {
-      auto range_x = abs(_bounds[2] - _bounds[0]);
-      auto range_y = abs(_bounds[3] - _bounds[1]);
-      // std::cout << "exaggeration: " << exaggeration << std::endl;
-
-       //std::cout << "min x,y" << bounds[0] << "," << bounds[1] << std::endl;
-       //std::cout << "max x,y" << bounds[2] << "," << bounds[3] << std::endl;
-      std::cout << "Range X: " << range_x << " Range Y: " << range_y << std::endl;
-
-      // assume adaptive resolution(scales with points range) with a minimum size
-      auto width = static_cast<uint32_t>(std::floor(std::max(_resolutionScaling * range_x, float(MINIMUM_FIELDS_SIZE))));
-      auto height = static_cast<uint32_t>(std::floor(std::max(_resolutionScaling * range_y, float(MINIMUM_FIELDS_SIZE))));
-
-      float* points = embedding->getContainer().data();
-      unsigned int num_points = embedding->numDataPoints();
-      if (iteration < 0.5) { // only on the first iteration
-        _tensors[ShaderBuffers::POSITION]->setData(embedding->getContainer());
-        _tensors[ShaderBuffers::NUM_POINTS]->setData(std::vector<unsigned int>({ num_points }));
-        // on first iteration the bound were calculated on the CPU so load them to the tensor
-        _tensors[ShaderBuffers::BOUNDS]->setData(_bounds);
-      }
-
-      // calculate the fields texture
-      auto stencil = _stencilProg->compute(width, height, num_points, _bounds);
-      auto stencilData = stencil->data<float>();
-      auto fields = _fieldCompProg->compute(stencil, width, height);
-      auto fieldsData = fields->data<float>();
-
-      // Calculate the normalization sum
-      _interpProg->compute(fields, width, height);
-      //std::cout << "width: " << width << " height: " << height << std::endl;
-      if (_interpProg->getSumQ() == 0) {
-        std::stringstream ss;
-        ss << "Interpolation SumQ is 0, breaking out at iteration: " << iteration;
-        throw std::runtime_error(ss.str());
-        return;
-      }
-
-      // compute the forces based on the gradients record the kl_divergence
-      kl_divergence = _forcesProg->compute(num_points, exaggeration);
-
-      // Update the embedding positions
-      _updateProg->compute(num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
-
-      // Get the bounds of the new embedding
-      auto padding = 0.0f;
-      _boundsProg->compute(padding);
-      // Use that to center the embedding around 0,0 and scale it if needed
-      auto positions = _centerScaleProg->compute(num_points, exaggeration);
-      size_t size = sizeof(float) * 2 * num_points;
-
-      // Recompute the bounds of the centered embedding
-      // padded and save it for the following iteration
-      padding = 0.1f;
-      _bounds = _boundsProg->compute(padding);
-
-      // Save the new embedding
-      //embedding->getContainer().assign(positions.data(), positions.data() + size);
-      memcpy(points, positions.data(), size);
-    }
-
     void GpgpuSneVulkan::record_compute_sequence(
       float iteration,
       uint32_t width,
@@ -258,18 +204,23 @@ namespace hdi {
       _shaderImageHelper.setFieldArraySampler(_mgr->createLinearSampler());
       _seq0->begin();
       _stencilProg->record(_seq0, width, height, _shaderImageHelper.getStencilImage(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
+      _stencil2ListProg->record(_seq0, _fields_buffer_size, _fields_buffer_size, _shaderImageHelper.getStencilImage(), _shaderImageHelper.getActivePixelList(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), _shaderImageHelper.getStencilImage(), _fields_buffer_size);
-      _interpProg->record(_seq0, num_points, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), width, height);
+      //_interpProg->record(_seq0, num_points, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), width, height);
       _seq0->end();
-      if (_seq1.get() == nullptr) {
-        _seq1 = _mgr->sequence();
-        _seq1->begin();
-        _forcesProg->record(_seq1, num_points, exaggeration);
-        _updateProg->record(_seq1, num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
-        _boundsProg->record_unpadded(_seq1, num_points);
-        _centerScaleProg->record(_seq1, num_points, exaggeration);
-        _boundsProg->record_padded(_seq1, num_points, 0.1f);
-        _seq1->end();
+      _seq1 = _mgr->sequence();
+      _interpEnhProg->record(_seq1, num_points, _numInterpWorkgroups, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), width, height);
+      _seq1->end();
+      // Last sequence has constant size buffers is recorded once sequence for forces and update
+      if (_seq2.get() == nullptr) {
+        _seq2 = _mgr->sequence();
+        _seq2->begin();
+        _forcesProg->record(_seq2, num_points, exaggeration);
+        _updateProg->record(_seq2, num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
+        _boundsProg->record_unpadded(_seq2, num_points);
+        _centerScaleProg->record(_seq2, num_points, exaggeration);
+        _boundsProg->record_padded(_seq2, num_points, 0.1f);
+        _seq2->end();
       }
     }
 
@@ -283,8 +234,10 @@ namespace hdi {
       float mult) {
       _shaderImageHelper.clearBuffers();
       _stencilProg->update(width, height, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
+      _stencil2ListProg->update(_fields_buffer_size, _fields_buffer_size, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompProg->update(num_points, width, height, _fields_buffer_size);
-      _interpProg->update(num_points, width, height);
+      //_interpProg->update(num_points, width, height);
+      _interpEnhProg->update(num_points, width, height);
       _forcesProg->update(num_points, exaggeration);
       _updateProg->update(num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
       _centerScaleProg->update(num_points, exaggeration);
@@ -327,7 +280,7 @@ namespace hdi {
       //  new_field_buf = true;
       //}
 
-      //auto tu0 = std::chrono::high_resolution_clock::now();
+      auto tu0 = std::chrono::high_resolution_clock::now();
       if (new_field_buf) {
         std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
         // rerecord the computer buffer sequence with the new field size
@@ -337,50 +290,57 @@ namespace hdi {
         // simply update the push constants of the sequence
         update_compute_sequence(iteration, num_points, width, height, _bounds.data(), exaggeration, mult);
       }
-      //auto tu1 = std::chrono::high_resolution_clock::now();
-      //double cpu_ms_tu = std::chrono::duration<double, std::milli>(tu1 - tu0).count();
+      auto tu1 = std::chrono::high_resolution_clock::now();
+      double cpu_ms_tu = std::chrono::duration<double, std::milli>(tu1 - tu0).count();
 
       // With the correct memory barriers we can parallelize this
       //#pragma omp parallel sections 
       //{
         //#pragma omp section 
-        //auto t0 = std::chrono::high_resolution_clock::now();
+        auto t0 = std::chrono::high_resolution_clock::now();
         { _seq0->eval();}
-        //auto t1 = std::chrono::high_resolution_clock::now();
-        //double cpu_ms_0 = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double cpu_ms_0 = std::chrono::duration<double, std::milli>(t1 - t0).count();
         //#pragma omp section 
-        //auto t2 = std::chrono::high_resolution_clock::now();
+        auto t2 = std::chrono::high_resolution_clock::now();
         { _seq1->eval();}
-        //auto t3 = std::chrono::high_resolution_clock::now();
-        //double cpu_ms_1 = std::chrono::duration<double, std::milli>(t3 - t2).count();
+        auto t3 = std::chrono::high_resolution_clock::now();
+        double cpu_ms_1 = std::chrono::duration<double, std::milli>(t3 - t2).count();
+        { _seq2->eval(); }
+        auto t4 = std::chrono::high_resolution_clock::now();
+        double cpu_ms_2 = std::chrono::duration<double, std::milli>(t4 - t3).count();
       //}
-        //_totalTime += cpu_ms_0 + cpu_ms_1 + cpu_ms_tu;
+        _totalTime += cpu_ms_0 + cpu_ms_1 + cpu_ms_2 + cpu_ms_tu;
         double texsize = (_bounds[2] - _bounds[0]) * (_bounds[3] - _bounds[1]);
-        //double ms_per_texel = cpu_ms_0 / texsize;
-        //printf("%u, cpu_eval_ms0=%.3f, cpu_eval_ms1=%.3f, cpu_eval_ms_tu=%.3f, total=%.3f, TexSize=%.0f, ms per texel=%0.7f \n", int(iteration), cpu_ms_0, cpu_ms_1, cpu_ms_tu, _totalTime, texsize, ms_per_texel);
+        double ms_per_texel = cpu_ms_0 / texsize;
+        printf("%u, stencil+field=%.3f, interp field=%.3f, forces+disp=%.3f,, record/update=%.3f, total=%.3f, TexSize=%.0f, ms per texel=%0.7f \n", int(iteration), cpu_ms_0, cpu_ms_1, cpu_ms_2, cpu_ms_tu, _totalTime, texsize, ms_per_texel);
       // for debug purposes only - get the values locally
       auto syncSeq = _mgr->sequence();
       syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
         _tensors[ShaderBuffers::BOUNDS],
         _tensors[ShaderBuffers::POSITION],
-        _tensors[ShaderBuffers::KLDIV]
-        //_shaderImageHelper.getStencilImage(),
-        //_shaderImageHelper.getFieldImage(),
-        //_tensors[ShaderBuffers::SUM_Q],
-        //_tensors[ShaderBuffers::INTERP_FIELDS],
-        //_tensors[ShaderBuffers::GRADIENTS],
-        //_tensors[ShaderBuffers::PREV_GRADIENTS],
-        //_tensors[ShaderBuffers::GAIN],
-        //_tensors[ShaderBuffers::DEBUG],
+        _tensors[ShaderBuffers::KLDIV],
+        _shaderImageHelper.getActivePixelList(),
+        /*_shaderImageHelper.getStencilImage(),
+        _shaderImageHelper.getFieldImage(),
+        _tensors[ShaderBuffers::SUM_Q],
+        _tensors[ShaderBuffers::PARTIAL_SUM],
+        _tensors[ShaderBuffers::INTERP_FIELDS],
+        _tensors[ShaderBuffers::GRADIENTS],
+        _tensors[ShaderBuffers::PREV_GRADIENTS],
+        _tensors[ShaderBuffers::GAIN],
+        _tensors[ShaderBuffers::DEBUG],*/
       })->eval();
       /*auto stencil = static_cast<kp::Image*>(_shaderImageHelper.getStencilImage().get())->vector<float>();
       auto field = static_cast<kp::Image*>(_shaderImageHelper.getFieldImage().get())->vector<float>();
-      auto sum_q = _interpProg->getSumQ();
+      auto sum_q = _interpEnhProg->getSumQ();
+      auto partial = _tensors[ShaderBuffers::PARTIAL_SUM]->vector<float>();
       auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
       auto grads = _tensors[ShaderBuffers::GRADIENTS]->vector<float>();
       auto prevGrads = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
-      auto gain = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();
-      auto debug = _tensors[ShaderBuffers::DEBUG]->vector<float>();*/
+      auto gain = _tensors[ShaderBuffers::PREV_GRADIENTS]->vector<float>();*/
+      auto debug = _tensors[ShaderBuffers::DEBUG]->vector<float>();
+      auto activeList = _shaderImageHelper.getActivePixelList()->vector();
       
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();

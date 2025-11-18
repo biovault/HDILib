@@ -16,19 +16,14 @@ layout(std430, binding = 2) buffer ValBuf { vec4 Values[]; };
 layout(std430, binding = 3) buffer SumBuf { float Sum[]; };
 //(binding = 4, rgba32f) readonly uniform image2D inputFields;
 layout(set = 0, binding = 4) uniform sampler2D inputSampler;
-//layout(std430, binding = 5) readonly buffer NumPoints { uint NP[]; };
 
-//#ifdef SHADER_USE_PUSH_CONSTANTS
-//layout(push_constant) uniform FieldPushConstants {
-//    vec2 imageSize; // scaled image size used for fields image
-//} pc;
-//#else
-    layout(scalar, binding = 5 ) uniform FieldPushConstants {
-        uint num_points; 
-        vec2 imageSize; // scaled image size used for fields image
-    } pc;
+
+layout(scalar, binding = 5 ) uniform FieldPushConstants {
+    uint num_points; 
+    vec2 imageSize; // scaled image size used for fields image
+} pc;
 layout(std430, binding = 6) buffer Debug { vec4 Dbg[]; };
-//#endif
+
 shared float reduction_array[64];
 
 // sample field based on the range [0,0] -> [1.0,1.0]
