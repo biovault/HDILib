@@ -28,6 +28,10 @@ struct interpParams {
   float image_size[2];
 };
 
+struct interp2Params {
+  uint32_t num_workgroups;
+};
+
 struct forcesParams {
   uint32_t num_points;
   float exaggeration;
@@ -67,10 +71,13 @@ enum class ShaderBuffers {
   UBO_STENCIL = 13,
   UBO_FIELD = 14,
   UBO_INTERP = 15,
-  UBO_FORCES = 16,
-  UBO_UPDATE = 17,
-  UBO_CENTER_SCALE = 18,
-  DEBUG = 19 // For any debug output buffers
+  UBO_INTERP2 = 16,
+  UBO_FORCES = 17,
+  UBO_UPDATE = 18,
+  UBO_CENTER_SCALE = 19,
+  DEBUG = 20, // For any debug output buffers
+  PARTIAL_SUM = 21,
+  ATOMIC_COUNTER = 22,
 };
 
 typedef std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> TensorMap;

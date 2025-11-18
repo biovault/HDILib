@@ -1,0 +1,39 @@
+#version 450
+
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_ARB_shading_language_include : enable
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout(binding = 0, r32f) readonly uniform image2D Stencil;
+
+layout(std430, binding = 1) coherent buffer AtomicCounter {
+    uint atomicCounter;
+};
+
+layout(std430, binding = 2) buffer ActivePixelList {
+    uvec2 activePixels[];    // Rest is pixel list
+};
+
+layout(scalar, binding = 3) uniform PushConstants {
+    vec2 rect_min; // min bounds of the points rectangle
+    vec2 rect_max; // max bounds of the points rectangle
+    vec2 imageSize; // dimensions of the output image
+} pc;
+
+void main() {
+    uvec2 pixelCoord = gl_GlobalInvocationID.xy;
+    activePixels[10] = uvec2(42);
+    
+    if (pixelCoord.x >= pc.imageSize.x || pixelCoord.y >= pc.imageSize.y) return;
+    activePixels[11] = uvec2(43);
+    float mask = imageLoad(Stencil, ivec2(pixelCoord )).x;
+    activePixels[12] = uvec2(mask + 20);
+    if (mask > 0.5) {
+        // Atomically get next slot
+        uint index = atomicAdd(atomicCounter, 1);
+        activePixels[13] = pixelCoord + uvec(10);
+        //activePixels[index] = pixelCoord;
+        activePixels[index] = pixelCoord;
+    }
+}

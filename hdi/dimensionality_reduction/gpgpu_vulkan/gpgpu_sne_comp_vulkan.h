@@ -30,7 +30,6 @@ namespace hdi {
 
       // a single iteration of the tSNE algorithm involving field computation, forces computation and embedding update
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
-      void compute_stepwise(embedding_type* embedding, float exaggeration, float iteration, float mult);
       void compute_sequence(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
@@ -47,7 +46,7 @@ namespace hdi {
       //const unsigned int FIXED_FIELDS_SIZE = 40;
       const unsigned int MINIMUM_FIELDS_SIZE = 5;
       //const float PIXEL_RATIO = 2;
-      const float RESOLUTION_SCALING = 2;
+      const float RESOLUTION_SCALING = 1.414; // 2;
 
       void initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P);
 
@@ -58,6 +57,7 @@ namespace hdi {
       bool _initialized = false;
       double _totalTime = 0.0;
       float _resolutionScaling = 1.0f;
+      uint32_t _numInterpWorkgroups;
       TsneParameters _params;
       bool _adaptive_resolution;
       // Embedding bounds
@@ -70,13 +70,17 @@ namespace hdi {
       // recorded sequence for the compute shader version
       std::shared_ptr<kp::Sequence> _seq0;
       std::shared_ptr<kp::Sequence> _seq1;
+      std::shared_ptr<kp::Sequence> _seq2;
       // kompute tensor buffers
       std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> _tensors;
       // kompute compute shaders
       std::shared_ptr<BoundsShaderProg> _boundsProg;
       std::shared_ptr<StencilShaderProg> _stencilProg;
+      std::shared_ptr<Stencil2ListShaderProg> _stencil2ListProg;
       std::shared_ptr<FieldComputationShaderProg> _fieldCompProg;
+      std::shared_ptr<FieldComputationEnhShaderProg> _fieldCompEnhProg;
       std::shared_ptr<InterpolationShaderProg> _interpProg;
+      std::shared_ptr<InterpolationEnhShaderProg> _interpEnhProg;
       std::shared_ptr<ForcesShaderProg> _forcesProg;
       std::shared_ptr<UpdateShaderProg> _updateProg;
       std::shared_ptr<CenterScaleShaderProg> _centerScaleProg;

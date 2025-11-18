@@ -1,0 +1,43 @@
+#version 430
+
+#extension GL_EXT_scalar_block_layout : require
+
+layout(local_size_x = 128) in;
+
+layout(std430, binding = 0) buffer PartialSums {
+    float partialSums[];  // Input: size = pc.num_workgroups
+};
+
+layout(std430, binding = 1) buffer SumBuf { float Sum[]; };
+layout(scalar, binding = 2 ) uniform FieldPushConstants {
+    uint num_workgroups; 
+} pc;
+
+shared float sharedData[128];
+
+void main() {
+    uint lid = gl_LocalInvocationID.x;
+    uint numPartials = pc.num_workgroups;  
+    
+    float localSum = 0.0;
+    
+    // Each thread sums its strided partials
+    for (uint i = lid; i < numPartials; i += 128) {
+        localSum += partialSums[i];
+    }
+    
+    // Reduce within workgroup
+    sharedData[lid] = localSum;
+    barrier();
+    
+    for (uint stride = 64; stride > 0; stride >>= 1) {
+        if (lid < stride) {
+            sharedData[lid] += sharedData[lid + stride];
+        }
+        barrier();
+    }
+    
+    if (lid == 0) {
+        Sum[0] = sharedData[0];
+    }
+}
