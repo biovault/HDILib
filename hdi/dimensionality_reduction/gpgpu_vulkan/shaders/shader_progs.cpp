@@ -176,33 +176,48 @@ void Stencil2ListShaderProg::record(
   unsigned int new_fields_buffer_size) {
 
   _fields_buffer_size = new_fields_buffer_size;
-  // Needs patch in Sequence.hpp
-  auto cmdBuf = seq->getCommandBuffer();
-  stencil->recordPrimaryImageBarrier(
-    *(cmdBuf.get()),
-    vk::AccessFlagBits::eNone,
-    vk::AccessFlagBits::eShaderWrite,
-    vk::PipelineStageFlagBits::eTopOfPipe,
-    vk::PipelineStageFlagBits::eComputeShader,
-    vk::ImageLayout::eGeneral);
+
+  const std::vector<std::shared_ptr<kp::Memory>> clearParams = {
+    _tensors[ShaderBuffers::ATOMIC_COUNTER],
+  };
+
+  const std::vector<std::shared_ptr<kp::Memory>> workgroupParams = {
+  _tensors[ShaderBuffers::ATOMIC_COUNTER],
+  _tensors[ShaderBuffers::IMAGE_WORKGROUP]
+  };
 
   const std::vector<std::shared_ptr<kp::Memory>> params = {
-    stencil, _tensors[ShaderBuffers::ATOMIC_COUNTER], activePixelList, _tensors[ShaderBuffers::UBO_STENCIL] };
+    stencil, 
+    _tensors[ShaderBuffers::ATOMIC_COUNTER], 
+    activePixelList, 
+    _tensors[ShaderBuffers::UBO_STENCIL] };
+
+
+  const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
+      _tensors[ShaderBuffers::ATOMIC_COUNTER], 
+      activePixelList, 
+      _tensors[ShaderBuffers::UBO_STENCIL]
+  };
+  uint32_t wgX = (width + 15) / 16;
+  uint32_t wgY = (height + 15) / 16;
+  _clearCounterAlgorithm = _mgr->algorithm(clearParams, _shaderBinaryClearCounter, kp::Workgroup{ 1, 1, 1 }, {}, {});
+  _stencil2listAlgorithm = _mgr->algorithm(params, _shaderBinary2List, kp::Workgroup({ wgX, wgY, 1 }), {}, {});
+  _fieldWorkgroupAlgorithm = _mgr->algorithm(workgroupParams, _shaderFieldWorkgroup, kp::Workgroup({ 1, 1, 1 }), {}, {});
+  stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)new_fields_buffer_size, (float)new_fields_buffer_size} };
+  _ubo.setData(uboVals, _stencil2listAlgorithm, 3);
+
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
-    std::vector<std::shared_ptr<kp::Memory>>({ stencil }),
+    std::vector<std::shared_ptr<kp::Memory>>(
+      { activePixelList }),
     vk::AccessFlagBits::eShaderWrite,
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
-  uint32_t wgX = (width + 15) / 16;
-  uint32_t wgY = (height + 15) / 16;
-  _stencil2listAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ wgX, wgY, 1 }), {}, {});
-  stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)new_fields_buffer_size, (float)new_fields_buffer_size} };
-  _ubo.setData(uboVals, _stencil2listAlgorithm, 3);
 
-
-  seq->record<kp::OpSyncDevice>(params)
+  seq->record<kp::OpSyncDevice>(syncParams)
+    ->record<kp::OpAlgoDispatch>(_clearCounterAlgorithm)
     ->record<kp::OpAlgoDispatch>(_stencil2listAlgorithm)
+    ->record<kp::OpAlgoDispatch>(_fieldWorkgroupAlgorithm)
     ->record(shaderBarrier);
 }
 
@@ -235,6 +250,7 @@ std::shared_ptr<kp::ImageT<float>> FieldComputationShaderProg::compute(
       stencil,
       _tensors[ShaderBuffers::NUM_POINTS]
   };
+
   auto pushConsts = std::vector<float>({ (float) width, (float) height, _function_support });
   auto algorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ width, height, 1 }), {}, pushConsts);
 
@@ -338,7 +354,7 @@ void FieldComputationEnhShaderProg::record(
   uint32_t height,
   std::shared_ptr<kp::ImageT<float>> sampleFields,
   std::shared_ptr<kp::ImageT<float>> fields,
-  std::shared_ptr<kp::ImageT<float>> stencil,
+  std::shared_ptr<kp::TensorT<uint32_t>> activePixelList,
   unsigned int new_fields_buffer_size) {
   _fields_buffer_size = new_fields_buffer_size;
   auto cmdBuf = seq->getCommandBuffer();
@@ -352,14 +368,15 @@ void FieldComputationEnhShaderProg::record(
     vk::ImageLayout::eGeneral);
 
   auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
-  uint32_t dispatchData[3] = { width, height, 1 };
-  dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
+  //uint32_t dispatchData[3] = { width, height, 1 };
+  //dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
 
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
+      activePixelList,
+      _tensors[ShaderBuffers::ATOMIC_COUNTER],
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
       fields,
-      stencil,
       _tensors[ShaderBuffers::UBO_FIELD]
   };
 
@@ -372,7 +389,7 @@ void FieldComputationEnhShaderProg::record(
   };
 
   fieldParams uboVals = { num_points, {(float)width, (float)height}, _function_support };
-  _ubo.setData(uboVals, _fieldAlgorithm, 4);
+  _ubo.setData(uboVals, _fieldAlgorithm, 5);
   const vk::AccessFlags readWriteFlags =
     vk::AccessFlags(vk::AccessFlagBits::eShaderWrite) | vk::AccessFlags(vk::AccessFlagBits::eShaderRead);
 
@@ -391,8 +408,8 @@ void FieldComputationEnhShaderProg::record(
     vk::ImageLayout::eGeneral,
     vk::AccessFlagBits2::eShaderWrite);
 
-  seq->record<kp::OpSyncDevice>({ dispatchTensor })
-    ->record<kp::OpSyncDevice>(syncParams)
+  //seq->record<kp::OpSyncDevice>({ dispatchTensor })
+  seq->record<kp::OpSyncDevice>(syncParams)
     ->record(fieldTransition)
     ->record<OpIndirectDispatch>(_fieldAlgorithm, dispatchTensor)
     ->record(shaderBarrier);
@@ -405,9 +422,9 @@ void FieldComputationEnhShaderProg::update(
   unsigned int new_fields_buffer_size) {
   assert(new_fields_buffer_size == _fields_buffer_size);
 
-  auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
-  uint32_t dispatchData[3] = { width, height, 1 };
-  dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
+  //auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
+  //uint32_t dispatchData[3] = { width, height, 1 };
+  //dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
   //std::fill(_field_array.begin(), _field_array.end(), 0.0f);
   //_field_out->setData(_field_array);
   fieldParams uboVals = { num_points, {(float)width, (float)height}, _function_support };

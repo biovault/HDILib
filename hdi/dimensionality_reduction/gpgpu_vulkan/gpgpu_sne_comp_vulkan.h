@@ -46,7 +46,7 @@ namespace hdi {
       //const unsigned int FIXED_FIELDS_SIZE = 40;
       const unsigned int MINIMUM_FIELDS_SIZE = 5;
       //const float PIXEL_RATIO = 2;
-      const float RESOLUTION_SCALING = 1.414; // 2;
+      const float RESOLUTION_SCALING = 2; // 1.414;
 
       void initializeVulkan(unsigned int num_pnts, const LinearProbabilityMatrix& linear_P);
 
@@ -71,6 +71,7 @@ namespace hdi {
       std::shared_ptr<kp::Sequence> _seq0;
       std::shared_ptr<kp::Sequence> _seq1;
       std::shared_ptr<kp::Sequence> _seq2;
+      std::shared_ptr<kp::Sequence> _seq3;
       // kompute tensor buffers
       std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> _tensors;
       // kompute compute shaders

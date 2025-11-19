@@ -141,7 +141,9 @@ public:
   Stencil2ListShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::STENCIL2ACTIVE]),
+    _shaderBinaryClearCounter(getSPIRVBinaries()[SPIRVShader::RESET_COUNTER]),
+    _shaderBinary2List(getSPIRVBinaries()[SPIRVShader::STENCIL2ACTIVE]),
+    _shaderFieldWorkgroup(getSPIRVBinaries()[SPIRVShader::FIELD_WORKGROUP]),
     _fields_buffer_size(0),
     _ubo(mgr, sizeof(stencilParams))
   {
@@ -162,9 +164,13 @@ public:
     unsigned int new_fields_buffer_size = 0);
 
 private:
-  std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t>& _shaderBinaryClearCounter;
+  std::vector<uint32_t>& _shaderBinary2List;
+  std::vector<uint32_t>& _shaderFieldWorkgroup;
   std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _clearCounterAlgorithm;
   std::shared_ptr<kp::Algorithm> _stencil2listAlgorithm;
+  std::shared_ptr<kp::Algorithm> _fieldWorkgroupAlgorithm;
   TensorMap& _tensors;
   unsigned int _fields_buffer_size;
   UniformBufferHelper _ubo;
@@ -214,7 +220,7 @@ public:
   FieldComputationEnhShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS]),
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS_ENH]),
     _fields_buffer_size(0),
     _ubo(mgr, sizeof(fieldParams))
   {
@@ -226,7 +232,7 @@ public:
     uint32_t width, uint32_t height,
     std::shared_ptr<kp::ImageT<float>> sampleFields,
     std::shared_ptr<kp::ImageT<float>> fields,
-    std::shared_ptr<kp::ImageT<float>> stencil,
+    std::shared_ptr<kp::TensorT<uint32_t>> activePixelList,
     unsigned int new_fields_buffer_size = 0);
 
   void update(
