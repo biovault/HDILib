@@ -26,25 +26,47 @@ layout(scalar, binding = 5) uniform FieldPushConstants {
     float support;  
 } pc;
 
+#define TILE_SIZE 256
+shared vec2 sharedPositions[TILE_SIZE];
+
 void main() {
+  // pixelIndex - the index to the output texture pixel coordinates
     uint pixelIndex = gl_GlobalInvocationID.x;
+    if (pixelIndex >= activeCount) return;
+
     vec2 min_bounds = Bounds[0];
     vec2 max_bounds = Bounds[1];
     vec2 range = max_bounds - min_bounds;
-
-    if (pixelIndex >= activeCount) return;
+    uint tid = gl_LocalInvocationIndex;
     
     uvec2 pixelCoord = activePixels[pixelIndex];
     vec2 pixel_pos = (((vec2(pixelCoord.x, pixelCoord.y) + vec2(0.5)) / pc.imageSize) * range) + min_bounds;
     
-    vec3 value = vec3(0);
-    for (uint i = 0; i < positions.length(); i++) {
-        vec2 t = pixel_pos - positions[i];
-        float eucl_sqrd = dot(t, t);
-        float tstud = 1.0 / (1.0 + eucl_sqrd);
-        float tstud2 = tstud * tstud;
-        value += vec3(tstud, tstud2 * t.x, tstud2 * t.y);
+    vec3 accumulator = vec3(0);
+    // Tile loop with shared memory
+    // The tile loop is designed to share access latentcy to the position SBO
+    uint numTiles = (pc.num_points + TILE_SIZE - 1) / TILE_SIZE;
+
+    for (uint tileIdx = 0; tileIdx < numTiles; tileIdx++) {
+      uint pointBase = tileIdx * TILE_SIZE;
+      uint loadIdx = pointBase + tid;
+      
+      if (loadIdx < pc.num_points) {
+          sharedPositions[tid] = positions[loadIdx];
+      }
+      barrier();
+      
+      uint tileEnd = min(TILE_SIZE, pc.num_points - pointBase);
+
+      for (uint i = 0; i < tileEnd; i++) {
+          vec2 t = pixel_pos - sharedPositions[i];
+          float eucl_sqrd = dot(t, t);
+          float tstud = 1.0 / (1.0 + eucl_sqrd);
+          float tstud2 = tstud * tstud;
+          accumulator += vec3(tstud, tstud2 * t.x, tstud2 * t.y);
+      }
+      barrier();
     }
     
-    imageStore(Fields, ivec2(pixelCoord), vec4(value, 0));
+    imageStore(Fields, ivec2(pixelCoord), vec4(accumulator, 0));
 }
