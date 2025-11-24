@@ -68,7 +68,7 @@ void main() {
     if (lid >= hgSize) {
         reduction_array[lid - hgSize] = value.xyz;
     }
-    //memoryBarrierShared();
+    memoryBarrierShared();
     barrier();
     if (lid < hgSize) {
         reduction_array[lid] += value.xyz;
@@ -81,7 +81,7 @@ void main() {
         reduction_array[lid] += reduction_array[lid + reduceSize];
         }
     }
-    //memoryBarrierShared();
+    memoryBarrierShared();
     barrier();
     if (lid < 1) {
         imageStore(Fields, ivec2(x, y), vec4(reduction_array[0] + reduction_array[1], 0));
