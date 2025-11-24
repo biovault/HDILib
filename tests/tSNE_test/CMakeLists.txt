@@ -33,6 +33,7 @@ add_executable(
 
 find_package(fmt CONFIG REQUIRED)
 find_package(kompute CONFIG REQUIRED)
+find_package(glfw3 REQUIRED)
 
 target_include_directories(tsne_tester PRIVATE "${argparse_SOURCE_DIR}/include")
 target_include_directories(tsne_tester PRIVATE "${rapidcsv_SOURCE_DIR}/src")
@@ -40,6 +41,7 @@ target_include_directories(tsne_tester
     PRIVATE "${CMAKE_SOURCE_DIR}")
 message(STATUS "binary at ${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(tsne_tester PRIVATE kompute::kompute)
+target_link_libraries(tsne_tester PRIVATE glfw)
 target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/utils/$<CONFIG>/hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
 target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/data/$<CONFIG>/hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
 target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/dimensionality_reduction/$<CONFIG>/hdidimensionalityreduction${CMAKE_STATIC_LIBRARY_SUFFIX})

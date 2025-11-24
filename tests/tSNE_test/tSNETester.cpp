@@ -18,6 +18,7 @@
 #include <kompute/logger/Logger.hpp>
 #include <algorithm>
 #include <vulkan/vulkan.hpp>
+#include <GLFW/glfw3.h>
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -47,6 +48,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
     using SparseScalarMatrixType = std::vector<MapType>;
     SparseScalarMatrixType distributions;
     hdi::dr::GradientDescentTSNETexture tSNE;
+    tSNE.setType(hdi::dr::GradientDescentTSNETexture::COMPUTE_SHADER_VULKAN);
     
     tSNE_param._embedding_dimensionality = num_target_dimensions;
     tSNE_param._mom_switching_iter = exaggeration_iter;
@@ -71,7 +73,79 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
         try {
             for (int iter = 0; iter < iterations; ++iter) {
                 tSNE.doAnIteration();
-                //std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
+                std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
+                if (stepsoutput > 0) {
+                    if (iter > 0 && iter % stepsoutput == 0) {
+                        save_to_csv(embedding.getContainer(), output, iter);
+                    }
+                }
+            }
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Exception with error: " << e.what() << std::endl;
+            return std::vector<float>();
+        }
+    }
+    std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
+    std::cout << "... done!\n";
+    return embedding.getContainer();
+}
+
+std::vector<float> perform_tSNE_OpenGL(unsigned int num_points, unsigned int num_dimensions, std::vector<float> data, std::string output, int stepsoutput, int iterations = 1000, int perplexity = 30, int exaggeration_iter = 250, hdi::dr::knn_library knn_algorithm = hdi::dr::knn_library::KNN_HNSW, hdi::dr::knn_distance_metric knn_distance_metric = hdi::dr::knn_distance_metric::KNN_METRIC_EUCLIDEAN, int num_target_dimensions = 2) {
+
+    if (!glfwInit()) {
+        throw std::runtime_error("Unable to initialize GLFW.");
+    }
+    GLFWwindow* offscreen_context;
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);  // invisible - ie offscreen, window
+    offscreen_context = glfwCreateWindow(640, 480, "", NULL, NULL);
+    if (offscreen_context == NULL) {
+        glfwTerminate();
+        throw std::runtime_error("Failed to create GLFW window");
+    }
+    glfwMakeContextCurrent(offscreen_context);
+
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        glfwTerminate();
+        throw std::runtime_error("Failed to initialize OpenGL context");
+    }
+
+    hdi::dr::knn_library _knn_algorithm;
+    hdi::dr::knn_distance_metric _knn_metric;
+    hdi::dr::TsneParameters tSNE_param;
+    using ProbGenType = hdi::dr::HDJointProbabilityGenerator<float>;
+    ProbGenType::Parameters prob_gen_param;
+    ProbGenType prob_gen;
+    hdi::data::Embedding<float> embedding;
+    using MapType = hdi::data::MapMemEff<uint32_t, float>;
+    using SparseScalarMatrixType = std::vector<MapType>;
+    SparseScalarMatrixType distributions;
+    hdi::dr::GradientDescentTSNETexture tSNE;
+
+    tSNE_param._embedding_dimensionality = num_target_dimensions;
+    tSNE_param._mom_switching_iter = exaggeration_iter;
+    tSNE_param._remove_exaggeration_iter = exaggeration_iter;
+    tSNE_param._exaggeration_factor = 4.0;
+    prob_gen_param._perplexity = perplexity;
+    prob_gen_param._aknn_metric = knn_distance_metric;
+    prob_gen_param._aknn_algorithm = knn_algorithm;
+    std::cout << "calculate knn" << std::endl;
+    prob_gen.computeJointProbabilityDistribution(
+        data.data(),
+        num_dimensions,
+        num_points,
+        distributions,
+        prob_gen_param);
+
+    std::cout << "knn complete" << std::endl;
+    float gradient_desc_comp_time;
+    { // timed scope
+        hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(gradient_desc_comp_time);
+        tSNE.initializeWithJointProbabilityDistribution(distributions, &embedding, tSNE_param);
+        try {
+            for (int iter = 0; iter < iterations; ++iter) {
+                tSNE.doAnIteration();
+                std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
                 if (stepsoutput > 0) {
                     if (iter > 0 && iter % stepsoutput == 0) {
                         save_to_csv(embedding.getContainer(), output, iter);
@@ -123,6 +197,11 @@ int main(int argc, const char** argv) {
         .store_into(binary)
         .default_value(false)
         .help("The input file is binary not csv");
+    bool opengl = false;
+    program.add_argument("-g", "--opengl")
+        .store_into(opengl)
+        .default_value(false)
+        .help("Use OpenGL iplementation instead of VULKAN");
     program.add_argument("-d", "--dimension")
         .required()
         .scan<'i', unsigned int>()
@@ -238,7 +317,11 @@ int main(int argc, const char** argv) {
         data = flatten(data2D);
     }
 
-    auto embedding = perform_tSNE(num_points, dim, data, output, stepsoutput, iterations, perplexity);
+    std::vector<float> embedding;
+    if (opengl)
+        embedding = perform_tSNE_OpenGL(num_points, dim, data, output, stepsoutput, iterations, perplexity);
+    else
+        embedding = perform_tSNE(num_points, dim, data, output, stepsoutput, iterations, perplexity);
     save_to_csv(embedding, output);
 
     return 0;

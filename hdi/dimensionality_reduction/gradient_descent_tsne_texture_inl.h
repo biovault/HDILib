@@ -76,9 +76,6 @@ namespace hdi {
 
 #ifndef __APPLE__
     void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
-#ifdef USE_VULKAN_KOMPUTE
-      _gpgpu_type = COMPUTE_SHADER;
-#else
       if (tsne_type == AUTO_DETECT)
       {
         //resolve the optimal type to use based on the available OpenGL version
@@ -94,7 +91,6 @@ namespace hdi {
       }
       else
         _gpgpu_type = tsne_type;
-#endif // USE_VULKAN_KOMPUTE
     }
 #endif
 
@@ -147,6 +143,8 @@ namespace hdi {
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
         _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      else if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+        _gpgpu_vulkan_compute_tsne.initialize(_embedding, _params, _P);
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else
@@ -184,6 +182,8 @@ namespace hdi {
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
         _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      else if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+        _gpgpu_vulkan_compute_tsne.initialize(_embedding, _params, _P);
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
 #else
@@ -202,7 +202,10 @@ namespace hdi {
       }
       _params = params;
 #ifndef __APPLE__
-      _gpgpu_compute_tsne.updateParams(params);
+      if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+        _gpgpu_vulkan_compute_tsne.updateParams(params);
+      else
+        _gpgpu_compute_tsne.updateParams(params);
 #else
 
       _gpgpu_raster_tsne.updateParams(params);
@@ -293,9 +296,14 @@ namespace hdi {
       if (_gpgpu_type == COMPUTE_SHADER) {
         _gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
         kl_divergence = _gpgpu_compute_tsne.kl_divergence;
-    } else {
-        _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
-    }
+      }
+      else if (_gpgpu_type == COMPUTE_SHADER_VULKAN) {
+        _gpgpu_vulkan_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+        kl_divergence = _gpgpu_vulkan_compute_tsne.kl_divergence;
+      }
+      else {
+          _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+      }
 #else
       _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
 #endif

@@ -57,7 +57,7 @@ namespace hdi {
     class GradientDescentTSNETexture {
     public:
     #ifndef __APPLE__
-      typedef enum { RASTER, COMPUTE_SHADER, AUTO_DETECT } GpgpuSneType;
+      typedef enum { RASTER, COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, AUTO_DETECT } GpgpuSneType;
     #endif
       typedef float scalar_type;
       typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
@@ -112,6 +112,8 @@ namespace hdi {
       #ifndef __APPLE__
         if (_gpgpu_type == COMPUTE_SHADER)
           _gpgpu_compute_tsne.setScalingFactor(factor);
+        else if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+          _gpgpu_vulkan_compute_tsne.setScalingFactor(factor);
         else
           _gpgpu_raster_tsne.setScalingFactor(factor);
       #else
@@ -158,8 +160,8 @@ namespace hdi {
       scalar_type _normalization_Q; //! Normalization factor of Q - Z in the original paper
 
     #ifndef __APPLE__
-      //GpgpuSneCompute _gpgpu_compute_tsne;  ** test vulkan impl **
-      GpgpuSneVulkan _gpgpu_compute_tsne;
+      GpgpuSneCompute _gpgpu_compute_tsne;
+      GpgpuSneVulkan _gpgpu_vulkan_compute_tsne;
       GpgpuSneType _gpgpu_type;
     #endif // __APPLE__
       GpgpuSneRaster _gpgpu_raster_tsne;
