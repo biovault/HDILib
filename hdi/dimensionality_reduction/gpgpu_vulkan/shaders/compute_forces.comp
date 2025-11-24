@@ -85,12 +85,14 @@ layout(scalar, binding = 8 ) uniform ForcesPushConstants {
       kl_divergence += (Probabilities[index + j] * log(norm_prob/(v * inv_sum_Q)));
     }
 
+    memoryBarrierShared();
+    barrier();
     // Reduce add sum_positive_red to a single value
     if (lid >= 32) {
       sum_positive_red[lid - 32] = positive_force;
       sum_kl_divergence[lid - 32] = kl_divergence;
     }
-    //memoryBarrierShared();
+    memoryBarrierShared();
     barrier();
     if (lid < 32) {
       sum_positive_red[lid] += positive_force;
@@ -99,14 +101,14 @@ layout(scalar, binding = 8 ) uniform ForcesPushConstants {
     // Reduce 16, 8, 4, and 2 
     for (uint reduceSize = group_size/4; reduceSize > 1; reduceSize /= 2)
     {
-      //memoryBarrierShared();
+      memoryBarrierShared();
       barrier();
       if (lid < reduceSize) {
         sum_positive_red[lid] += sum_positive_red[lid + reduceSize];
         sum_kl_divergence[lid] += sum_kl_divergence[lid + reduceSize];
       }
     }
-    //memoryBarrierShared();
+    memoryBarrierShared();
     barrier();
     if (lid < 1) {
       sum_positive = sum_positive_red[0] + sum_positive_red[1];
