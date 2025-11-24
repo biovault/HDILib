@@ -121,7 +121,7 @@ namespace hdi {
       ShaderProgram _center_and_scale_program;
 
       // SSBOs
-      std::array<GLuint, 10> _compute_buffers;
+      std::array<GLuint, 11> _compute_buffers;
 
       GLuint _timerQuery[2];
 

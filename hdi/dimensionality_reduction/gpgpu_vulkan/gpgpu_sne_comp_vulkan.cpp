@@ -70,11 +70,14 @@ namespace hdi {
       _params = params;
 
       unsigned int num_points = embedding->numDataPoints();
-      if (num_points < 10000) {
-        _resolutionScaling = 3;
+      /*if (num_points < 10000) {
+        _resolutionScaling = 4;
       }
       else if (num_points < 1000) {
-        _resolutionScaling = 7;
+        _resolutionScaling = 4;
+      }*/
+      if (num_points < 1000) {
+        _resolutionScaling = 4;
       }
 
       // Linearize sparse probability matrix
@@ -329,7 +332,8 @@ namespace hdi {
         _tensors[ShaderBuffers::BOUNDS],
         _tensors[ShaderBuffers::POSITION],
         _tensors[ShaderBuffers::KLDIV],
-        _tensors[ShaderBuffers::IMAGE_WORKGROUP],/*
+        _tensors[ShaderBuffers::IMAGE_WORKGROUP],
+        _tensors[ShaderBuffers::SUM_Q],/*
         _shaderImageHelper.getActivePixelList(),
         _shaderImageHelper.getStencilImage(),
         _tensors[ShaderBuffers::ATOMIC_COUNTER],
@@ -353,11 +357,13 @@ namespace hdi {
       auto debug = _tensors[ShaderBuffers::DEBUG]->vector<float>();
       auto activeList = _shaderImageHelper.getActivePixelList()->vector();
       auto atom_counter = _tensors[ShaderBuffers::ATOMIC_COUNTER]->vector<uint32_t>()[0];*/
+      auto sum_q = _interpEnhProg->getSumQ();
       auto wrkgrp = _tensors[ShaderBuffers::IMAGE_WORKGROUP]->vector<uint32_t>();
       //printf("Width %i height %i, Workgroups dispatched: x=%u, y=%u, z=%u\n", width, height, wrkgrp[0], wrkgrp[1], wrkgrp[2]);
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
       kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
+      std::cout << "sumq: " << sum_q << " kl_div: " << kl_divergence << "\n";
       if (kl_divergence < 0) {
         std::cout << "Sequence KL Divergence is negative, at iteration: " << iteration;
       }
