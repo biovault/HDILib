@@ -3,7 +3,7 @@
 #extension GL_EXT_scalar_block_layout : require
 #extension GL_ARB_shading_language_include : enable
 
-layout(local_size_x = 256) in;
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) readonly buffer ActivePixels {
     uvec2 activePixels[];
@@ -44,7 +44,7 @@ void main() {
     
     vec3 accumulator = vec3(0);
     // Tile loop with shared memory
-    // The tile loop is designed to share access latentcy to the position SBO
+    // The tile loop is designed to share access latency to the position SBO
     uint numTiles = (pc.num_points + TILE_SIZE - 1) / TILE_SIZE;
 
     for (uint tileIdx = 0; tileIdx < numTiles; tileIdx++) {
@@ -54,6 +54,7 @@ void main() {
       if (loadIdx < pc.num_points) {
           sharedPositions[tid] = positions[loadIdx];
       }
+      memoryBarrierShared();
       barrier();
       
       uint tileEnd = min(TILE_SIZE, pc.num_points - pointBase);
@@ -65,6 +66,7 @@ void main() {
           float tstud2 = tstud * tstud;
           accumulator += vec3(tstud, tstud2 * t.x, tstud2 * t.y);
       }
+      memoryBarrierShared();
       barrier();
     }
     
