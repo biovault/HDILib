@@ -91,7 +91,19 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
     return embedding.getContainer();
 }
 
-std::vector<float> perform_tSNE_OpenGL(unsigned int num_points, unsigned int num_dimensions, std::vector<float> data, std::string output, int stepsoutput, int iterations = 1000, int perplexity = 30, int exaggeration_iter = 250, hdi::dr::knn_library knn_algorithm = hdi::dr::knn_library::KNN_HNSW, hdi::dr::knn_distance_metric knn_distance_metric = hdi::dr::knn_distance_metric::KNN_METRIC_EUCLIDEAN, int num_target_dimensions = 2) {
+std::vector<float> perform_tSNE_OpenGL(
+    unsigned int num_points, 
+    unsigned int num_dimensions, 
+    std::vector<float> data, 
+    std::string output, 
+    int stepsoutput, 
+    int iterations = 1000, 
+    int perplexity = 30, 
+    bool raster = false, 
+    int exaggeration_iter = 250, 
+    hdi::dr::knn_library knn_algorithm = hdi::dr::knn_library::KNN_HNSW, 
+    hdi::dr::knn_distance_metric knn_distance_metric = hdi::dr::knn_distance_metric::KNN_METRIC_EUCLIDEAN, 
+    int num_target_dimensions = 2) {
 
     if (!glfwInit()) {
         throw std::runtime_error("Unable to initialize GLFW.");
@@ -121,6 +133,8 @@ std::vector<float> perform_tSNE_OpenGL(unsigned int num_points, unsigned int num
     using SparseScalarMatrixType = std::vector<MapType>;
     SparseScalarMatrixType distributions;
     hdi::dr::GradientDescentTSNETexture tSNE;
+    if (raster)
+        tSNE.setType(hdi::dr::GradientDescentTSNETexture::RASTER);
 
     tSNE_param._embedding_dimensionality = num_target_dimensions;
     tSNE_param._mom_switching_iter = exaggeration_iter;
@@ -145,7 +159,11 @@ std::vector<float> perform_tSNE_OpenGL(unsigned int num_points, unsigned int num
         try {
             for (int iter = 0; iter < iterations; ++iter) {
                 tSNE.doAnIteration();
-                std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
+                std::cout << "Iter: " << iter;
+                if (!raster)
+                    std::cout << " kl_divergence: " << tSNE.kl_divergence;
+                else 
+                    std::cout << "\n";
                 if (stepsoutput > 0) {
                     if (iter > 0 && iter % stepsoutput == 0) {
                         save_to_csv(embedding.getContainer(), output, iter);
@@ -200,8 +218,15 @@ int main(int argc, const char** argv) {
     bool opengl = false;
     program.add_argument("-g", "--opengl")
         .store_into(opengl)
+        .default_value(false);
+    bool raster = false;
+    program.add_argument("-r", "--raster")
+        .store_into(raster)
         .default_value(false)
-        .help("Use OpenGL iplementation instead of VULKAN");
+        .help("Use RASTER iplementation instead of VULKAN");
+    auto& algoGroup = program.add_mutually_exclusive_group();
+    algoGroup.add_argument("--opengl");
+    algoGroup.add_argument("--raster");
     program.add_argument("-d", "--dimension")
         .required()
         .scan<'i', unsigned int>()
@@ -318,8 +343,8 @@ int main(int argc, const char** argv) {
     }
 
     std::vector<float> embedding;
-    if (opengl)
-        embedding = perform_tSNE_OpenGL(num_points, dim, data, output, stepsoutput, iterations, perplexity);
+    if (opengl || raster)
+        embedding = perform_tSNE_OpenGL(num_points, dim, data, output, stepsoutput, iterations, perplexity, raster);
     else
         embedding = perform_tSNE(num_points, dim, data, output, stepsoutput, iterations, perplexity);
     save_to_csv(embedding, output);
