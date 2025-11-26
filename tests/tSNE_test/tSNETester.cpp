@@ -73,7 +73,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
         try {
             for (int iter = 0; iter < iterations; ++iter) {
                 tSNE.doAnIteration();
-                std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
+                //std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
                 if (stepsoutput > 0) {
                     if (iter > 0 && iter % stepsoutput == 0) {
                         save_to_csv(embedding.getContainer(), output, iter);
@@ -159,11 +159,11 @@ std::vector<float> perform_tSNE_OpenGL(
         try {
             for (int iter = 0; iter < iterations; ++iter) {
                 tSNE.doAnIteration();
-                std::cout << "Iter: " << iter;
+                /*std::cout << "Iter: " << iter;
                 if (!raster)
                     std::cout << " kl_divergence: " << tSNE.kl_divergence;
                 else 
-                    std::cout << "\n";
+                    std::cout << "\n";*/
                 if (stepsoutput > 0) {
                     if (iter > 0 && iter % stepsoutput == 0) {
                         save_to_csv(embedding.getContainer(), output, iter);
