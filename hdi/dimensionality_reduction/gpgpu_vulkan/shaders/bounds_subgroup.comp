@@ -1,0 +1,68 @@
+  #version 450
+
+  #extension GL_KHR_shader_subgroup_arithmetic : enable
+  layout(std430, binding = 0) buffer BoundsInterface { vec2 Bounds[]; };
+  layout(std430, binding = 1) buffer Pos{ vec2 Positions[]; };
+  layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+  shared vec2 min_shared[16]; // Assuming worst case subgroup size: 128/8
+  shared vec2 max_shared[16]; 
+
+  layout(push_constant) uniform Params {
+      float padding; 
+      uint num_points;   
+  } pc;
+
+   void main() {
+    uint lid = gl_LocalInvocationIndex.x;
+    uint sid = gl_SubgroupID;
+    uint groupSize = gl_WorkGroupSize.x;
+
+    vec2 minBound = vec2(1e38);  // inf
+    vec2 maxBound = vec2(-1e38);  // -inf
+
+
+    //uint np = uint(round(num_points));
+    // Find min and max bounds by striding (by groupSize) across the positions in each thread.
+    for (uint i = lid; i < pc.num_points; i += groupSize)
+    {
+      vec2 pos = Positions[i];
+
+      minBound = min(pos, minBound);
+      maxBound = max(pos, maxBound);
+    }
+
+    minBound.x = subgroupMin(minBound.x);
+    minBound.y = subgroupMin(minBound.y);
+    maxBound.x = subgroupMax(maxBound.x);
+    maxBound.y = subgroupMax(maxBound.y);
+
+    // One thread per subgroup writes to shared memory
+    if (subgroupElect()) {
+        min_shared[sid] = minBound;
+        max_shared[sid] = maxBound;
+    }
+
+    memoryBarrierShared();
+    barrier();
+
+    // Reduce bounds
+    // Initialize the reduction arrays from the top 64 thread min and max values
+    if (lid == 0) {
+      vec2 finalMin = min_shared[0];
+      vec2 finalMax = max_shared[0];
+
+      // gl_NumSubgroups: number of subgroups in local workgroup
+      for (uint i = 1; i < gl_NumSubgroups; i++) {
+          finalMin = min(finalMin, min_shared[i]);
+          finalMax = max(finalMax, max_shared[i]);
+      }
+      vec2 padding = (finalMax - finalMin) * pc.padding * 0.5;
+
+      finalMin -= padding;
+      finalMax += padding;
+
+      Bounds[0] = finalMin;
+      Bounds[1] = finalMax;
+    }
+  }
