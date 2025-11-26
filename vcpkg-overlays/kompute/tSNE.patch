@@ -1592,7 +1592,7 @@ index 5093c83..8f4e4d4 100644
      // -------------- OPTIONALLY OWNED RESOURCES
      std::shared_ptr<vk::Instance> mInstance = nullptr;
 diff --git a/src/Manager.cpp b/src/Manager.cpp
-index b74dc59..549867b 100644
+index b74dc59..f797657 100644
 --- a/src/Manager.cpp
 +++ b/src/Manager.cpp
 @@ -14,7 +14,6 @@
@@ -1628,16 +1628,48 @@ index b74dc59..549867b 100644
      vk::ApplicationInfo applicationInfo;
      applicationInfo.pApplicationName = "Kompute";
      applicationInfo.pEngineName = "Kompute";
-@@ -454,6 +462,13 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
+@@ -446,6 +454,35 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
+                      fmt::join(validExtensions, ", "));
+     }
+ 
++    vk::PhysicalDeviceSubgroupProperties subgroupProps;
++    vk::PhysicalDeviceProperties2 props2;
++    props2.pNext = &subgroupProps;
++
++    this->mPhysicalDevice->getProperties2(&props2);
++    if (!(subgroupProps.supportedOperations & vk::SubgroupFeatureFlagBits::eArithmetic)) {
++      KP_LOG_ERROR("Device does not support subgroup arithmetic operations!");
++    }
++
++    // ---------- Enable needed features (from Vulkan 1.1 and Vulkan 1.3) on the device ----------
++    // This constructs a chain of pNext structures to enable features
++    // If don't want Vulkan 1.3 we could restrict chain 
++    // to vk::PhysicalDeviceSynchronization2Features
++
++    // With c++20 we could use designated initializers here
++    vk::PhysicalDeviceFeatures2 deviceFeatures;
++    vk::PhysicalDeviceVulkan11Features vulkan11Features;
++    vk::PhysicalDeviceVulkan13Features vulkan13Features;
++    vulkan13Features.synchronization2 = true;
++
++    vk::StructureChain <
++      vk::PhysicalDeviceFeatures2,
++      vk::PhysicalDeviceVulkan11Features,
++      vk::PhysicalDeviceVulkan13Features> features2Chain = {
++      deviceFeatures,
++      vulkan11Features, // Vulkan 1.1 features
++      vulkan13Features, // Vulkan 1.3 features
++    };
++          
+     vk::DeviceCreateInfo deviceCreateInfo(vk::DeviceCreateFlags(),
+                                           deviceQueueCreateInfos.size(),
+                                           deviceQueueCreateInfos.data(),
+@@ -454,6 +491,9 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
                                            validExtensions.size(),
                                            validExtensions.data());
  
-+    // Get extension features to be used in the logical device
-+    vk::PhysicalDeviceFeatures2 deviceFeatures{};
-+    vk::PhysicalDeviceSynchronization2Features physicalDeviceSyncFeatures{};
-+    deviceFeatures.setPNext(&physicalDeviceSyncFeatures);
-+    physicalDeviceSyncFeatures.setSynchronization2(VK_TRUE);
-+    deviceCreateInfo.setPNext(&deviceFeatures);
++    // Link in our features chain starting with the first element 
++    deviceCreateInfo.setPNext(&features2Chain.get<vk::PhysicalDeviceFeatures2>());
 +
      this->mDevice = std::make_shared<vk::Device>();
      physicalDevice.createDevice(
