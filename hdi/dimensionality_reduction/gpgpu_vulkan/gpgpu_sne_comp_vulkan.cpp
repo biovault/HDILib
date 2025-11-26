@@ -76,9 +76,9 @@ namespace hdi {
       else if (num_points < 1000) {
         _resolutionScaling = 4;
       }*/
-      if (num_points < 1000) {
-        _resolutionScaling = 4;
-      }
+      //if (num_points < 1000) {
+      //  _resolutionScaling = 8;
+      //}
 
       // Linearize sparse probability matrix
       LinearProbabilityMatrix linear_P;
@@ -175,6 +175,18 @@ namespace hdi {
       _forcesProg = std::make_shared<ForcesShaderProg>(_mgr, _tensors);
       _updateProg = std::make_shared<UpdateShaderProg>(_mgr, _tensors);
       _centerScaleProg = std::make_shared<CenterScaleShaderProg>(_mgr, _tensors);
+
+      // Upload the probability values and indices to the GPU once
+      auto seq = _mgr->sequence();
+      seq->begin();
+      const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
+        _tensors[ShaderBuffers::NEIGHBOUR],
+        _tensors[ShaderBuffers::INDEX],
+        _tensors[ShaderBuffers::PROBABILITIES],
+      };
+      seq->record<kp::OpSyncDevice>(syncParams);
+      seq->eval();
+      seq->end();
     }
 
     void GpgpuSneVulkan::clean() {
@@ -332,9 +344,9 @@ namespace hdi {
         _tensors[ShaderBuffers::BOUNDS],
         _tensors[ShaderBuffers::POSITION],
         _tensors[ShaderBuffers::KLDIV],
-        _tensors[ShaderBuffers::IMAGE_WORKGROUP],
-        _tensors[ShaderBuffers::SUM_Q],/*
-        _shaderImageHelper.getActivePixelList(),
+        //_tensors[ShaderBuffers::IMAGE_WORKGROUP],
+        //_tensors[ShaderBuffers::SUM_Q],
+        /*_shaderImageHelper.getActivePixelList(),
         _shaderImageHelper.getStencilImage(),
         _tensors[ShaderBuffers::ATOMIC_COUNTER],
         _shaderImageHelper.getFieldImage(),
@@ -357,13 +369,13 @@ namespace hdi {
       auto debug = _tensors[ShaderBuffers::DEBUG]->vector<float>();
       auto activeList = _shaderImageHelper.getActivePixelList()->vector();
       auto atom_counter = _tensors[ShaderBuffers::ATOMIC_COUNTER]->vector<uint32_t>()[0];*/
-      auto sum_q = _interpEnhProg->getSumQ();
-      auto wrkgrp = _tensors[ShaderBuffers::IMAGE_WORKGROUP]->vector<uint32_t>();
+      //auto sum_q = _interpEnhProg->getSumQ();
+      //auto wrkgrp = _tensors[ShaderBuffers::IMAGE_WORKGROUP]->vector<uint32_t>();
       //printf("Width %i height %i, Workgroups dispatched: x=%u, y=%u, z=%u\n", width, height, wrkgrp[0], wrkgrp[1], wrkgrp[2]);
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
       kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
-      std::cout << "sumq: " << sum_q << " kl_div: " << kl_divergence << "\n";
+      //std::cout << "sumq: " << sum_q << " kl_div: " << kl_divergence << "\n";
       if (kl_divergence < 0) {
         std::cout << "Sequence KL Divergence is negative, at iteration: " << iteration;
       }

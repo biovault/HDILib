@@ -65,8 +65,6 @@ private:
   std::shared_ptr<kp::TensorT<uint32_t>> _activePixelList;
 };
 
-// The shader programs present two separate APIS:
-// 1) compute() function that runs the shader program immediately and returns the result
 // 2) record() and update() function that records the commands into a kompute::Sequence for later execution
 // Do not mix the two APIs for the same shader program instance (or bad things will happen)
 // API 1) is useful for development and debugging, while API 2) is more efficient for production use cases
@@ -75,10 +73,8 @@ public:
   BoundsShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::BOUNDS] )
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::BOUNDS_SUBGROUP] )
   {}
-
-  std::vector<float> compute(float padding = 0.0);
 
   void record_padded(
     std::shared_ptr<kp::Sequence> seq,
@@ -107,11 +103,6 @@ public:
     _ubo(mgr, sizeof(stencilParams))
   {
   };
-
-  std::shared_ptr<kp::ImageT<float>> compute(
-    uint32_t width, uint32_t height, 
-    unsigned int num_points, 
-    std::vector<float> bounds);
 
   void record(
     std::shared_ptr<kp::Sequence> seq,
@@ -188,10 +179,6 @@ public:
   {
   };
 
-  std::shared_ptr<kp::ImageT<float>> compute(
-    std::shared_ptr<kp::ImageT<float>> stencil, 
-    uint32_t width, uint32_t height);
-
   void record(
     std::shared_ptr<kp::Sequence> seq,
     uint32_t num_points,
@@ -259,7 +246,6 @@ public:
   {
   };
 
-  void compute(std::shared_ptr<kp::ImageT<float>> fields, uint32_t width, uint32_t height);
   void record(
     std::shared_ptr<kp::Sequence> seq,
     uint32_t num_points,
@@ -337,7 +323,7 @@ public:
     _ubo(mgr, sizeof(forcesParams))
   {
   }
-  float compute(unsigned int num_points, float exaggeration);
+
   void record(
     std::shared_ptr<kp::Sequence> seq, 
     unsigned int num_points, 
@@ -364,7 +350,7 @@ public:
     _ubo(mgr, sizeof(updaterParams))
   {
   }
-  void compute(unsigned int num_points, float eta, float minimum_gain, float iteration, float momentumn, unsigned int momentum_switch, float final_momentum, float gain_mult);
+
   void record(
     std::shared_ptr<kp::Sequence> seq, 
     uint32_t num_points, 
@@ -403,7 +389,6 @@ public:
     _ubo(mgr, sizeof(centerScaleParams))
   {
   }
-  std::vector<float> compute(unsigned int num_points, float exaggeration);
 
   void record(
     std::shared_ptr<kp::Sequence> seq, 
