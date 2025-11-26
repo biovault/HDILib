@@ -2,6 +2,7 @@
 std::map<SPIRVShader, std::vector<uint32_t>>& getSPIRVBinaries() {
   static auto SPIRVShaderBinaries = std::map<SPIRVShader, std::vector<uint32_t>>({
     {SPIRVShader::BOUNDS, std::vector<uint32_t>(bounds::BOUNDS_COMP_SPV.begin(), bounds::BOUNDS_COMP_SPV.end())},
+    {SPIRVShader::BOUNDS_SUBGROUP, std::vector<uint32_t>(bounds_subgroup::BOUNDS_SUBGROUP_COMP_SPV.begin(), bounds_subgroup::BOUNDS_SUBGROUP_COMP_SPV.end())},
     {SPIRVShader::COMPUTE_FIELDS, std::vector<uint32_t>(compute_fields::COMPUTE_FIELDS_COMP_SPV.begin(), compute_fields::COMPUTE_FIELDS_COMP_SPV.end())},
     {SPIRVShader::COMPUTE_FIELDS_ENH, std::vector<uint32_t>(compute_fields_enh::COMPUTE_FIELDS_ENH_COMP_SPV.begin(), compute_fields_enh::COMPUTE_FIELDS_ENH_COMP_SPV.end())},
     {SPIRVShader::COMPUTE_FORCES, std::vector<uint32_t>(compute_forces::COMPUTE_FORCES_COMP_SPV.begin(), compute_forces::COMPUTE_FORCES_COMP_SPV.end())},
