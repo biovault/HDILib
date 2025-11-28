@@ -1,11 +1,13 @@
 #version 450
 
 #extension GL_EXT_scalar_block_layout : require
-#extension GL_ARB_shading_language_include : enable
+//#extension GL_KHR_shader_subgroup_basic : require
+//#extension GL_KHR_shader_subgroup_ballot : require
+//#extension GL_KHR_shader_subgroup_arithmetic : require
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-layout(rgba32f, binding = 0) readonly uniform image2D Stencil;
+layout(rgba32f, binding = 0) uniform image2D Stencil;
 
 layout(std430, binding = 1) coherent buffer AtomicCounter {
     uint atomicCounter;
@@ -26,7 +28,9 @@ void main() {
     
     if (pixelCoord.x >= pc.imageSize.x || pixelCoord.y >= pc.imageSize.y) return;
 
+    // Read and clear stencil value
     float mask = imageLoad(Stencil, ivec2(pixelCoord )).x;
+    imageStore(Stencil, ivec2(pixelCoord ), vec4(0.0));
 
     if (mask > 0.5) {
         // Atomically get next slot
@@ -34,3 +38,43 @@ void main() {
         activePixels[index] = pixelCoord;
     }
 }
+
+// Optimized version using subgroup operations
+// Uncomment the extension lines at the top if needed
+// This version may improve performance on GPUs that support subgroup operations
+// but initial testing showed minimal difference
+/*
+void main() {
+    uvec2 pixelCoord = gl_GlobalInvocationID.xy;
+    
+    bool inBounds = pixelCoord.x < pc.imageSize.x && pixelCoord.y < pc.imageSize.y;
+    
+    // Read and clear stencil value
+    float mask = 0.0;
+    if (inBounds) {
+        mask = imageLoad(Stencil, ivec2(pixelCoord)).x;
+        imageStore(Stencil, ivec2(pixelCoord), vec4(0.0));
+    }
+    
+    bool isSet = inBounds && mask > 0.5;
+    
+    // Create ballot of which invocations have set pixels
+    uvec4 ballot = subgroupBallot(isSet);
+    uint setCount = subgroupBallotBitCount(ballot);
+    
+    // Only one invocation per subgroup does the atomic
+    uint subgroupBase = 0;
+    if (subgroupElect() && setCount > 0) {
+        subgroupBase = atomicAdd(atomicCounter, setCount);
+    }
+    
+    // Broadcast the base index to all invocations in subgroup
+    subgroupBase = subgroupBroadcastFirst(subgroupBase);
+    
+    // Each set invocation gets its offset within the subgroup
+    if (isSet) {
+        uint offset = subgroupBallotExclusiveBitCount(ballot);
+        uint index = subgroupBase + offset;
+        activePixels[index] = pixelCoord;
+    }
+} */
