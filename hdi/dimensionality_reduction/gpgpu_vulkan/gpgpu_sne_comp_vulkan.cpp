@@ -107,13 +107,13 @@ namespace hdi {
       // Create the manager with debug extensions
       _mgr = std::make_shared<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({ "VK_KHR_synchronization2" }));
       // <DEBUG output physical device info>
-      vk::PhysicalDeviceSynchronization2FeaturesKHR sync2Features{};
+      /*vk::PhysicalDeviceSynchronization2FeaturesKHR sync2Features{};
       vk::PhysicalDeviceFeatures2 features2{};
       features2.pNext = &sync2Features;
 
       _mgr->getPhysicalDevice()->getFeatures2(&features2);
-      std::cout << "Synchronization2 supported: "
-        << (sync2Features.synchronization2 ? "YES" : "NO") << std::endl;
+      //std::cout << "Synchronization2 supported: "
+      //  << (sync2Features.synchronization2 ? "YES" : "NO") << std::endl;
 
       auto pprops = _mgr->getPhysicalDevice()->getProperties();
       printf("Physical device API version: %u.%u.%u\n",
@@ -134,7 +134,7 @@ namespace hdi {
 
       auto props = _mgr->getPhysicalDevice()->enumerateDeviceExtensionProperties();
       for (auto& p : props)
-        std::cout << p.extensionName << std::endl;
+        std::cout << p.extensionName << std::endl;*/
       // </DEBUG output physical device info>
 
       _tensors[ShaderBuffers::POSITION] = _mgr->tensorT(std::vector<float>(num_pnts * 2, 0.0f));
@@ -152,7 +152,7 @@ namespace hdi {
       _tensors[ShaderBuffers::IMAGE_WORKGROUP] = _mgr->tensorT(std::vector<unsigned int>(3, 1u));
       _tensors[ShaderBuffers::DEBUG] = _mgr->tensorT(std::vector<float>(num_pnts * 4, 0.0f));
       _numInterpWorkgroups = uint32_t((num_pnts + 127) / 128);
-      std::cout << "Interoplat using " << _numInterpWorkgroups << " workgroups\n";
+      //std::cout << "Interoplate using " << _numInterpWorkgroups << " workgroups\n";
       _tensors[ShaderBuffers::PARTIAL_SUM] = _mgr->tensor(std::vector<float>(_numInterpWorkgroups, 0.0f));
       _tensors[ShaderBuffers::ATOMIC_COUNTER] = _mgr->tensorT(std::vector<uint32_t>(1, 0u));
       // These tensors will be used as UBOs
@@ -178,7 +178,6 @@ namespace hdi {
 
       // Upload the probability values and indices to the GPU once
       auto seq = _mgr->sequence();
-      seq->begin();
       const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
         _tensors[ShaderBuffers::NEIGHBOUR],
         _tensors[ShaderBuffers::INDEX],
@@ -186,7 +185,7 @@ namespace hdi {
       };
       seq->record<kp::OpSyncDevice>(syncParams);
       seq->eval();
-      seq->end();
+
     }
 
     void GpgpuSneVulkan::clean() {
@@ -223,26 +222,15 @@ namespace hdi {
       _fieldCompEnhProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), _shaderImageHelper.getActivePixelList(), _fields_buffer_size);
       _interpEnhProg->record(_seq0, num_points, _numInterpWorkgroups, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), width, height);
       _seq0->end();
-      /*_seq1 = _mgr->sequence();
-      _seq1->begin();
-      _fieldCompEnhProg->record(_seq1, num_points, width, height, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), _shaderImageHelper.getActivePixelList(), _fields_buffer_size);
-      //_fieldCompProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), _shaderImageHelper.getStencilImage(), _fields_buffer_size);
-      //_interpProg->record(_seq0, num_points, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), width, height);
-      _seq1->end();
-      _seq2 = _mgr->sequence();
-      _seq2->begin();
-      _interpEnhProg->record(_seq2, num_points, _numInterpWorkgroups, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), width, height);
-      _seq2->end();*/
-      // Last sequence has constant size buffers is recorded once sequence for forces and update
-      if (_seq3.get() == nullptr) {
-        _seq3 = _mgr->sequence();
-        _seq3->begin();
-        _forcesProg->record(_seq3, num_points, exaggeration);
-        _updateProg->record(_seq3, num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
-        _boundsProg->record_unpadded(_seq3, num_points);
-        _centerScaleProg->record(_seq3, num_points, exaggeration);
-        _boundsProg->record_padded(_seq3, num_points, 0.1f);
-        _seq3->end();
+      if (_seq1.get() == nullptr) {
+        _seq1 = _mgr->sequence();
+        _seq1->begin();
+        _forcesProg->record(_seq1, num_points, exaggeration);
+        _updateProg->record(_seq1, num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
+        _boundsProg->record_unpadded(_seq1, num_points);
+        _centerScaleProg->record(_seq1, num_points, exaggeration);
+        _boundsProg->record_padded(_seq1, num_points, 0.1f);
+        _seq1->end();
       }
     }
 
@@ -257,9 +245,7 @@ namespace hdi {
       _shaderImageHelper.clearBuffers();
       _stencilProg->update(width, height, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _stencil2ListProg->update(_fields_buffer_size, _fields_buffer_size, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
-      //_fieldCompProg->update(num_points, width, height, _fields_buffer_size);
       _fieldCompEnhProg->update(num_points, width, height, _fields_buffer_size);
-      //_interpProg->update(num_points, width, height);
       _interpEnhProg->update(num_points, width, height);
       _forcesProg->update(num_points, exaggeration);
       _updateProg->update(num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
@@ -269,11 +255,6 @@ namespace hdi {
     void GpgpuSneVulkan::compute_sequence(embedding_type* embedding, float exaggeration, float iteration, float mult) {
       auto range_x = abs(_bounds[2] - _bounds[0]);
       auto range_y = abs(_bounds[3] - _bounds[1]);
-      // std::cout << "exaggeration: " << exaggeration << std::endl;
-
-       //std::cout << "min x,y" << bounds[0] << "," << bounds[1] << std::endl;
-       //std::cout << "max x,y" << bounds[2] << "," << bounds[3] << std::endl;
-     // std::cout << "Range X: " << range_x << " Range Y: " << range_y << std::endl;
 
       // assume adaptive resolution(scales with points range) with a minimum size
       auto width = static_cast<uint32_t>(std::floor(std::max(RESOLUTION_SCALING * range_x, float(MINIMUM_FIELDS_SIZE))));
@@ -283,10 +264,18 @@ namespace hdi {
       unsigned int num_points = embedding->numDataPoints();
       bool new_field_buf = false;
       if ((int)iteration == 0) { // only on the first iteration
+        // on the first iteration we get the starting embedding positions from the CPU
         _tensors[ShaderBuffers::POSITION]->setData(embedding->getContainer());
-        //_tensors[ShaderBuffers::NUM_POINTS]->setData(std::vector<unsigned int>({ num_points }));
         // on first iteration the bound were calculated on the CPU so load them to the tensor
         _tensors[ShaderBuffers::BOUNDS]->setData(_bounds);
+        // Upload the values to the GPU
+        auto seq = _mgr->sequence();
+        const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
+          _tensors[ShaderBuffers::POSITION],
+          _tensors[ShaderBuffers::BOUNDS]
+        };
+        seq->record<kp::OpSyncDevice>(syncParams);
+        seq->eval();
         _fields_buffer_size = 8;
         new_field_buf = true;
       }
@@ -305,7 +294,7 @@ namespace hdi {
 
       auto tu0 = std::chrono::high_resolution_clock::now();
       if (new_field_buf) {
-        std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
+        //std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
         // rerecord the computer buffer sequence with the new field size
         ; // at most 1024 (should this be an exception?)
         record_compute_sequence(iteration, width, height, num_points, _bounds.data(), exaggeration, mult);
@@ -328,7 +317,7 @@ namespace hdi {
       //auto t5 = std::chrono::high_resolution_clock::now();
       //double cpu_ms_2 = std::chrono::duration<double, std::milli>(t5 - t4).count();
       //auto t6 = std::chrono::high_resolution_clock::now();
-      { _seq3->eval(); }
+      { _seq1->eval(); }
       //auto t7 = std::chrono::high_resolution_clock::now();
       //double cpu_ms_3 = std::chrono::duration<double, std::milli>(t7 - t6).count();
 
@@ -339,11 +328,8 @@ namespace hdi {
       //+field=%.3f, interp field=%.3f, ---- cpu_ms_1, cpu_ms_2, 
       //printf("iter: %u, stencil=%.3f,  field=%.3f, interp field=%.3f, forces+disp=%.3f, total=%.3f, TexSize=%.0f, ms per texel=%0.7f \n", int(iteration), cpu_ms_0, cpu_ms_1, cpu_ms_2, cpu_ms_3, cpu_ms_tu, _totalTime, texsize, ms_per_texel);
       // for debug purposes only - get the values locally 
-      auto syncSeq = _mgr->sequence();
-      syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
-        _tensors[ShaderBuffers::BOUNDS],
-        _tensors[ShaderBuffers::POSITION],
-        _tensors[ShaderBuffers::KLDIV],
+      //auto syncSeq = _mgr->sequence();
+      //syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
         //_tensors[ShaderBuffers::IMAGE_WORKGROUP],
         //_tensors[ShaderBuffers::SUM_Q],
         /*_shaderImageHelper.getActivePixelList(),
@@ -357,7 +343,7 @@ namespace hdi {
         _tensors[ShaderBuffers::PREV_GRADIENTS],
         _tensors[ShaderBuffers::GAIN],
         _tensors[ShaderBuffers::DEBUG],*/
-      })->eval();
+      //})->eval();
       /*auto stencil = static_cast<kp::Image*>(_shaderImageHelper.getStencilImage().get())->vector<float>();
       auto field = static_cast<kp::Image*>(_shaderImageHelper.getFieldImage().get())->vector<float>();
       auto sum_q = _interpEnhProg->getSumQ();
