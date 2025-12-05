@@ -29,6 +29,9 @@ message(STATUS "hnswlib at ${rapidcsv_SOURCE_DIR}")
 add_executable(
     tsne_tester
     tSNEtester.cpp
+    RenderDebug.cpp
+    RenderDebug.h
+    renderdoc_app.h
 )
 
 find_package(fmt CONFIG REQUIRED)
