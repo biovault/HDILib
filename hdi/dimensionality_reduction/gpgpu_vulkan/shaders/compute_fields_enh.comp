@@ -47,8 +47,8 @@ void main() {
     // The tile loop is designed to share access latency to the position SBO
     uint numTiles = (pc.num_points + TILE_SIZE - 1) / TILE_SIZE;
 
+    uint pointBase = 0;
     for (uint tileIdx = 0; tileIdx < numTiles; tileIdx++) {
-      uint pointBase = tileIdx * TILE_SIZE;
       uint loadIdx = pointBase + tid;
       
       if (loadIdx < pc.num_points) {
@@ -68,7 +68,9 @@ void main() {
       }
       memoryBarrierShared();
       barrier();
+      pointBase += TILE_SIZE;
     }
     
     imageStore(Fields, ivec2(pixelCoord), vec4(accumulator, 0));
-}
+} 
+
