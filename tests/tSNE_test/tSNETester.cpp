@@ -20,6 +20,8 @@
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 
+#include "./RenderDebug.h"
+
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 void save_to_csv(std::vector<float> embedding, std::string output, int iter = -1) {
@@ -66,6 +68,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
         prob_gen_param);
 
     std::cout << "knn complete" << std::endl;
+    RenderDoc::RenderDebugger::startFrameCapture();
     float gradient_desc_comp_time;
     { // timed scope
         hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(gradient_desc_comp_time);
@@ -86,6 +89,8 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
             return std::vector<float>();
         }
     }
+    RenderDoc::RenderDebugger::endFrameCapture();
+
     std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
     std::cout << "... done!\n";
     return embedding.getContainer();
@@ -345,8 +350,9 @@ int main(int argc, const char** argv) {
     std::vector<float> embedding;
     if (opengl || raster)
         embedding = perform_tSNE_OpenGL(num_points, dim, data, output, stepsoutput, iterations, perplexity, raster);
-    else
+    else {
         embedding = perform_tSNE(num_points, dim, data, output, stepsoutput, iterations, perplexity);
+    }
     save_to_csv(embedding, output);
 
     return 0;
