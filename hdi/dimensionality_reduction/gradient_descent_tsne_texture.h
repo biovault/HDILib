@@ -56,9 +56,9 @@ namespace hdi {
     */
     class GradientDescentTSNETexture {
     public:
-    #ifndef __APPLE__
+    //#ifndef __APPLE__
       typedef enum { RASTER, COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, AUTO_DETECT } GpgpuSneType;
-    #endif
+    //#endif
       typedef float scalar_type;
       typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
       typedef std::vector<scalar_type> scalar_vector_type;
@@ -67,10 +67,10 @@ namespace hdi {
     public:
       GradientDescentTSNETexture();
 
-    #ifndef __APPLE__
+    //#ifndef __APPLE__
       //! Override the default compute type.
       void setType(GpgpuSneType _tsneType);
-    #endif
+    //#endif
       //! Initialize the class with a list of distributions. A joint-probability distribution will be computed as in the tSNE algorithm
       void initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
       //! Initialize the class with a joint-probability distribution. Note that it must be provided non initialized and with the weight of each row equal to 2.
@@ -161,9 +161,10 @@ namespace hdi {
 
     #ifndef __APPLE__
       GpgpuSneCompute _gpgpu_compute_tsne;
+    #endif // __APPLE__
       GpgpuSneVulkan _gpgpu_vulkan_compute_tsne;
       GpgpuSneType _gpgpu_type;
-    #endif // __APPLE__
+
       GpgpuSneRaster _gpgpu_raster_tsne;
 
       std::array<scalar_type, 4> _temp;
