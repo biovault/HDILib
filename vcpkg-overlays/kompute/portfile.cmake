@@ -8,6 +8,12 @@ vcpkg_from_github(
         tSNE.patch
 )
 
+if(VCPKG_HOST_IS_OSX)
+    set(VK_NO_VERSION_CHECK ON)
+else()
+    set(VK_NO_VERSION_CHECK OFF)
+endif()
+
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}"
     OPTIONS
@@ -28,7 +34,9 @@ vcpkg_cmake_configure(
         -DKOMPUTE_OPT_USE_BUILT_IN_PYBIND11=OFF
         -DKOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER=OFF
         -DVulkan_GLSLC_EXECUTABLE="${CURRENT_HOST_INSTALLED_DIR}/tools/shaderc/glslc${VCPKG_HOST_EXECUTABLE_SUFFIX}"
+        -DKOMPUTE_OPT_DISABLE_VULKAN_VERSION_CHECK="${VK_NO_VERSION_CHECK}"
 )
+
 
 vcpkg_cmake_install()
 
