@@ -26,12 +26,40 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(rapidcsv)
 message(STATUS "hnswlib at ${rapidcsv_SOURCE_DIR}")
 
+set(GPUDEBUG ON)
+
+if(APPLE AND GPUDEBUG)
+    enable_language(OBJCXX)
+endif()
+
+set(TESTER_SOURCES
+    tSNEtester.cpp
+)
+
+if(WIN32 AND GPUDEBUG)
+    set(RENDERDOC_SOURCES
+        RenderDebug.cpp
+        RenderDebug.h
+        renderdoc_app.h
+    )
+else()
+    set(RENDERDOC_SOURCES)
+endif()
+
+if(APPLE AND GPUDEBUG)
+    set(METALCAPTURE_SOURCES
+        MetalCaptureBridge.mm
+    )
+else()
+    set(METALCAPTURE_SOURCES)
+endif()
+
+ 
 add_executable(
     tsne_tester
     tSNEtester.cpp
-    RenderDebug.cpp
-    RenderDebug.h
-    renderdoc_app.h
+    ${RENDERDOC_SOURCES}
+    ${METALCPTURE}
 )
 
 find_package(fmt CONFIG REQUIRED)
@@ -45,9 +73,17 @@ target_include_directories(tsne_tester
 message(STATUS "binary at ${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(tsne_tester PRIVATE kompute::kompute)
 target_link_libraries(tsne_tester PRIVATE glfw)
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/utils/$<CONFIG>/hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/data/$<CONFIG>/hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/dimensionality_reduction/$<CONFIG>/hdidimensionalityreduction${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_link_libraries(tsne_tester PRIVATE ${OPENGL_LIBRARIES})
+target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/utils/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/data/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/dimensionality_reduction/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidimensionalityreduction${CMAKE_STATIC_LIBRARY_SUFFIX})
+if (APPLE)
+    target_link_libraries(tsne_tester PRIVATE "-framework OpenGL" )
+endif()
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(${TSNE_PLUGIN} PRIVATE OpenMP::OpenMP_CXX)
+endif()
 if(NOT LZ4_TARGET)
     if(TARGET LZ4::lz4_static)
         set(LZ4_TARGET LZ4::lz4_static)
