@@ -502,7 +502,7 @@ void ForcesShaderProg::record(
     _tensors[ShaderBuffers::KLDIV],
     _tensors[ShaderBuffers::UBO_FORCES]
   };
-  auto grid_size = unsigned int(sqrt(num_points) + 1);
+  auto grid_size = static_cast<unsigned int>(std::floor(sqrt(num_points)) + 1);
   _forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, {});
   forcesParams uboVals = { num_points, exaggeration };
   _ubo.setData(uboVals, _forcesAlgorithm, 8);
@@ -552,8 +552,8 @@ void UpdateShaderProg::record(
         _tensors[ShaderBuffers::UBO_UPDATE]
     };
     //auto num_workgroups = unsigned int((num_points * 2 / 128) + 1);
-    auto num_workgroups = unsigned int((num_points/ 128) + 1);
-    auto grid_size = unsigned int(sqrt(num_workgroups) + 1);
+    auto num_workgroups = static_cast<unsigned int>(std::floor(num_points/ 128.0) + 1);
+    auto grid_size = static_cast<unsigned int>(std::floor(sqrt(num_workgroups)) + 1);
     _updateAlgorithm = _mgr->algorithm(
       algoParams, 
       _shaderBinary, 
@@ -616,8 +616,8 @@ void CenterScaleShaderProg::record(
     diameter = 0.1;
   }
 
-  auto num_workgroups = unsigned int(num_points / 128) + 1;
-  auto grid_size = unsigned int(sqrt(num_workgroups) + 1);
+  auto num_workgroups = static_cast<unsigned int>(std::floor(num_points / 128.0) + 1);
+  auto grid_size = static_cast<unsigned int>(std::floor(sqrt(num_workgroups)) + 1);
   _centerScaleAlgorithm = _mgr->algorithm(
     algoParams,
     _shaderBinary, 
