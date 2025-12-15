@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <argparse/argparse.hpp>
 #include <rapidcsv.h>
+
+#include <GLFW/glfw3.h>
 #include "hdi/utils/cout_log.h"
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/data/embedding.h"
@@ -14,13 +16,19 @@
 #include "hdi/utils/scoped_timers.h"
 #include "hdi/dimensionality_reduction/knn_utils.h"
 #include "hdi/dimensionality_reduction/tsne.h"
+
 #include "hdi/dimensionality_reduction/gradient_descent_tsne_texture.h"
 #include <kompute/logger/Logger.hpp>
 #include <algorithm>
 #include <vulkan/vulkan.hpp>
-#include <GLFW/glfw3.h>
 
+#ifdef WIN32
 #include "./RenderDebug.h"
+#endif
+
+#ifdef __APPLE__
+#include "./MetalCaptureBridge.h"
+#endif
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -68,7 +76,12 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
         prob_gen_param);
 
     std::cout << "knn complete" << std::endl;
+#ifdef WIN32
     RenderDoc::RenderDebugger::startFrameCapture();
+#endif
+#ifdef __APPLE__
+    StartMetalCapture(metalDevice);
+#endif
     float gradient_desc_comp_time;
     { // timed scope
         hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(gradient_desc_comp_time);
@@ -89,7 +102,12 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
             return std::vector<float>();
         }
     }
+#ifdef WIN32
     RenderDoc::RenderDebugger::endFrameCapture();
+#endif
+#ifdef __APPLE__
+    EndMetalCapture();
+#endif
 
     std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
     std::cout << "... done!\n";
@@ -121,11 +139,13 @@ std::vector<float> perform_tSNE_OpenGL(
         throw std::runtime_error("Failed to create GLFW window");
     }
     glfwMakeContextCurrent(offscreen_context);
-
+    
+#ifndef __APPLE__
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         glfwTerminate();
         throw std::runtime_error("Failed to initialize OpenGL context");
     }
+#endif
 
     hdi::dr::knn_library _knn_algorithm;
     hdi::dr::knn_distance_metric _knn_metric;
