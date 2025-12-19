@@ -26,7 +26,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(rapidcsv)
 message(STATUS "hnswlib at ${rapidcsv_SOURCE_DIR}")
 
-set(GPUDEBUG ON)
+option(GPUDEBUG " Enable GPU debugging (Windows or MacOS)" ON)
 
 if(APPLE AND GPUDEBUG)
     enable_language(OBJCXX)
@@ -36,31 +36,38 @@ set(TESTER_SOURCES
     tSNEtester.cpp
 )
 
-if(WIN32 AND GPUDEBUG)
-    set(RENDERDOC_SOURCES
-        RenderDebug.cpp
-        RenderDebug.h
-        renderdoc_app.h
-    )
-else()
-    set(RENDERDOC_SOURCES)
-endif()
+set(RENDERDOC_SOURCES
+    RenderDebug.cpp
+    RenderDebug.h
+    renderdoc_app.h
+)
 
-if(APPLE AND GPUDEBUG)
-    set(METALCAPTURE_SOURCES
-        MetalCaptureBridge.mm
-    )
-else()
-    set(METALCAPTURE_SOURCES)
-endif()
 
+set(METALCAPTURE_SOURCES
+    MetalCaptureBridge.mm
+    MetalCaptureBridge.h
+    MetalDevice.cpp
+    MetalDevice.h
+)
  
 add_executable(
     tsne_tester
-    tSNEtester.cpp
-    ${RENDERDOC_SOURCES}
-    ${METALCPTURE}
 )
+
+target_sources(tsne_tester PRIVATE ${TESTER_SOURCES})
+
+if(WIN32 AND GPUDEBUG)
+    target_sources(tsne_tester PRIVATE ${RENDERDOC_SOURCES})
+endif()
+
+if(APPLE AND GPUDEBUG)
+    set_source_files_properties(
+        MetalCaptureBridge.mm
+        PROPERTIES
+            LANGUAGE OBJCXX
+    )
+    target_sources(tsne_tester PRIVATE ${METALCAPTURE_SOURCES})
+endif()
 
 find_package(fmt CONFIG REQUIRED)
 find_package(kompute CONFIG REQUIRED)
@@ -78,7 +85,7 @@ target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/
 target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/data/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
 target_link_libraries(tsne_tester PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../hdi/dimensionality_reduction/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidimensionalityreduction${CMAKE_STATIC_LIBRARY_SUFFIX})
 if (APPLE)
-    target_link_libraries(tsne_tester PRIVATE "-framework OpenGL" )
+    target_link_libraries(tsne_tester PRIVATE "-framework OpenGL" "-framework Metal" "-framework Foundation" )
 endif()
 
 if(OpenMP_CXX_FOUND)
