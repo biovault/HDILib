@@ -153,7 +153,7 @@ void Stencil2ListShaderProg::record(
   _fieldWorkgroupAlgorithm = _mgr->algorithm(workgroupParams, _shaderFieldWorkgroup, kp::Workgroup({ 1, 1, 1 }), {}, {});
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)new_fields_buffer_size, (float)new_fields_buffer_size} };
   _ubo.setData(uboVals, _stencil2listAlgorithm, 3);
-
+  
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
     std::vector<std::shared_ptr<kp::Memory>>(
       { activePixelList }),
