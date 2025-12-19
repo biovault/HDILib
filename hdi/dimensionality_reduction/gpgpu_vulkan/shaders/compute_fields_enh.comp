@@ -32,7 +32,7 @@ shared vec2 sharedPositions[TILE_SIZE];
 void main() {
   // pixelIndex - the index to the output texture pixel coordinates
     uint pixelIndex = gl_GlobalInvocationID.x;
-    if (pixelIndex >= activeCount) return;
+    bool activePixel = (pixelIndex < activeCount);
 
     vec2 min_bounds = Bounds[0];
     vec2 max_bounds = Bounds[1];
@@ -46,8 +46,15 @@ void main() {
     // Tile loop with shared memory
     // The tile loop is designed to share access latency to the position SBO
     uint numTiles = (pc.num_points + TILE_SIZE - 1) / TILE_SIZE;
+    
+    //for (uint i = tid; i < TILE_SIZE; i += gl_WorkGroupSize.x) {
+    //    sharedPositions[i] = vec2(0);
+    //}
+    memoryBarrierShared();
+    barrier();
 
     uint pointBase = 0;
+
     for (uint tileIdx = 0; tileIdx < numTiles; tileIdx++) {
       uint loadIdx = pointBase + tid;
       
@@ -59,18 +66,22 @@ void main() {
       
       uint tileEnd = min(TILE_SIZE, pc.num_points - pointBase);
 
-      for (uint i = 0; i < tileEnd; i++) {
-          vec2 t = pixel_pos - sharedPositions[i];
-          float eucl_sqrd = dot(t, t);
-          float tstud = 1.0 / (1.0 + eucl_sqrd);
-          float tstud2 = tstud * tstud;
-          accumulator += vec3(tstud, tstud2 * t.x, tstud2 * t.y);
+      if (activePixel) {
+          for (uint i = 0; i < tileEnd; i++) {
+              vec2 t = pixel_pos - sharedPositions[i];
+              float eucl_sqrd = dot(t, t);
+              float tstud = 1.0 / (1.0 + eucl_sqrd);
+              float tstud2 = tstud * tstud;
+              accumulator += vec3(tstud, tstud2 * t.x, tstud2 * t.y);
+          }
       }
       memoryBarrierShared();
       barrier();
       pointBase += TILE_SIZE;
     }
     
-    imageStore(Fields, ivec2(pixelCoord), vec4(accumulator, 0));
-} 
+    if (activePixel) {
+        imageStore(Fields, ivec2(pixelCoord), vec4(accumulator, 0));
+    }
+}
 
