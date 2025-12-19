@@ -1592,18 +1592,21 @@ index 5093c83..8f4e4d4 100644
      // -------------- OPTIONALLY OWNED RESOURCES
      std::shared_ptr<vk::Instance> mInstance = nullptr;
 diff --git a/src/Manager.cpp b/src/Manager.cpp
-index b74dc59..f797657 100644
+index b74dc59..5f17fbc 100644
 --- a/src/Manager.cpp
 +++ b/src/Manager.cpp
-@@ -14,7 +14,6 @@
+@@ -14,7 +14,9 @@
  #include <sstream>
  #include <string>
  #include <unordered_map>
 -
++#ifdef __APPLE__
++#include <vulkan/vulkan_metal.h>
++#endif
  namespace kp {
  
  #ifndef KOMPUTE_DISABLE_VK_DEBUG_LAYERS
-@@ -61,8 +60,10 @@ Manager::Manager(uint32_t physicalDeviceIndex,
+@@ -61,8 +63,10 @@ Manager::Manager(uint32_t physicalDeviceIndex,
  #endif
  
      this->createInstance();
@@ -1614,7 +1617,7 @@ index b74dc59..f797657 100644
  }
  
  Manager::Manager(std::shared_ptr<vk::Instance> instance,
-@@ -170,6 +171,13 @@ Manager::createInstance()
+@@ -170,6 +174,13 @@ Manager::createInstance()
  
      this->mFreeInstance = true;
  
@@ -1628,7 +1631,24 @@ index b74dc59..f797657 100644
      vk::ApplicationInfo applicationInfo;
      applicationInfo.pApplicationName = "Kompute";
      applicationInfo.pEngineName = "Kompute";
-@@ -446,6 +454,35 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
+@@ -193,7 +204,15 @@ Manager::createInstance()
+       VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+     computeInstanceCreateInfo.flags |=
+       vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+-#endif
++
++    VkExportMetalObjectCreateInfoEXT metalExportCreateInfo{};
++    metalExportCreateInfo.sType =
++        VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;
++    metalExportCreateInfo.pNext = nullptr;
++    metalExportCreateInfo.exportObjectType =
++      VK_EXPORT_METAL_OBJECT_TYPE_METAL_DEVICE_BIT_EXT;
++    computeInstanceCreateInfo.pNext = &metalExportCreateInfo;
++  #endif
+ 
+     if (!applicationExtensions.empty()) {
+         computeInstanceCreateInfo.enabledExtensionCount =
+@@ -446,6 +465,35 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
                       fmt::join(validExtensions, ", "));
      }
  
@@ -1664,7 +1684,7 @@ index b74dc59..f797657 100644
      vk::DeviceCreateInfo deviceCreateInfo(vk::DeviceCreateFlags(),
                                            deviceQueueCreateInfos.size(),
                                            deviceQueueCreateInfos.data(),
-@@ -454,6 +491,9 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
+@@ -454,6 +502,9 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
                                            validExtensions.size(),
                                            validExtensions.data());
  
