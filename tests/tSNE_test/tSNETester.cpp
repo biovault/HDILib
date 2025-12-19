@@ -28,6 +28,7 @@
 
 #ifdef __APPLE__
 #include "./MetalCaptureBridge.h"
+#include "./MetalDevice.h"
 #endif
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
@@ -76,16 +77,18 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
         prob_gen_param);
 
     std::cout << "knn complete" << std::endl;
-#ifdef WIN32
+#if defined(WIN32) && !defined(NDEBUG)
     RenderDoc::RenderDebugger::startFrameCapture();
 #endif
-#ifdef __APPLE__
-    StartMetalCapture(metalDevice);
-#endif
+
     float gradient_desc_comp_time;
     { // timed scope
         hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(gradient_desc_comp_time);
         tSNE.initializeWithJointProbabilityDistribution(distributions, &embedding, tSNE_param);
+#if defined(__APPLE__) and !defined(NDEBUG)
+        vk::Device *devicePtr = static_cast<vk::Device *>(tSNE.getDevice());
+        StartMetalCapture(getMetalDevice(*devicePtr));
+#endif
         try {
             for (int iter = 0; iter < iterations; ++iter) {
                 tSNE.doAnIteration();
@@ -101,12 +104,12 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
             std::cerr << "Exception with error: " << e.what() << std::endl;
             return std::vector<float>();
         }
-    }
-#ifdef WIN32
-    RenderDoc::RenderDebugger::endFrameCapture();
+#if defined(__APPLE__) && !defined(NDEBUG)
+        EndMetalCapture();
 #endif
-#ifdef __APPLE__
-    EndMetalCapture();
+    }
+#if defined(WIN32) && !defined(NDEBUG)
+    RenderDoc::RenderDebugger::endFrameCapture();
 #endif
 
     std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
