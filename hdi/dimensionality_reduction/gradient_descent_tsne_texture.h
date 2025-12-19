@@ -125,6 +125,17 @@ namespace hdi {
       double& exaggeration_baseline() { return _exaggeration_baseline; }
       const double& exaggeration_baseline()const { return _exaggeration_baseline; }
 
+      // return Vulkan device
+      // only valid on APPLE VULKAN debug - otherwise returns nullptr
+      // The caller should cast back to vk::Device *
+      void *getDevice() {
+#ifdef __APPLE__
+        return _gpgpu_vulkan_compute_tsne.getDevice().get();
+#else
+        return nullptr;
+#endif
+      }
+
     private:
       //! Compute High-dimensional distribution
       void computeHighDimensionalDistribution(const sparse_scalar_matrix_type& probabilities);
