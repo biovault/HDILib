@@ -73,7 +73,8 @@ public:
   BoundsShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::BOUNDS_SUBGROUP] )
+    //	_shaderBinary(getSPIRVBinaries()[SPIRVShader::BOUNDS_SUBGROUP] )
+    _shaderBinary(getSPIRVBinaries()[SPIRVShader::BOUNDS] )
   {}
 
   void record_padded(
