@@ -42,6 +42,11 @@ namespace hdi {
       }
       bool isInitialized() const { return _initialized == true; }
 
+      // For debug purposes only
+      std::shared_ptr<vk::Device> getDevice() {
+        return _mgr->getDevice();
+      }
+
     private:
       //const unsigned int FIXED_FIELDS_SIZE = 40;
       const unsigned int MINIMUM_FIELDS_SIZE = 5;
