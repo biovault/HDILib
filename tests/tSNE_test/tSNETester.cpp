@@ -46,7 +46,7 @@ void save_to_csv(std::vector<float> embedding, std::string output, int iter = -1
     s.close();
 }
 
-std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimensions, std::vector<float> data, std::string output, int stepsoutput, int iterations = 1000, int perplexity = 30, int exaggeration_iter = 250, hdi::dr::knn_library knn_algorithm = hdi::dr::knn_library::KNN_HNSW, hdi::dr::knn_distance_metric knn_distance_metric = hdi::dr::knn_distance_metric::KNN_METRIC_EUCLIDEAN, int num_target_dimensions = 2) {
+std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimensions, std::vector<float> data, std::string output, int stepsoutput, int iterations = 1000, int perplexity = 30, double exaggeration=4.0, int exaggeration_iter = 250, hdi::dr::knn_library knn_algorithm = hdi::dr::knn_library::KNN_HNSW, hdi::dr::knn_distance_metric knn_distance_metric = hdi::dr::knn_distance_metric::KNN_METRIC_EUCLIDEAN, int num_target_dimensions = 2) {
 
     hdi::dr::knn_library _knn_algorithm;
     hdi::dr::knn_distance_metric _knn_metric;
@@ -64,7 +64,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
     tSNE_param._embedding_dimensionality = num_target_dimensions;
     tSNE_param._mom_switching_iter = exaggeration_iter;
     tSNE_param._remove_exaggeration_iter = exaggeration_iter;
-    tSNE_param._exaggeration_factor = 4.0;
+    tSNE_param._exaggeration_factor = exaggeration;
     prob_gen_param._perplexity = perplexity;
     prob_gen_param._aknn_metric = knn_distance_metric;
     prob_gen_param._aknn_algorithm = knn_algorithm;
@@ -114,7 +114,9 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
 
     std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
     std::cout << "... done!\n";
-    return embedding.getContainer();
+    auto result = embedding.getContainer();
+    tSNE.clear();
+    return result;
 }
 
 std::vector<float> perform_tSNE_OpenGL(
@@ -124,9 +126,10 @@ std::vector<float> perform_tSNE_OpenGL(
     std::string output, 
     int stepsoutput, 
     int iterations = 1000, 
-    int perplexity = 30, 
-    bool raster = false, 
-    int exaggeration_iter = 250, 
+    int perplexity = 30,
+    bool raster = false,
+    double exaggeration=4.0,
+    int exaggeration_iter = 250,
     hdi::dr::knn_library knn_algorithm = hdi::dr::knn_library::KNN_HNSW, 
     hdi::dr::knn_distance_metric knn_distance_metric = hdi::dr::knn_distance_metric::KNN_METRIC_EUCLIDEAN, 
     int num_target_dimensions = 2) {
@@ -167,7 +170,7 @@ std::vector<float> perform_tSNE_OpenGL(
     tSNE_param._embedding_dimensionality = num_target_dimensions;
     tSNE_param._mom_switching_iter = exaggeration_iter;
     tSNE_param._remove_exaggeration_iter = exaggeration_iter;
-    tSNE_param._exaggeration_factor = 4.0;
+    tSNE_param._exaggeration_factor = exaggeration;
     prob_gen_param._perplexity = perplexity;
     prob_gen_param._aknn_metric = knn_distance_metric;
     prob_gen_param._aknn_algorithm = knn_algorithm;
@@ -206,7 +209,9 @@ std::vector<float> perform_tSNE_OpenGL(
     }
     std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
     std::cout << "... done!\n";
-    return embedding.getContainer();
+    auto result = embedding.getContainer();
+    tSNE.clear();
+    return result;
 }
 
 template<typename T>
@@ -234,6 +239,14 @@ int main(int argc, const char** argv) {
         .default_value(30.0)
         .scan<'g', double>()
         .help("Perplexity value for tSNE (default: 30.0).");
+    program.add_argument("-x", "--exag")
+        .default_value(4.0)
+        .scan<'g', double>()
+        .help("Exaggeration value for tSNE (default: 4.0).");
+    program.add_argument("-y", "--exagdecay")
+        .default_value(250u)
+        .scan<'i', unsigned int>()
+        .help("Exaggeration value for tSNE (default: 250).");
     program.add_argument("-i", "--iterations")
         .default_value(1000u)
         .scan<'i', unsigned int>()
@@ -284,6 +297,8 @@ int main(int argc, const char** argv) {
     auto csvpath = program.get<std::filesystem::path>("csvfile");
     auto output = program.get<std::string>("output");
     auto perplexity = program.get<double>("perplexity");
+    auto exag = program.get<double>("exag");
+    auto exagdecay = program.get<unsigned int>("exagdecay");
     auto iterations = program.get<unsigned int>("iterations");
     auto dim = program.get<unsigned int>("dimension");
     auto subset = program.get<int>("numpoints");
@@ -372,9 +387,9 @@ int main(int argc, const char** argv) {
 
     std::vector<float> embedding;
     if (opengl || raster)
-        embedding = perform_tSNE_OpenGL(num_points, dim, data, output, stepsoutput, iterations, perplexity, raster);
+        embedding = perform_tSNE_OpenGL(num_points, dim, data, output, stepsoutput, iterations, perplexity, raster, exag, exagdecay);
     else {
-        embedding = perform_tSNE(num_points, dim, data, output, stepsoutput, iterations, perplexity);
+        embedding = perform_tSNE(num_points, dim, data, output, stepsoutput, iterations, perplexity, exag, exagdecay);
     }
     save_to_csv(embedding, output);
 
