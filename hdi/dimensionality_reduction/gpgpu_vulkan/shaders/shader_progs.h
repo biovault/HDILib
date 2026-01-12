@@ -20,22 +20,22 @@ class ShaderImageHelper {
     _field_sample = _field_out->createSampledView();
     _activePixelList = mgr->tensorT<uint32_t>(std::vector<uint32_t>(fields_buffer_size * fields_buffer_size * 2, 0));
   };
-  std::shared_ptr<kp::ImageT<float>> getStencilImage() const {
+  std::weak_ptr<kp::ImageT<float>> getStencilImage() const {
     return _stencil_out;
   };
   std::vector<float>& getStencilArray() {
     return _stencil_array;
   };
-  std::shared_ptr<kp::ImageT<float>> getFieldImage() const {
+  std::weak_ptr<kp::ImageT<float>> getFieldImage() const {
     return _field_out;
   };
-  std::shared_ptr<kp::ImageT<float>> getFieldSamplerImage() const {
+  std::weak_ptr<kp::ImageT<float>> getFieldSamplerImage() const {
     return _field_sample;
   };
   std::vector<float>& getFieldArray() {
     return _field_array;
   };
-  std::shared_ptr<kp::TensorT<uint32_t>> getActivePixelList() const {
+  std::weak_ptr<kp::TensorT<uint32_t>> getActivePixelList() const {
     return _activePixelList;
   };
 
@@ -55,6 +55,19 @@ class ShaderImageHelper {
     }
     _field_out->setData(_field_array);
   };
+  
+  void resetBuffers() {
+    _stencil_out->destroy();
+    _field_out->destroy();
+    _field_sample->destroy();
+    _activePixelList->destroy();
+    _stencil_out.reset();
+    _field_out.reset();
+    _field_sample.reset();
+    _activePixelList.reset();
+  }
+  
+  
 
 private:
   std::shared_ptr<kp::ImageT<float>> _stencil_out;
@@ -108,7 +121,7 @@ public:
   void record(
     std::shared_ptr<kp::Sequence> seq,
     uint32_t width, uint32_t height,
-    std::shared_ptr<kp::ImageT<float>> stencil,
+    std::weak_ptr<kp::ImageT<float>> stencil,
     unsigned int num_points,
     std::vector<float> bounds,
     unsigned int new_fields_buffer_size = 0);
@@ -117,6 +130,11 @@ public:
     uint32_t width, uint32_t height,
     std::vector<float> bounds,
     unsigned int new_fields_buffer_size = 0);
+  
+  void clear() {
+    _stencilAlgorithm->destroy();
+    _stencilAlgorithm.reset();
+  }
 
 private:
   std::vector<uint32_t>& _shaderBinary;
@@ -144,8 +162,8 @@ public:
   void record(
     std::shared_ptr<kp::Sequence> seq,
     uint32_t width, uint32_t height,
-    std::shared_ptr<kp::ImageT<float>> stencil,
-    std::shared_ptr<kp::TensorT<uint32_t>> activePixelList,
+    std::weak_ptr<kp::ImageT<float>> stencil,
+    std::weak_ptr<kp::TensorT<uint32_t>> activePixelList,
     unsigned int num_points,
     std::vector<float> bounds,
     unsigned int new_fields_buffer_size = 0);
@@ -154,6 +172,12 @@ public:
     uint32_t width, uint32_t height,
     std::vector<float> bounds,
     unsigned int new_fields_buffer_size = 0);
+  
+  void clear() {
+    _clearCounterAlgorithm->destroy();
+    _stencil2listAlgorithm->destroy();
+    _fieldWorkgroupAlgorithm->destroy();
+  }
 
 private:
   std::vector<uint32_t>& _shaderBinaryClearCounter;
@@ -193,6 +217,11 @@ public:
     uint32_t num_points,
     uint32_t width, uint32_t height,
     unsigned int new_fields_buffer_size = 0);
+  
+  void clear() {
+    _fieldAlgorithm->destroy();
+  }
+  
 private:
   std::vector<uint32_t>& _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
@@ -218,15 +247,20 @@ public:
     std::shared_ptr<kp::Sequence> seq,
     uint32_t num_points,
     uint32_t width, uint32_t height,
-    std::shared_ptr<kp::ImageT<float>> sampleFields,
-    std::shared_ptr<kp::ImageT<float>> fields,
-    std::shared_ptr<kp::TensorT<uint32_t>> activePixelList,
+    std::weak_ptr<kp::ImageT<float>> sampleFields,
+    std::weak_ptr<kp::ImageT<float>> fields,
+    std::weak_ptr<kp::TensorT<uint32_t>> activePixelList,
     unsigned int new_fields_buffer_size = 0);
 
   void update(
     uint32_t num_points,
     uint32_t width, uint32_t height,
     unsigned int new_fields_buffer_size = 0);
+  
+  void clear() {
+    _fieldAlgorithm->destroy();
+  }
+  
 private:
   std::vector<uint32_t>& _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
@@ -250,8 +284,8 @@ public:
   void record(
     std::shared_ptr<kp::Sequence> seq,
     uint32_t num_points,
-    std::shared_ptr<kp::ImageT<float>> sampleFields,
-    std::shared_ptr<kp::ImageT<float>> fields,
+    std::weak_ptr<kp::ImageT<float>> sampleFields,
+    std::weak_ptr<kp::ImageT<float>> fields,
     uint32_t width,
     uint32_t height);
 
@@ -289,8 +323,8 @@ public:
     std::shared_ptr<kp::Sequence> seq,
     uint32_t num_points,
     uint32_t num_workgroups,
-    std::shared_ptr<kp::ImageT<float>> sampleFields,
-    std::shared_ptr<kp::ImageT<float>> fields,
+    std::weak_ptr<kp::ImageT<float>> sampleFields,
+    std::weak_ptr<kp::ImageT<float>> fields,
     uint32_t width,
     uint32_t height);
 
@@ -303,6 +337,11 @@ public:
     auto sumQ = _tensors[ShaderBuffers::SUM_Q]->vector<float>()[0];
     return sumQ;
   };
+  
+  void clear() {
+    _interpAlgorithm1->destroy();
+    _interpAlgorithm2->destroy();
+  }
 private:
   std::vector<uint32_t>& _shaderBinary1;
   std::vector<uint32_t>& _shaderBinary2;

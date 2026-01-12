@@ -113,36 +113,6 @@ namespace hdi {
 #else
       _mgr = std::make_shared<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({ "VK_KHR_synchronization2" }));
 #endif
-      // <DEBUG output physical device info>
-      /*vk::PhysicalDeviceSynchronization2FeaturesKHR sync2Features{};
-      vk::PhysicalDeviceFeatures2 features2{};
-      features2.pNext = &sync2Features;
-
-      _mgr->getPhysicalDevice()->getFeatures2(&features2);
-      //std::cout << "Synchronization2 supported: "
-      //  << (sync2Features.synchronization2 ? "YES" : "NO") << std::endl;
-
-      auto pprops = _mgr->getPhysicalDevice()->getProperties();
-      printf("Physical device API version: %u.%u.%u\n",
-        VK_VERSION_MAJOR(pprops.apiVersion),
-        VK_VERSION_MINOR(pprops.apiVersion),
-        VK_VERSION_PATCH(pprops.apiVersion));
-
-      vk::PhysicalDeviceSynchronization2FeaturesKHR sync2{};	
-
-      vk::PhysicalDeviceFeatures2 qfeatures2;
-      qfeatures2.pNext = &sync2;
-      _mgr->getPhysicalDevice()->getFeatures2(&qfeatures2);
-      printf("sync2 feature supported/enabled = %u\n", sync2.synchronization2);
-      auto p_khr = (void*)vkGetDeviceProcAddr(*_mgr->getDevice().get(), "vkCmdPipelineBarrier2KHR");
-      auto p_core = (void*)vkGetDeviceProcAddr(*_mgr->getDevice().get(), "vkCmdPipelineBarrier2");
-      printf("vkCmdPipelineBarrier2KHR = %p\n", p_khr);
-      printf("vkCmdPipelineBarrier2     = %p\n", p_core);
-
-      auto props = _mgr->getPhysicalDevice()->enumerateDeviceExtensionProperties();
-      for (auto& p : props)
-        std::cout << p.extensionName << std::endl;*/
-      // </DEBUG output physical device info>
 
       _tensors[ShaderBuffers::POSITION] = _mgr->tensorT(std::vector<float>(num_pnts * 2, 0.0f));
       _tensors[ShaderBuffers::INTERP_FIELDS] = _mgr->tensorT(std::vector<float>(num_pnts * 4, 0.0f));
@@ -200,6 +170,28 @@ namespace hdi {
         n.second->destroy();
       _tensors.clear();
       _initialized = false;
+      
+      //std::cout << " Clearing vulkan resources\n";
+      auto sten = _shaderImageHelper.getStencilImage();
+      auto fiel = _shaderImageHelper.getFieldImage();
+      auto samp = _shaderImageHelper.getFieldSamplerImage();
+      //std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
+      
+      if (fiel.lock()) {
+        auto field_vkimage = static_cast<VkImage>(*fiel.lock()->getPrimaryImage().get());
+        auto stencil_vkimage = static_cast<VkImage>(*sten.lock()->getPrimaryImage().get());
+        auto sample_vkimage = static_cast<VkImage>(*samp.lock()->getPrimaryImage().get());
+        //std::cout << " VkImages -  field: " << field_vkimage << " sample: " << sample_vkimage << " stencil: " << stencil_vkimage << "\n";
+      }
+      
+      _stencilProg.reset();
+      _stencil2ListProg.reset();
+      _fieldCompEnhProg.reset();
+      _interpEnhProg.reset();
+      _seq0.reset();
+      //std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
+      _shaderImageHelper.resetBuffers();
+      //std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
     }
 
     void GpgpuSneVulkan::compute(embedding_type* embedding, float exaggeration, float iteration, float mult) {
@@ -219,11 +211,39 @@ namespace hdi {
       float* bounds,
       float exaggeration,
       float mult) {
+      
+      auto sten = _shaderImageHelper.getStencilImage();
+      auto fiel = _shaderImageHelper.getFieldImage();
+      auto samp = _shaderImageHelper.getFieldSamplerImage();
+      if (_seq0) {
+        if (fiel.lock()) {
+          auto field_vkimage = static_cast<VkImage>(*fiel.lock()->getPrimaryImage().get());
+          auto stencil_vkimage = static_cast<VkImage>(*sten.lock()->getPrimaryImage().get());
+          auto sample_vkimage = static_cast<VkImage>(*samp.lock()->getPrimaryImage().get());
+          //std::cout << " VkImages -  field: " << field_vkimage << " sample: " << sample_vkimage << " stencil: " << stencil_vkimage << "\n";
+        }
+        // free all old VULKAN image resources
+        // These will be recreated at the new size
+        //std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
+        _stencilProg = std::make_shared<StencilShaderProg>(_mgr, _tensors);
+        _stencil2ListProg = std::make_shared<Stencil2ListShaderProg>(_mgr, _tensors);
+        _fieldCompEnhProg = std::make_shared<FieldComputationEnhShaderProg>(_mgr, _tensors);
+        _interpEnhProg = std::make_shared<InterpolationEnhShaderProg>(_mgr, _tensors);
+        _shaderImageHelper.resetBuffers();
+        _seq0.reset();
 
+        std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
+      }
       _seq0 = _mgr->sequence();
-      _seq0->begin();
+      //if (sten.lock())
+      //  std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
       _shaderImageHelper.createBuffers(_mgr, _fields_buffer_size);
       _shaderImageHelper.setFieldArraySampler(_mgr->createLinearSampler());
+      //if (sten.lock())
+      //  std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
+      _seq0->begin();
+      //_shaderImageHelper.resetBuffers();
+
       _stencilProg->record(_seq0, width, height, _shaderImageHelper.getStencilImage(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _stencil2ListProg->record(_seq0, _fields_buffer_size, _fields_buffer_size, _shaderImageHelper.getStencilImage(), _shaderImageHelper.getActivePixelList(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompEnhProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), _shaderImageHelper.getActivePixelList(), _fields_buffer_size);
@@ -301,10 +321,11 @@ namespace hdi {
 
       //auto tu0 = std::chrono::high_resolution_clock::now();
       if (new_field_buf) {
-        std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
+        //std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
         // rerecord the computer buffer sequence with the new field size
         ; // at most 1024 (should this be an exception?)
         record_compute_sequence(iteration, width, height, num_points, _bounds.data(), exaggeration, mult);
+
       } else {
         // simply update the push constants of the sequence		
         update_compute_sequence(iteration, num_points, width, height, _bounds.data(), exaggeration, mult);

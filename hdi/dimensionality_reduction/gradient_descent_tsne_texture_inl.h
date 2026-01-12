@@ -101,6 +101,8 @@ namespace hdi {
 
     void GradientDescentTSNETexture::clear() {
       _embedding->clear();
+      if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+        _gpgpu_vulkan_compute_tsne.clean();
       _initialized = false;
     }
 
