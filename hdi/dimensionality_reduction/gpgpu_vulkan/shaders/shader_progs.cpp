@@ -64,15 +64,17 @@ void StencilShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
   uint32_t width,
   uint32_t height,
-  std::shared_ptr<kp::ImageT<float>> stencil,
+  std::weak_ptr<kp::ImageT<float>> stencil,
   unsigned int num_points,
   std::vector<float> bounds,
   unsigned int new_fields_buffer_size) {
 
+  _stencilAlgorithm.reset();
+
   _fields_buffer_size = new_fields_buffer_size;
   // Needs patch in Sequence.hpp
   auto cmdBuf = seq->getCommandBuffer();
-  stencil->recordPrimaryImageBarrier(
+  stencil.lock()->recordPrimaryImageBarrier(
     *(cmdBuf.get()),
     vk::AccessFlagBits::eNone,
     vk::AccessFlagBits::eShaderWrite,
@@ -81,7 +83,7 @@ void StencilShaderProg::record(
     vk::ImageLayout::eGeneral);
 
   const std::vector<std::shared_ptr<kp::Memory>> params = { 
-    _tensors[ShaderBuffers::POSITION], _tensors[ShaderBuffers::UBO_STENCIL], stencil};
+    _tensors[ShaderBuffers::POSITION], _tensors[ShaderBuffers::UBO_STENCIL], stencil.lock()};
   // stencil2list zeros the stencil after use
   // The usage here is hacky because the OpMemoryBarrier should accept vk:AccessFlags but doesn't yet
   auto dstMaskBits = static_cast<vk::AccessFlagBits>(
@@ -89,7 +91,7 @@ void StencilShaderProg::record(
     static_cast<uint32_t>(vk::AccessFlagBits::eShaderRead)
     );
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
-    std::vector<std::shared_ptr<kp::Memory>>({ stencil }),
+    std::vector<std::shared_ptr<kp::Memory>>({ stencil.lock() }),
     vk::AccessFlagBits::eShaderWrite,
     dstMaskBits,
     vk::PipelineStageFlagBits::eComputeShader,
@@ -119,12 +121,14 @@ void Stencil2ListShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
   uint32_t width,
   uint32_t height,
-  std::shared_ptr<kp::ImageT<float>> stencil,
-  std::shared_ptr<kp::TensorT<uint32_t>> activePixelList,
+  std::weak_ptr<kp::ImageT<float>> stencil,
+  std::weak_ptr<kp::TensorT<uint32_t>> activePixelList,
   unsigned int num_points,
   std::vector<float> bounds,
   unsigned int new_fields_buffer_size) {
 
+  _stencil2listAlgorithm.reset();
+  _fieldWorkgroupAlgorithm.reset();
   _fields_buffer_size = new_fields_buffer_size;
 
   const std::vector<std::shared_ptr<kp::Memory>> clearParams = {
@@ -132,14 +136,14 @@ void Stencil2ListShaderProg::record(
   };
 
   const std::vector<std::shared_ptr<kp::Memory>> workgroupParams = {
-  _tensors[ShaderBuffers::ATOMIC_COUNTER],
+  _tensors[ShaderBuffers::ATOMIC_COUNTER],	
   _tensors[ShaderBuffers::IMAGE_WORKGROUP]
   };
 
   const std::vector<std::shared_ptr<kp::Memory>> params = {
-    stencil, 
-    _tensors[ShaderBuffers::ATOMIC_COUNTER], 
-    activePixelList, 
+    stencil.lock(),
+    _tensors[ShaderBuffers::ATOMIC_COUNTER],
+    activePixelList.lock(),
     _tensors[ShaderBuffers::UBO_STENCIL] };
 
 
@@ -156,7 +160,7 @@ void Stencil2ListShaderProg::record(
   
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
     std::vector<std::shared_ptr<kp::Memory>>(
-      { activePixelList }),
+      { activePixelList.lock() }),
     vk::AccessFlagBits::eShaderWrite,
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
@@ -189,6 +193,7 @@ void FieldComputationShaderProg::record(
   std::shared_ptr<kp::ImageT<float>> fields,
   std::shared_ptr<kp::ImageT<float>> stencil,
   unsigned int new_fields_buffer_size) {
+  _fieldAlgorithm.reset();
   _fields_buffer_size = new_fields_buffer_size;
   auto cmdBuf = seq->getCommandBuffer();
 
@@ -269,14 +274,14 @@ void FieldComputationEnhShaderProg::record(
   uint32_t num_points,
   uint32_t width,
   uint32_t height,
-  std::shared_ptr<kp::ImageT<float>> sampleFields,
-  std::shared_ptr<kp::ImageT<float>> fields,
-  std::shared_ptr<kp::TensorT<uint32_t>> activePixelList,
+  std::weak_ptr<kp::ImageT<float>> sampleFields,
+  std::weak_ptr<kp::ImageT<float>> fields,
+  std::weak_ptr<kp::TensorT<uint32_t>> activePixelList,
   unsigned int new_fields_buffer_size) {
   _fields_buffer_size = new_fields_buffer_size;
   auto cmdBuf = seq->getCommandBuffer();
 
-  fields->recordPrimaryImageBarrier(
+  fields.lock()->recordPrimaryImageBarrier(
     *(cmdBuf.get()),
     vk::AccessFlagBits::eNone,
     vk::AccessFlagBits::eShaderWrite,
@@ -289,11 +294,11 @@ void FieldComputationEnhShaderProg::record(
   //dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
 
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
-      activePixelList,
+      activePixelList.lock(),
       _tensors[ShaderBuffers::ATOMIC_COUNTER],
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
-      fields,
+      fields.lock(),
       _tensors[ShaderBuffers::UBO_FIELD]
   };
 
@@ -301,7 +306,7 @@ void FieldComputationEnhShaderProg::record(
 
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
       _tensors[ShaderBuffers::BOUNDS],
-      fields,
+      fields.lock(),
       _tensors[ShaderBuffers::UBO_FIELD]
   };
 
@@ -311,15 +316,15 @@ void FieldComputationEnhShaderProg::record(
     vk::AccessFlags(vk::AccessFlagBits::eShaderWrite) | vk::AccessFlags(vk::AccessFlagBits::eShaderRead);
 
   auto shaderBarrier = std::make_shared<kp::OpMemoryBarrier>(
-    std::vector<std::shared_ptr<kp::Memory>>({ fields }),
+    std::vector<std::shared_ptr<kp::Memory>>({ fields.lock() }),
     vk::AccessFlagBits::eShaderWrite,
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
 
   auto fieldTransition = std::make_shared<OpImageLayoutTransition>(
-    fields,
-    sampleFields,
+    fields.lock(),
+    sampleFields.lock(),
     vk::ImageLayout::eUndefined,
     vk::AccessFlagBits2::eShaderRead,
     vk::ImageLayout::eGeneral,
@@ -345,18 +350,18 @@ void FieldComputationEnhShaderProg::update(
 void InterpolationShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
   uint32_t num_points,
-  std::shared_ptr<kp::ImageT<float>> sampleFields,
-  std::shared_ptr<kp::ImageT<float>> fields,
+  std::weak_ptr<kp::ImageT<float>> sampleFields,
+  std::weak_ptr<kp::ImageT<float>> fields,
   uint32_t width,
   uint32_t height) {
   // resync layouts between the two views
-  sampleFields->setPrimaryImageLayout(fields->getPrimaryImageLayout());
+  sampleFields.lock()->setPrimaryImageLayout(fields.lock()->getPrimaryImageLayout());
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::POSITION],
       _tensors[ShaderBuffers::BOUNDS],
       _tensors[ShaderBuffers::INTERP_FIELDS],
       _tensors[ShaderBuffers::SUM_Q],
-      sampleFields,
+      sampleFields.lock(),
       _tensors[ShaderBuffers::UBO_INTERP],
       _tensors[ShaderBuffers::DEBUG]
   };
@@ -383,8 +388,8 @@ void InterpolationShaderProg::record(
     vk::PipelineStageFlagBits::eComputeShader);
 
   auto sampleTransition = std::make_shared<OpImageLayoutTransition>(
-    fields,
-    sampleFields,
+    fields.lock(),
+    sampleFields.lock(),
     vk::ImageLayout::eGeneral,
     vk::AccessFlagBits2::eShaderWrite,
     vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -408,15 +413,15 @@ void InterpolationEnhShaderProg::record(
   std::shared_ptr<kp::Sequence> seq,
   uint32_t num_points,
   uint32_t num_workgroups,
-  std::shared_ptr<kp::ImageT<float>> sampleFields,
-  std::shared_ptr<kp::ImageT<float>> fields,
+  std::weak_ptr<kp::ImageT<float>> sampleFields,
+  std::weak_ptr<kp::ImageT<float>> fields,
   uint32_t width,
   uint32_t height) {
-    sampleFields->setPrimaryImageLayout(fields->getPrimaryImageLayout());
+    sampleFields.lock()->setPrimaryImageLayout(fields.lock()->getPrimaryImageLayout());
     const std::vector<std::shared_ptr<kp::Memory>> algoParams1 = {
         _tensors[ShaderBuffers::POSITION],
         _tensors[ShaderBuffers::BOUNDS],
-        sampleFields,
+        sampleFields.lock(),
         _tensors[ShaderBuffers::INTERP_FIELDS],
         _tensors[ShaderBuffers::PARTIAL_SUM],
         _tensors[ShaderBuffers::UBO_INTERP]
@@ -429,8 +434,8 @@ void InterpolationEnhShaderProg::record(
 
 
     auto sampleTransition = std::make_shared<OpImageLayoutTransition>(
-      fields,
-      sampleFields,
+      fields.lock(),
+      sampleFields.lock(),
       vk::ImageLayout::eGeneral,
       vk::AccessFlagBits2::eShaderWrite,
       vk::ImageLayout::eShaderReadOnlyOptimal,
