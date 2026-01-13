@@ -14,8 +14,6 @@ if(USE_VULKAN_KOMPUTE)
     add_dependencies(${PROJECT} compile_shaders)
     find_package(fmt CONFIG REQUIRED)
     find_package(kompute CONFIG REQUIRED)
-    # choose the algorithm implementation slow PUSH_CONSTANTS or fast UBOs 
-    set(SHADER_USE_PUSH_CONSTANTS FALSE)
     target_compile_definitions(${PROJECT} PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 else()
     file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
@@ -72,9 +70,6 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 target_compile_definitions(${PROJECT} PRIVATE _ISOC99_SOURCE _GNU_SOURCE)
-if (SHADER_USE_PUSH_CONSTANTS) 
-  target_compile_definitions(${PROJECT} PRIVATE SHADER_USE_PUSH_CONSTANTS=1)
-endif()
 
 if(HDILib_ENABLE_PID)
     set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
