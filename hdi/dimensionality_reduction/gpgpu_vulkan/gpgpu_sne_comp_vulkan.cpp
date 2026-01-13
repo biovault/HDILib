@@ -195,12 +195,7 @@ namespace hdi {
     }
 
     void GpgpuSneVulkan::compute(embedding_type* embedding, float exaggeration, float iteration, float mult) {
-#ifdef SHADER_USE_PUSH_CONSTANTS
-      compute_stepwise(embedding, exaggeration, iteration, mult);
-#else
       compute_sequence(embedding, exaggeration, iteration, mult);
-#endif // SHADER_USE_PUSH_CONSTANTS
-
     }
 
     void GpgpuSneVulkan::record_compute_sequence(
@@ -232,7 +227,7 @@ namespace hdi {
         _shaderImageHelper.resetBuffers();
         _seq0.reset();
 
-        std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
+        //std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
       }
       _seq0 = _mgr->sequence();
       //if (sten.lock())
