@@ -89,7 +89,7 @@ if (APPLE)
 endif()
 
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(${TSNE_PLUGIN} PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(tsne_tester PRIVATE OpenMP::OpenMP_CXX)
 endif()
 if(NOT LZ4_TARGET)
     if(TARGET LZ4::lz4_static)
