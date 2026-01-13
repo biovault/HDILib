@@ -2,7 +2,6 @@
 #include <map>
 #include <vector>
 #include "bounds.hpp"
-#include "bounds_subgroup.hpp"
 #include "compute_fields.hpp"
 #include "compute_fields_enh.hpp"
 #include "compute_forces.hpp"
@@ -30,7 +29,6 @@ enum class SPIRVShader {
   COMPUTE_FIELDS_ENH = 10,
   RESET_COUNTER = 11,
   FIELD_WORKGROUP = 12,
-  BOUNDS_SUBGROUP = 13,
 };
 
 std::map<SPIRVShader, std::vector<uint32_t>>& getSPIRVBinaries();
