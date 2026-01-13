@@ -17,7 +17,7 @@ void BoundsShaderProg::record_padded(
   std::shared_ptr<kp::Sequence> seq,
   uint32_t num_points,
   float padding) {
-  std::cout << "bounds padded\n";
+  //std::cout << "bounds padded\n";
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::BOUNDS],
       _tensors[ShaderBuffers::POSITION],
@@ -41,7 +41,7 @@ void BoundsShaderProg::record_padded(
 void BoundsShaderProg::record_unpadded(
   std::shared_ptr<kp::Sequence> seq,
   uint32_t num_points) {
-  std::cout << "bounds unpadded\n";
+  //std::cout << "bounds unpadded\n";
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       _tensors[ShaderBuffers::BOUNDS],
       _tensors[ShaderBuffers::POSITION],
