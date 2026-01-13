@@ -2,11 +2,15 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
-#include <filesystem>
 #include <argparse/argparse.hpp>
 #include <rapidcsv.h>
 
+// prevents duplicate include of GL.h - will be provided by hdi includes
+#ifdef WIN32
+#define GLFW_INCLUDE_NONE
+#endif
 #include <GLFW/glfw3.h>
+
 #include "hdi/utils/cout_log.h"
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/data/embedding.h"
@@ -23,6 +27,7 @@
 #include <vulkan/vulkan.hpp>
 
 #ifdef WIN32
+// Include RenderDoc for GPGPU debugging - remove if you don't have RenderDoc installed
 #include "./RenderDebug.h"
 #endif
 
