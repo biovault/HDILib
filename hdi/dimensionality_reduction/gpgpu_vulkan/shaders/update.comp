@@ -3,10 +3,7 @@
 #extension GL_EXT_scalar_block_layout : require
 
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
-//layout(std430, binding = 0) buffer Pos{ float Positions[]; };
-//layout(std430, binding = 1) buffer GradientLayout { float Gradients[]; };
-//layout(std430, binding = 2) buffer PrevGradientLayout { float PrevGradients[]; };
-//layout(std430, binding = 3) buffer GainLayout { float Gain[]; };
+
 layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
 layout(std430, binding = 1) buffer GradientLayout { vec2 Gradients[]; };
 layout(std430, binding = 2) buffer PrevGradientLayout { vec2 PrevGradients[]; };
@@ -23,31 +20,6 @@ layout(scalar, binding = 4 ) uniform FieldPushConstants {
     float mult;      // Multiplier for position update
 } pc;
 
-/*
-void main() {
-    uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
-    uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
-    if (i >= pc.num_points * 2)
-        return;
-
-    float grad = Gradients[i];
-    float pgrad = PrevGradients[i];
-    float gain = Gain[i];
-
-    gain = sign(grad) != sign(pgrad) ? gain + 0.2 : gain * 0.8;
-    gain = max(gain, pc.minGain);
-
-    float etaGain = pc.eta * gain;
-    grad = (grad > 0 ? 1 : -1) * abs(grad * etaGain) / etaGain;
-
-    pgrad = (pc.iter < pc.mom_iter ? pc.mom : pc.final_mom) * pgrad - etaGain * grad;
-
-    Gain[i] = gain;
-    PrevGradients[i] = pgrad;
-    Positions[i] += pgrad * pc.mult;
-}
-*/
-// vectorized implementation
 void main() {
     uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
     uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
