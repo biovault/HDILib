@@ -38,7 +38,7 @@ void main() {
         sharedData[subgroup_id] = subgroupSum;
     }
 
-    memoryBarrierShared();
+    //memoryBarrierShared();
     barrier();
 
     // Final reduction across subgroups (only 4 values for 128 threads)
@@ -49,21 +49,4 @@ void main() {
         }
         Sum[0] = finalSum;
     }
-    /*
-    // Reduce within workgroup
-    sharedData[lid] = localSum;
-    memoryBarrierShared();
-    barrier();
-    
-    for (uint stride = 64; stride > 0; stride >>= 1) {
-        if (lid < stride) {
-            sharedData[lid] += sharedData[lid + stride];
-        }
-        memoryBarrierShared();
-        barrier();
-    }
-    
-    if (lid == 0) {
-        Sum[0] = sharedData[0];
-    }*/
 }
