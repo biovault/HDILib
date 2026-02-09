@@ -1,13 +1,14 @@
   #version 450
 
+  #extension GL_KHR_shader_subgroup_arithmetic : enable
+  #extension GL_KHR_shader_subgroup_basic : enable
+
   layout(std430, binding = 0) buffer BoundsInterface { vec2 Bounds[]; };
   layout(std430, binding = 1) buffer Pos{ vec2 Positions[]; };
-  //layout(std430, binding = 2) readonly buffer NumPoints { uint NP[]; };
-  //layout(std430, binding = 3) buffer Dbg { vec2 Bug[]; };
-  layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+  layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
-  shared vec2 min_reduction[64];
-  shared vec2 max_reduction[64]; 
+  shared vec2 subgroupMinBuf[16];  // max possible for local_size_x=512
+  shared vec2 subgroupMaxBuf[16];
 
   layout(push_constant) uniform Params {
       float padding; 
@@ -30,63 +31,45 @@
       minBound = min(pos, minBound);
       maxBound = max(pos, maxBound);
     }
-    
-    // Reduce bounds
-    // Initialize the reduction arrays from the top 64 thread min and max values
-    if (lid >= 64) {
-      min_reduction[lid - 64] = minBound;
-      max_reduction[lid - 64] = maxBound;
-    }
-    // Barrier synchronize the threads in the work group
-    // and parallel reduce the min and max values in shared memory 
-    memoryBarrierShared();
-    barrier();
-    if (lid < 64) {
-      min_reduction[lid] = min(minBound, min_reduction[lid]);
-      max_reduction[lid] = max(maxBound, max_reduction[lid]);
-    }
-    memoryBarrierShared();
-    barrier();
-    if (lid < 32) {
-      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 32]);
-      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 32]);
-    }
-    memoryBarrierShared();
-    barrier();
-    if (lid < 16) {
-      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 16]);
-      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 16]);
-    }
-    memoryBarrierShared();
-    barrier();
-    if (lid < 8) {
-      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 8]);
-      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 8]);
-    }
-    memoryBarrierShared();
-    barrier();
-    if (lid < 4) {
-      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 4]);
-      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 4]);
-    }
-    memoryBarrierShared();
-    barrier();
-    if (lid < 2) {
-      min_reduction[lid] = min(min_reduction[lid], min_reduction[lid + 2]);
-      max_reduction[lid] = max(max_reduction[lid], max_reduction[lid + 2]);
-    }
-    memoryBarrierShared();
-    barrier();
-    if (lid == 0) {
-      minBound = min(min_reduction[0], min_reduction[1]);
-      maxBound = max(max_reduction[0], max_reduction[1]);
 
-      vec2 padding = (maxBound - minBound) * pc.padding * 0.5;
+    vec2 sgMin = vec2(
+        subgroupMin(minBound.x),
+        subgroupMin(minBound.y)
+    );
 
-      minBound -= padding;
-      maxBound += padding;
+    vec2 sgMax = vec2(
+        subgroupMax(maxBound.x),
+        subgroupMax(maxBound.y)
+    );
 
-      Bounds[0] = minBound;
-      Bounds[1] = maxBound;
+
+    uint sgID   = gl_SubgroupID;
+    uint sgLane = gl_SubgroupInvocationID;
+
+    if (sgLane == 0) {
+        subgroupMinBuf[sgID] = sgMin;
+        subgroupMaxBuf[sgID] = sgMax;
+    }
+
+    barrier();
+    if (sgID == 0) {
+      vec2 finalMin = vec2(1e38);
+      vec2 finalMax = vec2(-1e38);
+
+      if (lid < gl_NumSubgroups) {
+          finalMin = subgroupMinBuf[lid];
+          finalMax = subgroupMaxBuf[lid];
+      }
+
+      finalMin.x = subgroupMin(finalMin.x);
+      finalMin.y = subgroupMin(finalMin.y);
+      finalMax.x = subgroupMax(finalMax.x);
+      finalMax.y = subgroupMax(finalMax.y);
+
+      if (lid == 0) {
+          vec2 padding = (finalMax - finalMin) * pc.padding * 0.5;
+          Bounds[0] = finalMin - padding;
+          Bounds[1] = finalMax + padding;
+      }
     }
   }
