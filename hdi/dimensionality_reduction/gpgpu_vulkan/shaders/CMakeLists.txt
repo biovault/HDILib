@@ -10,6 +10,12 @@ function(vulkan_compile_shader_13)
           message(FATAL_ERROR "glslangValidator not found.")
           return()
      endif()
+     # If needing to run the optimizer
+     #find_program(SPIRV_OPTIMIZER_PATH NAMES spirv-opt)
+     #     if(SPIRV_OPTIMIZER_PATH STREQUAL "SPIRV_OPTIMIZER_PATH-NOTFOUND")
+     #     message(FATAL_ERROR "glslangValidator not found.")
+     #     return()
+     #endif()
 
      cmake_parse_arguments(SHADER_COMPILE "" "INFILE;OUTFILE;NAMESPACE" "" ${ARGN})
      set(SHADER_COMPILE_INFILE_FULL "${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_COMPILE_INFILE}")
@@ -42,6 +48,7 @@ function(vulkan_compile_shader_13)
              add_custom_target(build-time-make-directory-${SHADER_COMPILE_SPV_FILENAME} ALL
              COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_COMPILE_SPV_PATH})
      endif()
+
      ## Requires custom command function as this is the only way to call 
      ## a function during compile time from cmake (ie through cmake script)
      add_custom_command(OUTPUT "${SHADER_COMPILE_HEADER_FILE_FULL}"
