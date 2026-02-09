@@ -11,7 +11,6 @@
 #include "shaders/shaders.h"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
-
 namespace hdi {
   namespace dr {
 
@@ -111,8 +110,10 @@ namespace hdi {
         "VK_KHR_portability_subset",
         "VK_EXT_metal_objects"}));
 #else
-      _mgr = std::make_shared<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({ "VK_KHR_synchronization2" }));
-#endif
+      _mgr = std::make_shared<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({
+        "VK_KHR_synchronization2",
+        "VK_KHR_shader_float_controls2" }));
+    #endif
 
       _tensors[ShaderBuffers::POSITION] = _mgr->tensorT(std::vector<float>(num_pnts * 2, 0.0f));
       _tensors[ShaderBuffers::INTERP_FIELDS] = _mgr->tensorT(std::vector<float>(num_pnts * 4, 0.0f));
@@ -140,6 +141,8 @@ namespace hdi {
       _tensors[ShaderBuffers::UBO_FORCES] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(forcesParams), 0));
       _tensors[ShaderBuffers::UBO_UPDATE] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(updaterParams), 0));
       _tensors[ShaderBuffers::UBO_CENTER_SCALE] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(centerScaleParams), 0));
+      _tensors[ShaderBuffers::UBO_FIELD_PF_1] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(fieldParamsPF1), 0));
+      _tensors[ShaderBuffers::UBO_FIELD_PF_2] = _mgr->uboTensorT<uint8_t>(std::vector<uint8_t>(sizeof(fieldParamsPF2), 0));
 
 
       _boundsProg = std::make_shared<BoundsShaderProg>(_mgr, _tensors);
@@ -147,6 +150,7 @@ namespace hdi {
       _stencil2ListProg = std::make_shared<Stencil2ListShaderProg>(_mgr, _tensors);
       _fieldCompProg = std::make_shared<FieldComputationShaderProg>(_mgr, _tensors);
       _fieldCompEnhProg = std::make_shared<FieldComputationEnhShaderProg>(_mgr, _tensors);
+      _fieldCompPFProg = std::make_shared<FieldComputationPointFirstShaderProg>(_mgr, _tensors);
       _interpProg = std::make_shared<InterpolationShaderProg>(_mgr, _tensors);
       _interpEnhProg = std::make_shared<InterpolationEnhShaderProg>(_mgr, _tensors);
       _forcesProg = std::make_shared<ForcesShaderProg>(_mgr, _tensors);
@@ -187,6 +191,7 @@ namespace hdi {
       _stencilProg.reset();
       _stencil2ListProg.reset();
       _fieldCompEnhProg.reset();
+      _fieldCompPFProg.reset();
       _interpEnhProg.reset();
       _seq0.reset();
       //std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
@@ -223,7 +228,8 @@ namespace hdi {
         _stencilProg = std::make_shared<StencilShaderProg>(_mgr, _tensors);
         _stencil2ListProg = std::make_shared<Stencil2ListShaderProg>(_mgr, _tensors);
         _fieldCompEnhProg = std::make_shared<FieldComputationEnhShaderProg>(_mgr, _tensors);
-        _interpEnhProg = std::make_shared<InterpolationEnhShaderProg>(_mgr, _tensors);
+        //_fieldCompPFProg = std::make_shared<FieldComputationPointFirstShaderProg>(_mgr, _tensors);
+        //_interpEnhProg = std::make_shared<InterpolationEnhShaderProg>(_mgr, _tensors);
         _shaderImageHelper.resetBuffers();
         _seq0.reset();
 
@@ -232,7 +238,7 @@ namespace hdi {
       _seq0 = _mgr->sequence();
       //if (sten.lock())
       //  std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
-      _shaderImageHelper.createBuffers(_mgr, _fields_buffer_size);
+      _shaderImageHelper.createBuffers(_mgr, _fields_buffer_size, num_points, 256);
       _shaderImageHelper.setFieldArraySampler(_mgr->createLinearSampler());
       //if (sten.lock())
       //  std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
@@ -242,6 +248,7 @@ namespace hdi {
       _stencilProg->record(_seq0, width, height, _shaderImageHelper.getStencilImage(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _stencil2ListProg->record(_seq0, _fields_buffer_size, _fields_buffer_size, _shaderImageHelper.getStencilImage(), _shaderImageHelper.getActivePixelList(), num_points, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompEnhProg->record(_seq0, num_points, width, height, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), _shaderImageHelper.getActivePixelList(), _fields_buffer_size);
+      //_fieldCompPFProg->record(_seq0, num_points, width, height, _shaderImageHelper.getNumWorkgroups(), _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), _shaderImageHelper.getActivePixelList(), _shaderImageHelper.getPartialResults(), _fields_buffer_size);
       _interpEnhProg->record(_seq0, num_points, _numInterpWorkgroups, _shaderImageHelper.getFieldSamplerImage(), _shaderImageHelper.getFieldImage(), width, height);
       _seq0->end();
       if (_seq1.get() == nullptr) {
@@ -268,6 +275,7 @@ namespace hdi {
       _stencilProg->update(width, height, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _stencil2ListProg->update(_fields_buffer_size, _fields_buffer_size, std::vector<float>(bounds, bounds + 4), _fields_buffer_size);
       _fieldCompEnhProg->update(num_points, width, height, _fields_buffer_size);
+      //_fieldCompPFProg->update(num_points, width, height, _shaderImageHelper.getNumWorkgroups(), _fields_buffer_size);
       _interpEnhProg->update(num_points, width, height);
       _forcesProg->update(num_points, exaggeration);
       _updateProg->update(num_points, _params._eta, _params._minimum_gain, iteration, _params._momentum, _params._mom_switching_iter, _params._final_momentum, mult);
@@ -298,7 +306,7 @@ namespace hdi {
         };
         seq->record<kp::OpSyncDevice>(syncParams);
         seq->eval();
-        _fields_buffer_size = 8;
+        _fields_buffer_size = 32;
         new_field_buf = true;
       }
       else if (width > _fields_buffer_size || height > _fields_buffer_size) {
@@ -308,15 +316,20 @@ namespace hdi {
           //throw std::runtime_error("Field size larger than 2048 not supported");
         }
         while (width > _fields_buffer_size || height > _fields_buffer_size)
-          //_fields_buffer_size = std::min(2 * _fields_buffer_size, 2048u);
           _fields_buffer_size = std::min(32 + _fields_buffer_size, 2048u);
         new_field_buf = true;
       }
+      /*else if (width < _fields_buffer_size - 32 && height < _fields_buffer_size - 32 && _fields_buffer_size >= 64) {
+        // support shrinking for performance reasons
+        _fields_buffer_size = _fields_buffer_size - 32;
+        new_field_buf = true;
+      }      */
+
 
 
       //auto tu0 = std::chrono::high_resolution_clock::now();
       if (new_field_buf) {
-        //std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
+        std::cout << "New field size: " << _fields_buffer_size << " iter " << iteration << "\n";
         // rerecord the computer buffer sequence with the new field size
         ; // at most 1024 (should this be an exception?)
         record_compute_sequence(iteration, width, height, num_points, _bounds.data(), exaggeration, mult);
@@ -335,7 +348,36 @@ namespace hdi {
       { _seq1->eval(); }
       //auto t3 = std::chrono::high_resolution_clock::now();
       //double cpu_ms_1 = std::chrono::duration<double, std::milli>(t3 - t2).count();
-       
+
+      //*** DEBUG ****/
+      /*/auto syncSeq = _mgr->sequence();
+      syncSeq->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>> {
+        _shaderImageHelper.getFieldImage().lock(),
+        _shaderImageHelper.getStencilImage().lock(),
+        _shaderImageHelper.getActivePixelList().lock(),
+        _shaderImageHelper.getPartialResults().lock(),
+        _shaderImageHelper.getActivePixelList().lock(),
+        _tensors[ShaderBuffers::ATOMIC_COUNTER],
+        _tensors[ShaderBuffers::SUM_Q],
+        _tensors[ShaderBuffers::PARTIAL_SUM],
+        _tensors[ShaderBuffers::INTERP_FIELDS],
+        _tensors[ShaderBuffers::GRADIENTS],
+        _tensors[ShaderBuffers::PREV_GRADIENTS],
+        _tensors[ShaderBuffers::GAIN],
+        _tensors[ShaderBuffers::DEBUG],
+      })->eval();
+
+      auto stencil = static_cast<kp::Image*>(_shaderImageHelper.getStencilImage().lock().get())->vector<float>();
+      auto field = static_cast<kp::Image*>(_shaderImageHelper.getFieldImage().lock().get())->vector<float>();
+      auto partial = static_cast<kp::TensorT<float>*>(_shaderImageHelper.getPartialResults().lock().get())->data();
+      auto active_pixels = static_cast<kp::TensorT<uint32_t>*>(_shaderImageHelper.getActivePixelList().lock().get())->data();
+      auto counter = _tensors[ShaderBuffers::ATOMIC_COUNTER]->vector<uint32_t>()[0];
+      auto sum_q = _tensors[ShaderBuffers::SUM_Q]->vector<float>()[0];
+      auto interp_fields = _tensors[ShaderBuffers::INTERP_FIELDS]->vector<float>();
+      auto grads = _tensors[ShaderBuffers::GRADIENTS]->vector<float>();*/
+
+      //*** END DEBUG ****/
+
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
       kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];

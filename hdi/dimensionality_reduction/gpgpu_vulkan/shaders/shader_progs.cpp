@@ -96,7 +96,9 @@ void StencilShaderProg::record(
     dstMaskBits,
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
-  _stencilAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
+  uint32_t wgSize = 256;
+  uint32_t wgCount = (num_points + wgSize - 1) / wgSize;
+  _stencilAlgorithm = _mgr->algorithm(params, _shaderBinary, kp::Workgroup({ wgCount, 1, 1 }), {}, {});
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)width, (float)height} };
   _ubo.setData(uboVals, _stencilAlgorithm, 1);
 
@@ -289,6 +291,7 @@ void FieldComputationEnhShaderProg::record(
     vk::PipelineStageFlagBits::eComputeShader,
     vk::ImageLayout::eGeneral);
 
+  // calculated base on (number of active pixels) + 255/ 256
   auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
   //uint32_t dispatchData[3] = { width, height, 1 };
   //dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
@@ -507,8 +510,8 @@ void ForcesShaderProg::record(
     _tensors[ShaderBuffers::KLDIV],
     _tensors[ShaderBuffers::UBO_FORCES]
   };
-  auto grid_size = static_cast<unsigned int>(std::floor(sqrt(num_points)) + 1);
-  _forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ grid_size, grid_size, 1 }), {}, {});
+  //auto grid_size = static_cast<unsigned int>(std::floor(sqrt(num_points)) + 1);
+  _forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
   forcesParams uboVals = { num_points, exaggeration };
   _ubo.setData(uboVals, _forcesAlgorithm, 8);
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
