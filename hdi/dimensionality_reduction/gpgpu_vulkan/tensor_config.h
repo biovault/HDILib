@@ -23,6 +23,17 @@ struct fieldParams {
   float support;
 };
 
+struct fieldParamsPF1 {
+  uint32_t num_points;
+  uint32_t num_workgroups;
+  float image_size[2];
+  float support;
+};
+
+struct fieldParamsPF2 {
+  uint32_t num_workgroups;
+};
+
 struct interpParams {
   uint32_t num_points;
   float image_size[2];
@@ -78,6 +89,8 @@ enum class ShaderBuffers {
   DEBUG = 20, // For any debug output buffers
   PARTIAL_SUM = 21,
   ATOMIC_COUNTER = 22,
+  UBO_FIELD_PF_1 = 23,
+  UBO_FIELD_PF_2 = 24
 };
 
 typedef std::map<ShaderBuffers, std::shared_ptr<kp::Tensor>> TensorMap;

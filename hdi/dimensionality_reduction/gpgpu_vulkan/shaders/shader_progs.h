@@ -12,13 +12,19 @@ class ShaderImageHelper {
 
   void createBuffers(
     std::shared_ptr<kp::Manager> mgr, 
-    uint32_t fields_buffer_size) {
+    uint32_t fields_buffer_size,
+    uint32_t num_pnts,
+    uint32_t threads_per_workgroup_fields = 256) {
     _stencil_array = std::vector<float>(fields_buffer_size * fields_buffer_size * 4, 0.0);
     _stencil_out = mgr->imageT<float>(_stencil_array, fields_buffer_size, fields_buffer_size, 4, vk::ImageTiling::eOptimal);
     _field_array = std::vector<float>(fields_buffer_size * fields_buffer_size * 4, 0.0f);
     _field_out = mgr->imageT<float>(_field_array, fields_buffer_size, fields_buffer_size, 4, vk::ImageTiling::eOptimal);
     _field_sample = _field_out->createSampledView();
     _activePixelList = mgr->tensorT<uint32_t>(std::vector<uint32_t>(fields_buffer_size * fields_buffer_size * 2, 0));
+    // Create partial results buffer - don't know num active points so cover all field
+    _num_workgroups = (num_pnts + threads_per_workgroup_fields - 1) / threads_per_workgroup_fields;
+    uint32_t partialSize = _num_workgroups * fields_buffer_size * fields_buffer_size * 4;
+    _partialResults = mgr->tensorT(std::vector<float>(partialSize, 0.0f));
   };
   std::weak_ptr<kp::ImageT<float>> getStencilImage() const {
     return _stencil_out;
@@ -38,9 +44,16 @@ class ShaderImageHelper {
   std::weak_ptr<kp::TensorT<uint32_t>> getActivePixelList() const {
     return _activePixelList;
   };
+  std::weak_ptr<kp::TensorT<float>> getPartialResults() const {
+    return _partialResults;
+  };
 
   void setFieldArraySampler(vk::Sampler sampler) {
     _field_sample->setSampler(sampler);
+  };
+
+  uint32_t getNumWorkgroups() const {
+    return _num_workgroups;
   };
 
   void clearBuffers() {
@@ -61,10 +74,12 @@ class ShaderImageHelper {
     _field_out->destroy();
     _field_sample->destroy();
     _activePixelList->destroy();
+    _partialResults->destroy();
     _stencil_out.reset();
     _field_out.reset();
     _field_sample.reset();
     _activePixelList.reset();
+    _partialResults.reset();
   }
   
   
@@ -76,6 +91,8 @@ private:
   std::vector<float> _field_array;
   std::shared_ptr<kp::ImageT<float>> _field_sample;
   std::shared_ptr<kp::TensorT<uint32_t>> _activePixelList;
+  std::shared_ptr<kp::TensorT<float>> _partialResults;
+  uint32_t _num_workgroups;
 };
 
 // 2) record() and update() function that records the commands into a kompute::Sequence for later execution
