@@ -74,50 +74,54 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
     prob_gen_param._aknn_metric = knn_distance_metric;
     prob_gen_param._aknn_algorithm = knn_algorithm;
     std::cout << "calculate knn" << std::endl;
-    prob_gen.computeJointProbabilityDistribution(
+    float total_comp_time;
+    { // timed scope
+      hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(total_comp_time);
+      prob_gen.computeJointProbabilityDistribution(
         data.data(),
         num_dimensions,
         num_points,
         distributions,
         prob_gen_param);
 
-    std::cout << "knn complete" << std::endl;
-#if defined(WIN32) && !defined(NDEBUG)
-    RenderDoc::RenderDebugger::startFrameCapture();
-#endif
+      std::cout << "knn complete" << std::endl;
+    #if defined(WIN32) && !defined(NDEBUG)
+      RenderDoc::RenderDebugger::startFrameCapture();
+    #endif
 
-    float gradient_desc_comp_time;
-    { // timed scope
+      float gradient_desc_comp_time;
+      { // timed scope
         hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(gradient_desc_comp_time);
         tSNE.initializeWithJointProbabilityDistribution(distributions, &embedding, tSNE_param);
-#if defined(__APPLE__) and !defined(NDEBUG)
-        vk::Device *devicePtr = static_cast<vk::Device *>(tSNE.getDevice());
+      #if defined(__APPLE__) and !defined(NDEBUG)
+        vk::Device* devicePtr = static_cast<vk::Device*>(tSNE.getDevice());
         StartMetalCapture(getMetalDevice(*devicePtr));
-#endif
+      #endif
         try {
-            for (int iter = 0; iter < iterations; ++iter) {
-                tSNE.doAnIteration();
-                //std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
-                if (stepsoutput > 0) {
-                    if (iter > 0 && iter % stepsoutput == 0) {
-                        save_to_csv(embedding.getContainer(), output, iter);
-                    }
-                }
+          for (int iter = 0; iter < iterations; ++iter) {
+            tSNE.doAnIteration();
+            //std::cout << "Iter: " << iter << " kl_divergence: " << tSNE.kl_divergence << "\n";
+            if (stepsoutput > 0) {
+              if (iter > 0 && iter % stepsoutput == 0) {
+                save_to_csv(embedding.getContainer(), output, iter);
+              }
             }
+          }
+        } catch (const std::exception& e) {
+          std::cerr << "Exception with error: " << e.what() << std::endl;
+          return std::vector<float>();
         }
-        catch (const std::exception& e) {
-            std::cerr << "Exception with error: " << e.what() << std::endl;
-            return std::vector<float>();
-        }
-#if defined(__APPLE__) && !defined(NDEBUG)
+      #if defined(__APPLE__) && !defined(NDEBUG)
         EndMetalCapture();
-#endif
-    }
-#if defined(WIN32) && !defined(NDEBUG)
-    RenderDoc::RenderDebugger::endFrameCapture();
-#endif
+      #endif
+      }
+    #if defined(WIN32) && !defined(NDEBUG)
+      RenderDoc::RenderDebugger::endFrameCapture();
+    #endif
 
-    std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
+      std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
+    }
+    std::cout << "Total (including knn) (sec) " << total_comp_time << "\n";
     std::cout << "... done!\n";
     auto result = embedding.getContainer();
     tSNE.clear();
@@ -180,39 +184,43 @@ std::vector<float> perform_tSNE_OpenGL(
     prob_gen_param._aknn_metric = knn_distance_metric;
     prob_gen_param._aknn_algorithm = knn_algorithm;
     std::cout << "calculate knn" << std::endl;
-    prob_gen.computeJointProbabilityDistribution(
+    float total_comp_time;
+    { // timed scope
+      hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(total_comp_time);
+      prob_gen.computeJointProbabilityDistribution(
         data.data(),
         num_dimensions,
         num_points,
         distributions,
         prob_gen_param);
 
-    std::cout << "knn complete" << std::endl;
-    float gradient_desc_comp_time;
-    { // timed scope
+      std::cout << "knn complete" << std::endl;
+      float gradient_desc_comp_time;
+      { // timed scope
         hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(gradient_desc_comp_time);
         tSNE.initializeWithJointProbabilityDistribution(distributions, &embedding, tSNE_param);
         try {
-            for (int iter = 0; iter < iterations; ++iter) {
-                tSNE.doAnIteration();
-                /*std::cout << "Iter: " << iter;
-                if (!raster)
-                    std::cout << " kl_divergence: " << tSNE.kl_divergence;
-                else 
-                    std::cout << "\n";*/
-                if (stepsoutput > 0) {
-                    if (iter > 0 && iter % stepsoutput == 0) {
-                        save_to_csv(embedding.getContainer(), output, iter);
-                    }
-                }
+          for (int iter = 0; iter < iterations; ++iter) {
+            tSNE.doAnIteration();
+            /*std::cout << "Iter: " << iter;
+            if (!raster)
+                std::cout << " kl_divergence: " << tSNE.kl_divergence;
+            else
+                std::cout << "\n";*/
+            if (stepsoutput > 0) {
+              if (iter > 0 && iter % stepsoutput == 0) {
+                save_to_csv(embedding.getContainer(), output, iter);
+              }
             }
+          }
+        } catch (const std::exception& e) {
+          std::cerr << "Exception with error: " << e.what() << std::endl;
+          return std::vector<float>();
         }
-        catch (const std::exception& e) {
-            std::cerr << "Exception with error: " << e.what() << std::endl;
-            return std::vector<float>();
-        }
+      }
+      std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
     }
-    std::cout << "Gradient descent (sec) " << gradient_desc_comp_time << "\n";
+    std::cout << "Total (including knn) (sec) " << total_comp_time << "\n";
     std::cout << "... done!\n";
     auto result = embedding.getContainer();
     tSNE.clear();
@@ -400,6 +408,7 @@ int main(int argc, const char** argv) {
 
     return 0;
 }
+
 
 // Xmas tree small test
 // -p 13 -i 500 -d 2 D:\Data\ML\xmas\data.csv
