@@ -1,4 +1,7 @@
 #version 450
+
+#extension GL_KHR_shader_subgroup_basic : enable
+
 layout(local_size_x = 1) in;
 
 layout(std430, binding = 0) coherent buffer AtomicCounter {
@@ -11,8 +14,15 @@ layout(std430, binding = 1) writeonly buffer IndirectDispatch {
     uint groupCountZ;
 };
 
+// The purpose of this is set the values of the (indirect) workgroup dispatch 
+// used in the fields shader.
+// The fields shader is designed to used one subgroup (warp) per
+// active field pixel.
+const uint workgroup_size = 512u; //must match the workgroup size in the fields shader
 void main() {
-    uint workgroups = (atomicCounter + 255u) / 256u;
+    //gl_
+    uint subgroups_per_workgroup = workgroup_size/gl_SubgroupSize;
+    uint workgroups = (atomicCounter + subgroups_per_workgroup - 1) / subgroups_per_workgroup; // assume 8 subgroups per workgroup
     groupCountX = workgroups;
     groupCountY = 1;
     groupCountZ = 1;

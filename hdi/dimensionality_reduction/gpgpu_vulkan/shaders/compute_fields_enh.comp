@@ -1,8 +1,14 @@
 #version 430
 
+// This should be invoked to parallelise calculation of the
+// field pixel values one field pixel per subgroup (warp)
+// The dispatching is indirect w.r.t. a dispatch tensor.
+// See compute_field_workgroup.comp for the calculation 
 #extension GL_EXT_scalar_block_layout : require
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+#extension GL_KHR_shader_subgroup_basic : enable
 
-layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) readonly buffer ActivePixels {
     uvec2 activePixels[];
@@ -16,71 +22,89 @@ layout(std430, binding = 2) readonly buffer Positions {
     vec2 positions[];
 };
 
-layout(std430, binding = 3) readonly buffer BoundsInterface { vec2 Bounds[]; };
+layout(std430, binding = 3) readonly buffer BoundsInterface { 
+    vec2 Bounds[]; 
+};
 
 layout(rgba32f, binding = 4) writeonly uniform image2D Fields;
+
 layout(scalar, binding = 5) uniform FieldPushConstants {
     uint num_points;
     vec2 imageSize;
     float support;  
 } pc;
 
-#define TILE_SIZE 256
+#define TILE_SIZE 4096
+#define THREADS_PER_WORKGROUP 512
+
 shared vec2 sharedPositions[TILE_SIZE];
 
+
 void main() {
-  // pixelIndex - the index to the output texture pixel coordinates
-    uint pixelIndex = gl_GlobalInvocationID.x;
-    bool activePixel = (pixelIndex < activeCount);
+    uint tid = gl_LocalInvocationIndex;
+    uint lane = gl_SubgroupInvocationID;
+    uint lanes = gl_SubgroupSize;                // Runtime value
+    uint numSubgroups = gl_NumSubgroups;         // Runtime value
+    float res_x = 0.0;
+    float res_y = 0.0;
+    float res_z = 0.0;
+    // Need to invoke enough workgroups to ensure that each active pixel has a 
+    // subgroup available
+    // i.e.: (activePixels + (numSubgroups-1))/numSubgroups
+    //
+    // Pixel index calculated using RUNTIME subgroup values
+    // gl_WorkGroupID.x * numSubgroups gives the first pixel in this workgroup
+    // gl_SubgroupID offsets to this subgroup's pixel
+    uint pixelIndex = gl_WorkGroupID.x * numSubgroups + gl_SubgroupID;
+
+    bool activeSubgroup = (pixelIndex < activeCount);
 
     vec2 min_bounds = Bounds[0];
     vec2 max_bounds = Bounds[1];
     vec2 range = max_bounds - min_bounds;
-    uint tid = gl_LocalInvocationIndex;
-    
-    uvec2 pixelCoord = activePixels[pixelIndex];
-    vec2 pixel_pos = (((vec2(pixelCoord.x, pixelCoord.y) + vec2(0.5)) / pc.imageSize) * range) + min_bounds;
-    
-    vec3 accumulator = vec3(0);
-    // Tile loop with shared memory
-    // The tile loop is designed to share access latency to the position SBO
-    uint numTiles = (pc.num_points + TILE_SIZE - 1) / TILE_SIZE;
-    
-    //for (uint i = tid; i < TILE_SIZE; i += gl_WorkGroupSize.x) {
-    //    sharedPositions[i] = vec2(0);
-    //}
-    memoryBarrierShared();
-    barrier();
 
-    uint pointBase = 0;
+    vec2 pixelCoord = vec2(0.0);
+    vec2 pixel_pos = vec2(0.0);
+    if (activeSubgroup) {
+        pixelCoord = vec2(activePixels[pixelIndex]);
+        pixel_pos = (((pixelCoord + vec2(0.5)) / pc.imageSize) * range) + min_bounds;
+    }
+
+    uint numTiles = (pc.num_points + TILE_SIZE - 1) / TILE_SIZE;
 
     for (uint tileIdx = 0; tileIdx < numTiles; tileIdx++) {
-      uint loadIdx = pointBase + tid;
-      
-      if (loadIdx < pc.num_points) {
-          sharedPositions[tid] = positions[loadIdx];
-      }
-      memoryBarrierShared();
-      barrier();
-      
-      uint tileEnd = min(TILE_SIZE, pc.num_points - pointBase);
+        uint pointBase = tileIdx * TILE_SIZE;
+        uint curTileSize = min(TILE_SIZE, pc.num_points - pointBase);
 
-      if (activePixel) {
-          for (uint i = 0; i < tileEnd; i++) {
-              vec2 t = pixel_pos - sharedPositions[i];
-              float eucl_sqrd = dot(t, t);
-              float tstud = 1.0 / (1.0 + eucl_sqrd);
-              float tstud2 = tstud * tstud;
-              accumulator += vec3(tstud, tstud2 * t.x, tstud2 * t.y);
-          }
-      }
-      memoryBarrierShared();
-      barrier();
-      pointBase += TILE_SIZE;
+        // All threads load
+        for (uint i = tid; i < curTileSize; i += THREADS_PER_WORKGROUP) {
+            sharedPositions[i] = positions[pointBase + i];
+        }
+        barrier();
+
+        if (activeSubgroup) {
+            vec3 lane_accum = vec3(0.0);
+
+            for (uint i = lane; i < curTileSize; i += lanes) {
+                vec2 diff = pixel_pos - sharedPositions[i];
+                float dot_val = fma(diff.x, diff.x, fma(diff.y, diff.y, 1.0));
+                float tstud = 1.0 / dot_val;
+                float tstud2 = tstud * tstud;
+
+                lane_accum.x += tstud;
+                lane_accum.y = fma(tstud2, diff.x, lane_accum.y);
+                lane_accum.z = fma(tstud2, diff.y, lane_accum.z);
+            }
+
+            res_x += subgroupAdd(lane_accum.x);
+            res_y += subgroupAdd(lane_accum.y);
+            res_z += subgroupAdd(lane_accum.z);
+        }
+
+        barrier();
     }
-    
-    if (activePixel) {
-        imageStore(Fields, ivec2(pixelCoord), vec4(accumulator, 0));
+
+    if (activeSubgroup && subgroupElect()) {
+        imageStore(Fields, ivec2(pixelCoord), vec4(res_x, res_y, res_z, 0.0));
     }
 }
-
