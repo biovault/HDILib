@@ -169,7 +169,6 @@ public:
     _tensors(tensors),
     _shaderBinaryClearCounter(getSPIRVBinaries()[SPIRVShader::RESET_COUNTER]),
     _shaderBinary2List(getSPIRVBinaries()[SPIRVShader::STENCIL2ACTIVE]),
-    _shaderFieldWorkgroup(getSPIRVBinaries()[SPIRVShader::FIELD_WORKGROUP]),
     _fields_buffer_size(0),
     _ubo(mgr, sizeof(stencilParams))
   {
@@ -198,7 +197,6 @@ public:
 private:
   std::vector<uint32_t>& _shaderBinaryClearCounter;
   std::vector<uint32_t>& _shaderBinary2List;
-  std::vector<uint32_t>& _shaderFieldWorkgroup;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _clearCounterAlgorithm;
   std::shared_ptr<kp::Algorithm> _stencil2listAlgorithm;
@@ -254,6 +252,7 @@ public:
     _mgr(mgr),
     _tensors(tensors),
     _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS_ENH]),
+    _shaderFieldWorkgroup(getSPIRVBinaries()[SPIRVShader::FIELD_WORKGROUP]),
     _fields_buffer_size(0),
     _ubo(mgr, sizeof(fieldParams))
   {
@@ -279,7 +278,9 @@ public:
   
 private:
   std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t>& _shaderFieldWorkgroup;
   std::shared_ptr<kp::Manager> _mgr;
+  std::shared_ptr<kp::Algorithm> _fieldWorkgroupAlgorithm;
   std::shared_ptr<kp::Algorithm> _fieldAlgorithm;
   TensorMap& _tensors;
   const float _function_support = 6.5f;
