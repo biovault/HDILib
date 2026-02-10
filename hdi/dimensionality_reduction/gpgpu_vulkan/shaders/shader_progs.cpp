@@ -137,11 +137,6 @@ void Stencil2ListShaderProg::record(
     _tensors[ShaderBuffers::ATOMIC_COUNTER],
   };
 
-  const std::vector<std::shared_ptr<kp::Memory>> workgroupParams = {
-  _tensors[ShaderBuffers::ATOMIC_COUNTER],	
-  _tensors[ShaderBuffers::IMAGE_WORKGROUP]
-  };
-
   const std::vector<std::shared_ptr<kp::Memory>> params = {
     stencil.lock(),
     _tensors[ShaderBuffers::ATOMIC_COUNTER],
@@ -156,7 +151,6 @@ void Stencil2ListShaderProg::record(
   uint32_t wgY = (height + 15) / 16;
   _clearCounterAlgorithm = _mgr->algorithm(clearParams, _shaderBinaryClearCounter, kp::Workgroup{ 1, 1, 1 }, {}, {});
   _stencil2listAlgorithm = _mgr->algorithm(params, _shaderBinary2List, kp::Workgroup({ wgX, wgY, 1 }), {}, {});
-  _fieldWorkgroupAlgorithm = _mgr->algorithm(workgroupParams, _shaderFieldWorkgroup, kp::Workgroup({ 1, 1, 1 }), {}, {});
   stencilParams uboVals = { {bounds[0], bounds[1]}, {bounds[2], bounds[3]}, {(float)new_fields_buffer_size, (float)new_fields_buffer_size} };
   _ubo.setData(uboVals, _stencil2listAlgorithm, 3);
   
@@ -171,7 +165,6 @@ void Stencil2ListShaderProg::record(
   //seq->record<kp::OpSyncDevice>(syncParams)
   seq->record<kp::OpAlgoDispatch>(_clearCounterAlgorithm)
     ->record<kp::OpAlgoDispatch>(_stencil2listAlgorithm)
-    ->record<kp::OpAlgoDispatch>(_fieldWorkgroupAlgorithm)
     ->record(shaderBarrier);
 }
 
@@ -295,6 +288,10 @@ void FieldComputationEnhShaderProg::record(
   auto& dispatchTensor = _tensors[ShaderBuffers::IMAGE_WORKGROUP];
   //uint32_t dispatchData[3] = { width, height, 1 };
   //dispatchTensor->setData((void*)dispatchData, 3 * sizeof(uint32_t));
+    const std::vector<std::shared_ptr<kp::Memory>> workgroupParams = {
+    _tensors[ShaderBuffers::ATOMIC_COUNTER],	
+    _tensors[ShaderBuffers::IMAGE_WORKGROUP]
+    };
 
   const std::vector<std::shared_ptr<kp::Memory>> algoParams = {
       activePixelList.lock(),
@@ -305,6 +302,7 @@ void FieldComputationEnhShaderProg::record(
       _tensors[ShaderBuffers::UBO_FIELD]
   };
 
+  _fieldWorkgroupAlgorithm = _mgr->algorithm(workgroupParams, _shaderFieldWorkgroup, kp::Workgroup({ 1, 1, 1 }), {}, {});
   _fieldAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, {}, {}, {});
 
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
@@ -334,6 +332,7 @@ void FieldComputationEnhShaderProg::record(
     vk::AccessFlagBits2::eShaderWrite);
 
   seq->record(fieldTransition)
+    ->record<kp::OpAlgoDispatch>(_fieldWorkgroupAlgorithm)
     ->record<OpIndirectDispatch>(_fieldAlgorithm, dispatchTensor)
     ->record(shaderBarrier);
 }
@@ -511,7 +510,9 @@ void ForcesShaderProg::record(
     _tensors[ShaderBuffers::UBO_FORCES]
   };
   //auto grid_size = static_cast<unsigned int>(std::floor(sqrt(num_points)) + 1);
-  _forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
+  uint32_t dispatch = (num_points + 3) / 4;
+  //_forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
+  _forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ dispatch, 1, 1 }), {}, {});
   forcesParams uboVals = { num_points, exaggeration };
   _ubo.setData(uboVals, _forcesAlgorithm, 8);
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
