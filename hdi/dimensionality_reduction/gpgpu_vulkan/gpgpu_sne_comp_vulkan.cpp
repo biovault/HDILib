@@ -150,7 +150,6 @@ namespace hdi {
       _stencil2ListProg = std::make_shared<Stencil2ListShaderProg>(_mgr, _tensors);
       _fieldCompProg = std::make_shared<FieldComputationShaderProg>(_mgr, _tensors);
       _fieldCompEnhProg = std::make_shared<FieldComputationEnhShaderProg>(_mgr, _tensors);
-      _fieldCompPFProg = std::make_shared<FieldComputationPointFirstShaderProg>(_mgr, _tensors);
       _interpProg = std::make_shared<InterpolationShaderProg>(_mgr, _tensors);
       _interpEnhProg = std::make_shared<InterpolationEnhShaderProg>(_mgr, _tensors);
       _forcesProg = std::make_shared<ForcesShaderProg>(_mgr, _tensors);

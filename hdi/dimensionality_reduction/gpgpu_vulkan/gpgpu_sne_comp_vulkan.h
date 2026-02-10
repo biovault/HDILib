@@ -86,7 +86,6 @@ namespace hdi {
       std::shared_ptr<Stencil2ListShaderProg> _stencil2ListProg;
       std::shared_ptr<FieldComputationShaderProg> _fieldCompProg;
       std::shared_ptr<FieldComputationEnhShaderProg> _fieldCompEnhProg;
-      std::shared_ptr<FieldComputationPointFirstShaderProg> _fieldCompPFProg;
       std::shared_ptr<InterpolationShaderProg> _interpProg;
       std::shared_ptr<InterpolationEnhShaderProg> _interpEnhProg;
       std::shared_ptr<ForcesShaderProg> _forcesProg;
