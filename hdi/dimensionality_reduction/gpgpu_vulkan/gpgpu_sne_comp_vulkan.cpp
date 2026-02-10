@@ -190,7 +190,6 @@ namespace hdi {
       _stencilProg.reset();
       _stencil2ListProg.reset();
       _fieldCompEnhProg.reset();
-      _fieldCompPFProg.reset();
       _interpEnhProg.reset();
       _seq0.reset();
       //std::cout << "Use counts - stencil : " << sten.use_count() << " field: " << fiel.use_count() <<  " samp: " << samp.use_count() << "\n";
