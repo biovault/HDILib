@@ -23,8 +23,8 @@ void BoundsShaderProg::record_padded(
       _tensors[ShaderBuffers::POSITION],
   };
 
-
-  _boundsAlgorithmPadded = _mgr->algorithm<float, boundsPushConstants>(algoParams, _shaderBinary, kp::Workgroup({ 1,1,1 }), {}, { {padding, num_points} });
+  uint32_t required_subgroup_size = 32;
+  _boundsAlgorithmPadded = _mgr->algorithm<float, boundsPushConstants>(algoParams, _shaderBinary, kp::Workgroup({ 1,1,1 }), {}, { {padding, num_points} }, required_subgroup_size);
   seq
     ->record<kp::OpAlgoDispatch>(_boundsAlgorithmPadded)
     ->record<kp::OpSyncLocal>(std::vector<std::shared_ptr<kp::Memory>>({ 
@@ -53,8 +53,8 @@ void BoundsShaderProg::record_unpadded(
     vk::AccessFlagBits::eShaderRead,
     vk::PipelineStageFlagBits::eComputeShader,
     vk::PipelineStageFlagBits::eComputeShader);
-
-  _boundsAlgorithmUnpadded = _mgr->algorithm<float, boundsPushConstants>(algoParams, _shaderBinary, kp::Workgroup({ 1,1,1 }), {}, { {0.0, num_points} });
+  uint32_t required_subgroup_size = 32;
+  _boundsAlgorithmUnpadded = _mgr->algorithm<float, boundsPushConstants>(algoParams, _shaderBinary, kp::Workgroup({ 1,1,1 }), {}, { {0.0, num_points} }, required_subgroup_size);
   seq
     ->record<kp::OpAlgoDispatch>(_boundsAlgorithmUnpadded)
     ->record(shaderBarrier);
@@ -302,8 +302,9 @@ void FieldComputationEnhShaderProg::record(
       _tensors[ShaderBuffers::UBO_FIELD]
   };
 
+  uint32_t required_subgroup_size = 32;
   _fieldWorkgroupAlgorithm = _mgr->algorithm(workgroupParams, _shaderFieldWorkgroup, kp::Workgroup({ 1, 1, 1 }), {}, {});
-  _fieldAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, {}, {}, {});
+  _fieldAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, {}, {}, {}, required_subgroup_size);
 
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
       _tensors[ShaderBuffers::BOUNDS],
@@ -510,9 +511,14 @@ void ForcesShaderProg::record(
     _tensors[ShaderBuffers::UBO_FORCES]
   };
   //auto grid_size = static_cast<unsigned int>(std::floor(sqrt(num_points)) + 1);
-  uint32_t dispatch = (num_points + 3) / 4;
+  // Scheduling is based on one subgroup per point.
+  uint32_t wgSize = 128; // must match workgroup size in forces shader
+  uint32_t required_subgroup_size = 32;
+  uint32_t subgroups_per_wg = wgSize / required_subgroup_size;
+  uint32_t dispatch = (num_points + subgroups_per_wg - 1) / subgroups_per_wg;
   //_forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ num_points, 1, 1 }), {}, {});
-  _forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ dispatch, 1, 1 }), {}, {});
+
+  _forcesAlgorithm = _mgr->algorithm(algoParams, _shaderBinary, kp::Workgroup({ dispatch, 1, 1 }), {}, {}, required_subgroup_size);
   forcesParams uboVals = { num_points, exaggeration };
   _ubo.setData(uboVals, _forcesAlgorithm, 8);
   const std::vector<std::shared_ptr<kp::Memory>> syncParams = {
