@@ -19,9 +19,10 @@ layout(std430, binding = 1) writeonly buffer IndirectDispatch {
 // The fields shader is designed to used one subgroup (warp) per
 // active field pixel.
 const uint workgroup_size = 512u; //must match the workgroup size in the fields shader
+const uint subgroup_size = 32u; //must match the subgroup size in the fields shader
 void main() {
     //gl_
-    uint subgroups_per_workgroup = workgroup_size/gl_SubgroupSize;
+    uint subgroups_per_workgroup = workgroup_size/subgroup_size;
     uint workgroups = (atomicCounter + subgroups_per_workgroup - 1) / subgroups_per_workgroup; // assume 8 subgroups per workgroup
     groupCountX = workgroups;
     groupCountY = 1;
