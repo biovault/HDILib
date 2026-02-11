@@ -26,14 +26,18 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(rapidcsv)
 message(STATUS "hnswlib at ${rapidcsv_SOURCE_DIR}")
 
-option(GPUDEBUG " Enable GPU debugging (Windows or MacOS)" ON)
-
+# If using RenderDoc (https://renderdoc.org) or XCode GPU debugging capturing
+# GPU calls is a powerful debugging tool for Vulkan
+option(TSNETESTER_GPUDEBUG_CAPTURE " Enable GPU debug capture for the test program (Windows or MacOS)" ON)
+set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
+configure_file(tSNETester_config.h.in tSNETester_config.h)
 if(APPLE AND GPUDEBUG)
     enable_language(OBJCXX)
 endif()
 
 set(TESTER_SOURCES
     tSNEtester.cpp
+    tSNETester_config.h
 )
 
 set(RENDERDOC_SOURCES

@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <vulkan/vulkan.hpp>
 
+#include "tSNETester_config.h" //CMake generated config file for test configuration (e.g. GPU debug capture)
+
 #ifdef WIN32
 // Include RenderDoc for GPGPU debugging - remove if you don't have RenderDoc installed
 #include "./RenderDebug.h"
@@ -85,7 +87,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
         prob_gen_param);
 
       std::cout << "knn complete" << std::endl;
-    #if defined(WIN32) && !defined(NDEBUG)
+    #if defined(WIN32) && defined(TSNETESTER_GPUDEBUG_CAPTURE)
       RenderDoc::RenderDebugger::startFrameCapture();
     #endif
 
@@ -93,7 +95,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
       { // timed scope
         hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(gradient_desc_comp_time);
         tSNE.initializeWithJointProbabilityDistribution(distributions, &embedding, tSNE_param);
-      #if defined(__APPLE__) and !defined(NDEBUG)
+      #if defined(__APPLE__) and defined(TSNETESTER_GPUDEBUG_CAPTURE)
         vk::Device* devicePtr = static_cast<vk::Device*>(tSNE.getDevice());
         StartMetalCapture(getMetalDevice(*devicePtr));
       #endif
@@ -111,11 +113,11 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
           std::cerr << "Exception with error: " << e.what() << std::endl;
           return std::vector<float>();
         }
-      #if defined(__APPLE__) && !defined(NDEBUG)
+      #if defined(__APPLE__) && defined(TSNETESTER_GPUDEBUG_CAPTURE)
         EndMetalCapture();
       #endif
       }
-    #if defined(WIN32) && !defined(NDEBUG)
+    #if defined(WIN32) && defined(TSNETESTER_GPUDEBUG_CAPTURE)
       RenderDoc::RenderDebugger::endFrameCapture();
     #endif
 
