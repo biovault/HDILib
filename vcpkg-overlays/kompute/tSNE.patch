@@ -40,10 +40,66 @@ index 1ad0965..2d892d0 100644
  # Misc
  # ####################################################
 diff --git a/src/include/kompute/Algorithm.hpp b/src/include/kompute/Algorithm.hpp
-index c459bab..28d783f 100644
+index c459bab..d1823a9 100644
 --- a/src/include/kompute/Algorithm.hpp
 +++ b/src/include/kompute/Algorithm.hpp
-@@ -291,6 +291,11 @@ class Algorithm
+@@ -38,6 +38,8 @@ class Algorithm
+      * when initializing the pipeline, which set the size of the push constants
+      * - these can be modified but all new values must have the same data type
+      * and length as otherwise it will result in errors.
++     *  @param required_subgroup_size (optional) The required subgroup size to use
++     * when creating the pipeline. If 0 there is no rquuired size.
+      */
+     template<typename S = float, typename P = float>
+     Algorithm(std::shared_ptr<vk::Device> device,
+@@ -45,7 +47,8 @@ class Algorithm
+               const std::vector<uint32_t>& spirv = {},
+               const Workgroup& workgroup = {},
+               const std::vector<S>& specializationConstants = {},
+-              const std::vector<P>& pushConstants = {}) noexcept
++              const std::vector<P>& pushConstants = {},
++              uint32_t required_subgroup_size=0 ) noexcept
+     {
+         KP_LOG_DEBUG("Kompute Algorithm Constructor with device");
+ 
+@@ -61,7 +64,8 @@ class Algorithm
+                           spirv,
+                           workgroup,
+                           specializationConstants,
+-                          pushConstants);
++                          pushConstants,
++                          required_subgroup_size);
+         } else {
+             KP_LOG_INFO(
+               "Kompute Algorithm constructor with empty mem objects and or "
+@@ -84,13 +88,16 @@ class Algorithm
+      * initializing the pipeline, which set the size of the push constants -
+      * these can be modified but all new values must have the same vector size
+      * as this initial value.
++     *  @param required_subgroup_size (optional) The required subgroup size to use
++     * when creating the pipeline. If 0 there is no required size.
+      */
+     template<typename S = float, typename P = float>
+     void rebuild(const std::vector<std::shared_ptr<Memory>>& memObjects,
+                  const std::vector<uint32_t>& spirv,
+                  const Workgroup& workgroup = {},
+                  const std::vector<S>& specializationConstants = {},
+-                 const std::vector<P>& pushConstants = {})
++                 const std::vector<P>& pushConstants = {},
++                 uint32_t required_subgroup_size=0 )
+     {
+         KP_LOG_DEBUG("Kompute Algorithm rebuild started");
+ 
+@@ -138,7 +145,7 @@ class Algorithm
+ 
+         this->createParameters();
+         this->createShaderModule();
+-        this->createPipeline();
++        this->createPipeline(required_subgroup_size);
+     }
+ 
+     /**
+@@ -291,6 +298,11 @@ class Algorithm
  
      void destroy();
  
@@ -55,8 +111,17 @@ index c459bab..28d783f 100644
    private:
      // -------------- NEVER OWNED RESOURCES
      std::shared_ptr<vk::Device> mDevice;
+@@ -324,7 +336,7 @@ class Algorithm
+ 
+     // Create util functions
+     void createShaderModule();
+-    void createPipeline();
++    void createPipeline(uint32_t required_subgroup_size = 0);
+ 
+     // Parameters
+     void createParameters();
 diff --git a/src/Algorithm.cpp b/src/Algorithm.cpp
-index af12e09..223518d 100644
+index af12e09..818ecfe 100644
 --- a/src/Algorithm.cpp
 +++ b/src/Algorithm.cpp
 @@ -1,5 +1,6 @@
@@ -152,6 +217,28 @@ index af12e09..223518d 100644
          this->mDevice->updateDescriptorSets(computeWriteDescriptorSets,
                                              nullptr);
      }
+@@ -240,7 +281,7 @@ Algorithm::createShaderModule()
+ }
+ 
+ void
+-Algorithm::createPipeline()
++Algorithm::createPipeline(uint32_t required_subgroup_size)
+ {
+     KP_LOG_DEBUG("Kompute Algorithm calling create Pipeline");
+ 
+@@ -293,6 +334,12 @@ Algorithm::createPipeline()
+       "main",
+       &specializationInfo);
+ 
++    if (required_subgroup_size > 0) {
++        vk::PipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo;
++        subgroupSizeCreateInfo.requiredSubgroupSize = required_subgroup_size;
++        shaderStage.pNext = &subgroupSizeCreateInfo;
++    }
++
+     vk::ComputePipelineCreateInfo pipelineInfo(vk::PipelineCreateFlags(),
+                                                shaderStage,
+                                                *this->mPipelineLayout,
 diff --git a/src/include/kompute/Image.hpp b/src/include/kompute/Image.hpp
 index d254149..a1e0c3b 100644
 --- a/src/include/kompute/Image.hpp
@@ -1511,7 +1598,7 @@ index a1eaccf..3df27e5 100644
  vk::BufferUsageFlags
  Tensor::getStagingBufferUsageFlags()
 diff --git a/src/include/kompute/Manager.hpp b/src/include/kompute/Manager.hpp
-index 5093c83..8f4e4d4 100644
+index 5093c83..65a4075 100644
 --- a/src/include/kompute/Manager.hpp
 +++ b/src/include/kompute/Manager.hpp
 @@ -1,6 +1,7 @@
@@ -1573,7 +1660,50 @@ index 5093c83..8f4e4d4 100644
      /**
       * Default non-template function that can be used to create algorithm
       * objects which provides default types to the push and spec constants as
-@@ -530,6 +568,17 @@ class Manager
+@@ -443,6 +481,8 @@ class Manager
+      * specialization constants, and defaults to an empty constant
+      * @param pushConstants (optional) float vector to use for push constants,
+      * and defaults to an empty constant
++     * @param required_subgroup_size (optional) uint32_t to specify required subgroup size,
++     * defaults to 0 which means no required subgroup size
+      * @returns Shared pointer with initialised algorithm
+      */
+     std::shared_ptr<Algorithm> algorithm(
+@@ -450,10 +490,11 @@ class Manager
+       const std::vector<uint32_t>& spirv = {},
+       const Workgroup& workgroup = {},
+       const std::vector<float>& specializationConstants = {},
+-      const std::vector<float>& pushConstants = {})
++      const std::vector<float>& pushConstants = {},
++      uint32_t required_subgroup_size=0)
+     {
+         return this->algorithm<>(
+-          memObjects, spirv, workgroup, specializationConstants, pushConstants);
++          memObjects, spirv, workgroup, specializationConstants, pushConstants, required_subgroup_size);
+     }
+ 
+     /**
+@@ -477,7 +518,8 @@ class Manager
+       const std::vector<uint32_t>& spirv,
+       const Workgroup& workgroup,
+       const std::vector<S>& specializationConstants,
+-      const std::vector<P>& pushConstants)
++      const std::vector<P>& pushConstants,
++      uint32_t required_subgroup_size)
+     {
+ 
+         KP_LOG_DEBUG("Kompute Manager algorithm creation triggered");
+@@ -488,7 +530,8 @@ class Manager
+           spirv,
+           workgroup,
+           specializationConstants,
+-          pushConstants) };
++          pushConstants,
++          required_subgroup_size) };
+ 
+         if (this->mManageResources) {
+             this->mManagedAlgorithms.push_back(algorithm);
+@@ -530,6 +573,17 @@ class Manager
       **/
      std::shared_ptr<vk::Instance> getVkInstance() const;
  
