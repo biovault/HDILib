@@ -121,7 +121,7 @@ index c459bab..d1823a9 100644
      // Parameters
      void createParameters();
 diff --git a/src/Algorithm.cpp b/src/Algorithm.cpp
-index af12e09..818ecfe 100644
+index af12e09..ed724f0 100644
 --- a/src/Algorithm.cpp
 +++ b/src/Algorithm.cpp
 @@ -1,5 +1,6 @@
@@ -230,8 +230,8 @@ index af12e09..818ecfe 100644
        "main",
        &specializationInfo);
  
++    vk::PipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo;
 +    if (required_subgroup_size > 0) {
-+        vk::PipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo;
 +        subgroupSizeCreateInfo.requiredSubgroupSize = required_subgroup_size;
 +        shaderStage.pNext = &subgroupSizeCreateInfo;
 +    }
