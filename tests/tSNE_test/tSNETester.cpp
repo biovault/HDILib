@@ -87,7 +87,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
         prob_gen_param);
 
       std::cout << "knn complete" << std::endl;
-    #if defined(WIN32) && defined(TSNETESTER_GPUDEBUG_CAPTURE)
+    #if defined(WIN32) && TSNETESTER_GPUDEBUG_CAPTURE == 1
       RenderDoc::RenderDebugger::startFrameCapture();
     #endif
 
@@ -95,7 +95,7 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
       { // timed scope
         hdi::utils::ScopedTimer<float, hdi::utils::Seconds> timer(gradient_desc_comp_time);
         tSNE.initializeWithJointProbabilityDistribution(distributions, &embedding, tSNE_param);
-      #if defined(__APPLE__) and defined(TSNETESTER_GPUDEBUG_CAPTURE)
+      #if defined(__APPLE__) and TSNETESTER_GPUDEBUG_CAPTURE == 1
         vk::Device* devicePtr = static_cast<vk::Device*>(tSNE.getDevice());
         StartMetalCapture(getMetalDevice(*devicePtr));
       #endif
@@ -113,11 +113,11 @@ std::vector<float> perform_tSNE(unsigned int num_points, unsigned int num_dimens
           std::cerr << "Exception with error: " << e.what() << std::endl;
           return std::vector<float>();
         }
-      #if defined(__APPLE__) && defined(TSNETESTER_GPUDEBUG_CAPTURE)
+      #if defined(__APPLE__) && TSNETESTER_GPUDEBUG_CAPTURE == 1
         EndMetalCapture();
       #endif
       }
-    #if defined(WIN32) && defined(TSNETESTER_GPUDEBUG_CAPTURE)
+    #if defined(WIN32) && TSNETESTER_GPUDEBUG_CAPTURE == 1
       RenderDoc::RenderDebugger::endFrameCapture();
     #endif
 
