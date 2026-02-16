@@ -63,7 +63,21 @@ class HDILibConan(ConanFile):
             del self.options.fPIC
 
     def generate(self):
-        print(f"Generate for channel {self.channel}")
+        print("In generate")
+        # inject the vcpkg toolchain file into the start of the conan generated file
+        vcpkg_root = os.getenv("VCPKG_INSTALLATION_ROOT", None)
+        if vcpkg_root is None:
+            raise RuntimeError(
+                "Expected a preinstalled vcpkg and the environment variable"
+                " VCPKG_INSTALLATION_ROOT to be available"
+            )
+        vcpkg_tc_path = Path(
+            vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake"
+        ).as_posix()
+        print(f"Adding {vcpkg_tc_path} to the toolchain")
+        self.conf_info.define(
+            "tools.cmake.cmaketoolchain:user_toolchain", [vcpkg_tc_path]
+        )
         generator = None
         if self.settings.os == "Macos":
             generator = "Xcode"
@@ -148,13 +162,6 @@ class HDILibConan(ConanFile):
         self.cpp_info.libs = tools.collect_libs(self)
         self.cpp_info.set_property("skip_deps_file", True)
         self.cpp_info.set_property("cmake_config_file", True)
-        # inject the vcpkg toolchain file into the start of the conan generated file
-        vcpkg_root = os.getenv("VCPKG_INSTALLATION_ROOT", None)
-        if vcpkg_root is None:
-            raise RuntimeError("Expected a preinstalled vcpkg and the environment variable VCPKG_INSTALLATION_ROOT to be available")
-        vcpkg_tc_path = Path(vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake").as_posix()
-        print(f"Adding {vcpkg_tc_path} to the toolchain")
-        self.conf_info.define("tools.cmake.cmaketoolchain:user_toolchain", [vcpkg_tc_path])
 
     def package(self):
         install_dir = Path(self.build_folder).joinpath("install")
