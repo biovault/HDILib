@@ -65,9 +65,12 @@ class HDILibConan(ConanFile):
         vcpkg_root = os.getenv("VCPKG_INSTALLATION_ROOT", None)
         if vcpkg_root is None:
             raise RuntimeError("Expected a preinstalled vcpkg and the environment variable VCPKG_INSTALLATION_ROOT to be available")
-        vcpkg_tc_path = Path(vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake").as_posix()
+        vcpkg_tc_path = Path(vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake")
+        if not vcpkg_tc_path.exists():
+            raise RuntimeError(f"Expected vcpkg toolchain not found at {vcpkg_tc_path.as_posix()}")
+
         print(f"Adding {vcpkg_tc_path} to the toolchain")
-        self.conf_info.define("tools.cmake.cmaketoolchain:user_toolchain", [vcpkg_tc_path])
+        self.conf_info.define("tools.cmake.cmaketoolchain:user_toolchain", [vcpkg_tc_path.as_posix()])
         generator = None
         if self.settings.os == "Macos":
             generator = "Xcode"
