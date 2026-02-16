@@ -25,7 +25,7 @@ vcpkg_cmake_configure(
         -DKOMPUTE_OPT_LOG_LEVEL="Warn"
         -DKOMPUTE_OPT_USE_SPDLOG=OFF
         -DKOMPUTE_OPT_ANDROID_BUILD=OFF
-        -DKOMPUTE_OPT_DISABLE_VK_DEBUG_LAYERS=OFF
+        -DKOMPUTE_OPT_DISABLE_VK_DEBUG_LAYERS=ON     # Turn off to allow validation with Vulkan Configurator 
         -DKOMPUTE_OPT_BUILD_SHADERS=OFF              # Requires glslangValidator, i.e. glslang[tools]
         -DKOMPUTE_OPT_USE_BUILT_IN_SPDLOG=OFF
         -DKOMPUTE_OPT_SPDLOG_ASYNC_MODE=OFF
