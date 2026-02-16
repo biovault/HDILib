@@ -153,6 +153,7 @@ class HDILibConan(ConanFile):
         if vcpkg_root is None:
             raise RuntimeError("Expected a preinstalled vcpkg and the environment variable VCPKG_INSTALLATION_ROOT to be available")
         vcpkg_tc_path = Path(vcpkg_root, "scripts", "buildsystems", "vcpkg.cmake").as_posix()
+        print(f"Adding {vcpkg_tc_path} to the toolchain")
         self.conf_info.define("tools.cmake.cmaketoolchain:user_toolchain", [vcpkg_tc_path])
 
     def package(self):
