@@ -28,10 +28,10 @@ message(STATUS "hnswlib at ${rapidcsv_SOURCE_DIR}")
 
 # If using RenderDoc (https://renderdoc.org) or XCode GPU debugging capturing
 # GPU calls is a powerful debugging tool for Vulkan
-option(TSNETESTER_GPUDEBUG_CAPTURE " Enable GPU debug capture for the test program (Windows or MacOS)" ON)
+option(TSNETESTER_GPUDEBUG_CAPTURE " Enable GPU debug capture for the test program (Windows or MacOS)" OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 configure_file(tSNETester_config.h.in tSNETester_config.h)
-if(APPLE AND GPUDEBUG)
+if(APPLE AND TSNETESTER_GPUDEBUG_CAPTURE)
     enable_language(OBJCXX)
 endif()
 
@@ -60,11 +60,11 @@ add_executable(
 
 target_sources(tsne_tester PRIVATE ${TESTER_SOURCES})
 
-if(WIN32 AND GPUDEBUG)
+if(WIN32 AND TSNETESTER_GPUDEBUG_CAPTURE)
     target_sources(tsne_tester PRIVATE ${RENDERDOC_SOURCES})
 endif()
 
-if(APPLE AND GPUDEBUG)
+if(APPLE AND TSNETESTER_GPUDEBUG_CAPTURE)
     set_source_files_properties(
         MetalCaptureBridge.mm
         PROPERTIES
