@@ -6,6 +6,7 @@ from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps
 from conans.tools import os_info
 import shutil
 import subprocess
+import json
 
 required_conan_version = "~=1.66.0"
 
@@ -29,6 +30,16 @@ class HDILibTestConan(ConanFile):
         tc.variables["HDILib_ROOT"] = Path(
             self.deps_cpp_info["HDILib"].rootpath
         ).as_posix()
+        # These vulkan related dependencies are bundled with HDILib
+        tc.variables["kompute_ROOT"] = Path(
+            self.deps_cpp_info["HDILib"].rootpath
+        ).as_posix()
+        tc.variables["fmt_ROOT"] = Path(
+            self.deps_cpp_info["HDILib"].rootpath
+        ).as_posix()
+        tc.variables["glfw3_ROOT"] = Path(
+            self.deps_cpp_info["HDILib"].rootpath
+        ).as_posix()
         # Use the cmake export in the flann package
         tc.variables["flann_ROOT"] = Path(
             self.deps_cpp_info["flann"].rootpath, "lib", "cmake"
@@ -37,6 +48,7 @@ class HDILibTestConan(ConanFile):
         tc.variables["lz4_ROOT"] = Path(
             self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
         ).as_posix()
+
 
         if os_info.is_macos:
             proc = subprocess.run(
@@ -72,10 +84,6 @@ class HDILibTestConan(ConanFile):
         cmake.configure()
         cmake.build()
 
-    # def imports(self):
-    #    self.copy("*.dll", dst="bin", src="bin")
-    #    self.copy("*.dylib*", dst="bin", src="lib")
-    #    self.copy("*.so*", dst="bin", src="lib")
 
     def test(self):
         if os.getenv("Analysis", None) is not None:
