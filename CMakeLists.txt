@@ -219,7 +219,85 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibConfig.cmake.in
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
-# install the package files files
+# install the package files
+# install the vcpkg build files
+function(patch_file)
+  # Step through the file line by line replacing 
+  # the match expression with the replace expression
+  # Overwrite the existing file
+  cmake_parse_arguments(PARSE_ARGV 0 "patch_arg" "" "INPUT_PATH;MATCH_EXPRESSION;REPLACE_EXPRESSION" "")
+  set(eol "\n")
+  if (WIN32) 
+    set(eol "\r")
+  endif()
+  set(patched_result "")
+  file(STRINGS "${patch_arg_INPUT_PATH}" input_lines)
+  #message("Unpatched file ${input_lines}")
+  foreach(line IN LISTS input_lines)
+    set(patched_line "")
+    string(REPLACE "${patch_arg_MATCH_EXPRESSION}" "${patch_arg_REPLACE_EXPRESSION}" patched_line "${line}")
+    set(patched_result "${patched_result}${patched_line}${eol}")
+  endforeach()
+  #message("New patched file ${patched_result}")
+  file(WRITE "${patch_arg_INPUT_PATH}" "${patched_result}")
+endfunction()
+
+function(add_config_to_cmake_target_files)
+  # Using a glob_path for CMake target filed 
+  # patch each file found so that the lib path contains a 
+  # config (i.e. Release, Debug or RelWithDebInfo) element
+  # This matches the convention we use in multi-build packages
+
+  cmake_parse_arguments(PARSE_ARGV 0 "fix_arg" "" "LIB_NAME;PATH_GLOB" "")
+  #message("globbing: ${fix_arg_PATH_GLOB}")
+  file(GLOB _cmake_config_files "${fix_arg_PATH_GLOB}")
+  #message("glob list: ${_cmake_config_files}")
+  foreach(_cmake_config_file IN LISTS _cmake_config_files)
+      set(_upper_file "")
+      string(TOUPPER "${_cmake_config_file}" _upper_file)
+      #message("Checking: ${_upper_file}")
+      # Identify if each file is a Release, Debug or RelWithDebugInfo
+      # and apply the appropriate patch
+      set(_found -1)
+      string(FIND "${_upper_file}" "RELEASE.CMAKE" _found)
+      if (_found GREATER -1)
+        patch_file(
+          INPUT_PATH "${_cmake_config_file}" 
+          MATCH_EXPRESSION "lib/${fix_arg_LIB_NAME}" 
+          REPLACE_EXPRESSION "lib/Release/${fix_arg_LIB_NAME}"
+        )
+      endif()
+      string(FIND "${_upper_file}" "DEBUG.CMAKE" _found)
+      if (_found GREATER -1)
+        patch_file(
+          INPUT_PATH "${_cmake_config_file}" 
+          MATCH_EXPRESSION "lib/${fix_arg_LIB_NAME}" 
+          REPLACE_EXPRESSION "lib/Debug/${fix_arg_LIB_NAME}"
+      )
+      endif()
+      string(FIND "${_upper_file}" "RELWITHDEBINFO.CMAKE" _found)
+      if (_found GREATER -1)
+        patch_file(
+          INPUT_PATH "${_cmake_config_file}" 
+          MATCH_EXPRESSION "lib/${fix_arg_LIB_NAME}" 
+          REPLACE_EXPRESSION "lib/RelWithDebInfo/${fix_arg_LIB_NAME}"
+        )
+      endif()
+  endforeach()
+endfunction()
+
+function(fix_include_path)
+  # Insert a dependency name element into the include path
+  # In the package include each extra dependency has its own sub-dir
+  # under include. 
+  cmake_parse_arguments(PARSE_ARGV 0 "inc_arg" "" "DEPENDENCY_NAME;TARGET_PATH" "")
+
+  patch_file(
+    INPUT_PATH "${inc_arg_TARGET_PATH}" 
+    MATCH_EXPRESSION "\${_IMPORT_PREFIX}/include" 
+    REPLACE_EXPRESSION "\${_IMPORT_PREFIX}/${inc_arg_DEPENDENCY_NAME}/include"
+  )
+endfunction()
 
 if(${HDILib_INSTALL})
     install(FILES
@@ -228,6 +306,51 @@ if(${HDILib_INSTALL})
             DESTINATION lib/cmake/HDILib
             COMPONENT HDI_PACKAGE
     )
+    if (USE_VULKAN_KOMPUTE)
+      # TBD possibly move this to an external script
+      # Install the config.cmake files for the vcpkg dependencies
+      message("Fix config in ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake")
+      add_config_to_cmake_target_files(
+        LIB_NAME "kompute.lib" 
+        PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake"
+      )
+      fix_include_path(
+        DEPENDENCY_NAME "kompute"
+        TARGET_PATH "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets.cmake"
+      )
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute" 
+        DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
+      add_config_to_cmake_target_files(
+        LIB_NAME "fmt.lib" 
+        PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt/fmt-targets-*.cmake")
+      fix_include_path(
+        DEPENDENCY_NAME "fmt"
+        TARGET_PATH "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt/fmt-targets.cmake"
+      )
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt" 
+        DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
+      add_config_to_cmake_target_files(
+        LIB_NAME "glfw3.lib" 
+        PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glfw3/glfw3Targets-*.cmake")
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glfw3" 
+        DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
+
+      # Install the include files
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/kompute"
+        DESTINATION include)
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/fmt"
+        DESTINATION include)
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/GLFW"
+        DESTINATION include)
+
+      # Install the static libraries
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/$<CONFIGURATION> COMPONENT HDI_PACKAGE)
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmt${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/$<CONFIGURATION> COMPONENT HDI_PACKAGE)
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/$<CONFIGURATION> COMPONENT HDI_PACKAGE)
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
