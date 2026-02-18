@@ -191,9 +191,9 @@ class HDILibConan(ConanFile):
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
 
-        cmake_debug = self._configure_cmake()
-        cmake_debug.build(build_type="Debug")
-        cmake_debug.install(build_type="Debug")
+        #cmake_debug = self._configure_cmake()
+        #cmake_debug.build(build_type="Debug")
+        #cmake_debug.install(build_type="Debug")
 
         if os.getenv("Analysis", None) is None:
             # Disable code analysis in Release mode
@@ -201,9 +201,9 @@ class HDILibConan(ConanFile):
             cmake_release.build(build_type="Release")
             cmake_release.install(build_type="Release")
 
-            cmake_release = self._configure_cmake()
-            cmake_release.build(build_type="RelWithDebInfo")
-            cmake_release.install(build_type="RelWithDebInfo")
+            #cmake_release = self._configure_cmake()
+            #cmake_release.build(build_type="RelWithDebInfo")
+            #cmake_release.install(build_type="RelWithDebInfo")
 
     def package_id(self):
         # The package contains both Debug and Release build types
