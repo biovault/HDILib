@@ -18,6 +18,38 @@ required_conan_version = "~=1.66.0"
 class HDILibTestConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     # cmake_paths locates the HDILib built with build_type None
+    
+    def _get_vcpkg_root(self): 
+        vcpkg_root = os.getenv("VCPKG_INSTALLATION_ROOT", None)
+        if vcpkg_root is None:
+            raise RuntimeError("Expected a preinstalled vcpkg and the environment variable VCPKG_INSTALLATION_ROOT to be available")
+        return vcpkg_root
+    
+    def _get_vcpkg_toolchain(self):
+        vcpkg_tc_path = Path(self._get_vcpkg_root(), "scripts", "buildsystems", "vcpkg.cmake")
+        if not vcpkg_tc_path.exists():
+            raise RuntimeError(f"Expected vcpkg toolchain not found at {vcpkg_tc_path.absolute()}")
+        return vcpkg_tc_path
+    
+    def _inject_vcpkg_in_cmake_presets(self):
+        # The VCPKG toolchain becomes the primary toolchain,
+        # this gives automatic "vcpkg install"without an explicit call.
+        # The conan toolchain is "CHAINLOADED" by vcpkg preserving conan functionality
+        #
+        # In conan v1 the CMake class reads these settings from the presets file 
+        # and used them to create the cmake command line.
+        #
+        # T.B.D. check conan v2 mechanism
+        conan_toolchain = Path(self.generators_folder, "conan_toolchain.cmake")
+        conan_presets = Path(self.generators_folder, "CMakePresets.json")
+        with open(conan_presets) as f:
+          conan_preset_data = json.load(f)
+        for preset in conan_preset_data.get("configurePresets", []):
+            preset["cacheVariables"]["VCPKG_CHAINLOAD_TOOLCHAIN_FILE"] = str(conan_toolchain.absolute())
+            preset["toolchainFile"] = str(self._get_vcpkg_toolchain().absolute())
+        print(f"Modifying the presets file: {conan_presets}")
+        with open(conan_presets, "w") as f:
+          json.dump(conan_preset_data, f, indent=2)
 
     def generate(self):
 
@@ -59,6 +91,8 @@ class HDILibTestConan(ConanFile):
 
         tc.generate()
 
+        self._inject_vcpkg_in_cmake_presets()
+
     def requirements(self):
         if os.getenv("Analysis", None) is not None:
             return
@@ -80,6 +114,7 @@ class HDILibTestConan(ConanFile):
     def build(self):
         if os.getenv("Analysis", None) is not None:
             return
+        
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
