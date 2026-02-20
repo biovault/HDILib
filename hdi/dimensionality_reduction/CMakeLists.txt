@@ -8,7 +8,14 @@ if(USE_VULKAN_KOMPUTE)
     message(STATUS "################# ${HeaderFiles} ##############")
     file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp gpgpu_vulkan/*.cpp gpgpu_vulkan/shaders/*.cpp)
     message(STATUS "################# ${HeaderFiles} ##############")
-    file(GLOB_RECURSE ShaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/gpgpu_vulkan/shaders/*.comp")
+    file(GLOB_RECURSE ShaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} gpgpu_vulkan/shaders/*.comp)
+    # each *.comp file will be glslang converted to a SPIRV .hpp file
+    set(ShaderFileHeaders "")
+    foreach(_shader_comp IN LISTS ShaderFiles)
+      get_filename_component(_COMP_ROOT ${_shader_comp} NAME_WE)
+      list(APPEND ShaderFileHeaders "gpgpu_vulkan/shaders/${_COMP_ROOT}.hpp")
+    endforeach()
+    message("All shader headers: ${ShaderFileHeaders}")
     add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${ShaderFiles})
     source_group(Shaders FILES ${ShaderFiles})
     add_dependencies(${PROJECT} compile_shaders)
@@ -105,7 +112,9 @@ if(${HDILib_INSTALL})
 
     # Preserve the header hierarchy by explicit install
     # the CMake PUBLIC_HEADER target property flattens it if used.
-    install(CODE "foreach(DR_HEADER ${HeaderFiles})
+    set(_ALL_HEADERS ${HeaderFiles} ${ShaderFileHeaders})
+    # message("All headers ${DR_HEADER}")
+    install(CODE "foreach(DR_HEADER ${_ALL_HEADERS})
             message(STATUS \"Installing: \${DR_HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
             execute_process(
                 COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
