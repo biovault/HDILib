@@ -8,12 +8,24 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 project(PackageTest CXX)
 
+macro(print_all_variables)
+    message(STATUS "print_all_variables------------------------------------------{")
+    get_cmake_property(_variableNames VARIABLES)
+    foreach (_variableName ${_variableNames})
+        message(STATUS "${_variableName}=${${_variableName}}")
+    endforeach()
+    message(STATUS "print_all_variables------------------------------------------}")
+endmacro()
+
 # CONAN_HDILIB_ROOT should be at the root of the HDILib install PATHS ${CONAN_HDILIB_ROOT} CONFIG
 message(STATUS "HDILib root path ${HDILib_ROOT}")
 find_package(HDILib COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS ${HDILib_ROOT} CONFIG REQUIRED)
 message("test_package list dir ${CMAKE_CURRENT_LIST_DIR}")
 find_package(lz4 REQUIRED)
 find_package(flann REQUIRED)
+find_package(fmt CONFIG REQUIRED)
+find_package(kompute CONFIG REQUIRED)
+find_package(glfw3 REQUIRED)
 
 find_package(OpenMP)
 if (APPLE)
@@ -22,10 +34,7 @@ if (APPLE)
 else()
     find_package(OpenMP REQUIRED)
 endif()
-
-#find_package(fmt CONFIG REQUIRED)
-find_package(kompute CONFIG REQUIRED)
-find_package(glfw3 REQUIRED)
+# print_all_variables()
 
 add_executable(example example.cpp)
 # Link the libraries individually or use the predefined HDILib_LINK_LIBS
