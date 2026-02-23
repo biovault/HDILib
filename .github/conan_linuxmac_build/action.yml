@@ -86,7 +86,7 @@ runs:
           libXinerama-devel \
           libXi-devel \
           libXext-devel \
-          libx11-devel \
+          libX11-devel \
           libxkbcommon-devel
         fi
       shell: bash
