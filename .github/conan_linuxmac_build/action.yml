@@ -78,7 +78,7 @@ runs:
 
     - name: Fix vulkan dependencies
       run: |
-        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
           dnf install -y \
           libXrandr-devel \
           libXrender-devel \
