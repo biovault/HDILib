@@ -36,7 +36,7 @@ if(APPLE AND TSNETESTER_GPUDEBUG_CAPTURE)
 endif()
 
 set(TESTER_SOURCES
-    tSNEtester.cpp
+    tSNETester.cpp
     tSNETester_config.h
 )
 
