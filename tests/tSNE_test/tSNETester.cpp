@@ -6,7 +6,7 @@
 #include <rapidcsv.h>
 
 // prevents duplicate include of GL.h - will be provided by hdi includes
-#ifdef WIN32
+#ifdef WIN32 || __linux__
 #define GLFW_INCLUDE_NONE
 #endif
 
