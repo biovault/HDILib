@@ -9,7 +9,7 @@
 #ifdef WIN32
 #define GLFW_INCLUDE_NONE
 #endif
-#include <GLFW/glfw3.h>
+
 
 #include "hdi/utils/cout_log.h"
 #include "hdi/utils/log_helper_functions.h"
@@ -24,6 +24,7 @@
 #include "hdi/dimensionality_reduction/gradient_descent_tsne_texture.h"
 #include <kompute/logger/Logger.hpp>
 #include <algorithm>
+#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
 
 #include "tSNETester_config.h" //CMake generated config file for test configuration (e.g. GPU debug capture)
