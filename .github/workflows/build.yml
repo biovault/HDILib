@@ -180,6 +180,8 @@ jobs:
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
+  # This build for python on linux cannot be performed using the normal matrix
+  # becuse the C libs are not compatible with the python versions 
   Python-ManyLinux-2-28-Build:
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux_2_28_x86_64
@@ -212,6 +214,13 @@ jobs:
         run: |
           python3 --version
           pip3 --version
+
+      # The version of vcpkg 
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@11
+        #This vcpkg baseline corresponds to tag 2025.04.09",
+        with: 
+          vcpkgGitCommitId: "ce613c41372b23b1f51333815feb3edd87ef8a8b"
 
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
