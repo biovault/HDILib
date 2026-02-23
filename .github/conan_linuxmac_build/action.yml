@@ -75,6 +75,22 @@ runs:
 
       shell: bash
 
+
+    - name: Fix vulkan dependencies
+      run: |
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]
+          dnf install -y \
+          libXrandr-devel \
+          libXrender-devel \
+          libXcursor-devel \
+          libXinerama-devel \
+          libXi-devel \
+          libXext-devel \
+          libx11-devel \
+          libxkbcommon-devel
+        fi
+      shell: bash
+
     - name: Build with conan
       run: |
         export CONAN_USER_HOME=`pwd`/_conan
