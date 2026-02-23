@@ -217,7 +217,7 @@ jobs:
 
       # The version of vcpkg 
       - name: Setup vcpkg
-        uses: lukka/run-vcpkg@11
+        uses: lukka/run-vcpkg@v11
         #This vcpkg baseline corresponds to tag 2025.04.09",
         with: 
           vcpkgGitCommitId: "ce613c41372b23b1f51333815feb3edd87ef8a8b"
