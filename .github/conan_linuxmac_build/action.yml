@@ -112,7 +112,7 @@ runs:
         CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
         CC: ${{inputs.conan-cc}}
         CXX: ${{inputs.conan-cxx}}
-        VCPKG_INSTALLATION_ROOT: ~/vcpkg_root
+        VCPKG_INSTALLATION_ROOT: ./vcpkg_root
 
     - name: Upload to artifactory with conan
       run: |
