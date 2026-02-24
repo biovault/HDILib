@@ -36,6 +36,29 @@ else()
 endif()
 # print_all_variables()
 
+if(TARGET kompute::kompute)
+    message(STATUS "Found kompute::kompute target. Linking is possible.")
+    get_target_property(kompute_type kompute::kompute TYPE)
+    message(STATUS "  TYPE: ${kompute_type}")
+
+    get_target_property(kompute_sources kompute::kompute SOURCES)
+    message(STATUS "  SOURCES: ${kompute_sources}")
+
+    get_target_property(kompute_include_dirs kompute::kompute INTERFACE_INCLUDE_DIRECTORIES)
+    message(STATUS "  INTERFACE_INCLUDE_DIRECTORIES: ${kompute_include_dirs}")
+
+    get_target_property(kompute_link_libs kompute::kompute INTERFACE_LINK_LIBRARIES)
+    message(STATUS "  INTERFACE_LINK_LIBRARIES: ${kompute_link_libs}")
+
+    get_target_property(kompute_compile_defs kompute::kompute INTERFACE_COMPILE_DEFINITIONS)
+    message(STATUS "  INTERFACE_COMPILE_DEFINITIONS: ${kompute_compile_defs}")
+
+    get_target_property(kompute_compile_opts kompute::kompute INTERFACE_COMPILE_OPTIONS)
+    message(STATUS "  INTERFACE_COMPILE_OPTIONS: ${kompute_compile_opts}")
+else()
+    message(WARNING "kompute::kompute target not found. Check your kompute installation.")
+endif()
+
 add_executable(example example.cpp)
 # Link the libraries individually or use the predefined HDILib_LINK_LIBS
 if (WIN32)
