@@ -51,8 +51,9 @@ runs:
             yum install -y libomp
             dnf install gcc-toolset-14-gcc gcc-toolset-14-gcc-c++
           else
-            sudo apt-get install -y ninja-build;
+            sudo apt-get install -y ninja-build
           fi
+          which ninja-build
         fi
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-compiler-version }} == "10" ]]; then
@@ -78,7 +79,7 @@ runs:
 
     - name: Fix vulkan dependencies
       run: |
-        if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
           dnf install -y \
           libXrandr-devel \
           libXrender-devel \
@@ -96,6 +97,7 @@ runs:
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
           scl enable gcc-toolset-14 bash
+          # use lukka/run-vcpkg installed vcpkg
           export VCPKG_INSTALLATION_ROOT=${{ github.workspace }}/vcpkg
         fi
 
