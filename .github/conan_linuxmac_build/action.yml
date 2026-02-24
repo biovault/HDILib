@@ -53,7 +53,8 @@ runs:
           else
             sudo apt-get install -y ninja-build
           fi
-          which ninja-build
+          export NINJAVER=`ninja-build --version`
+          echo ninja-build version $NINJAVER
         fi
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-compiler-version }} == "10" ]]; then
