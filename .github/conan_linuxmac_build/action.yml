@@ -98,7 +98,6 @@ runs:
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
           scl enable gcc-toolset-14 bash
-          # use lukka/run-vcpkg installed vcpkg
           export VCPKG_INSTALLATION_ROOT=${{ github.workspace }}/vcpkg
         fi
 
