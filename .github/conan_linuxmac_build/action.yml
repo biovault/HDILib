@@ -93,9 +93,12 @@ runs:
 
     - name: Build with conan
       run: |
+
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
           scl enable gcc-toolset-14 bash
+          export VCPKG_INSTALLATION_ROOT=${{ github.workspace }}/vcpkg
         fi
+
         export CONAN_USER_HOME=`pwd`/_conan
         echo Add LKEB artifactory as remote
         conan remote add $CONAN_LKEB_ARTIFACTORY $CONAN_UPLOAD
@@ -132,7 +135,7 @@ runs:
         CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
         CC: ${{inputs.conan-cc}}
         CXX: ${{inputs.conan-cxx}}
-        VCPKG_INSTALLATION_ROOT: ${{ github.workspace }}/vcpkg
+        
 
     - name: Upload to artifactory with conan
       run: |
