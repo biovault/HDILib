@@ -48,8 +48,9 @@ runs:
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
           if [[ ${{ inputs.conan-channel }} == "python" ]]; then 
-            dnf install -y ninja-build;
-            yum install -y libomp;
+            dnf install -y ninja-build
+            yum install -y libomp
+            dnf install gcc-toolset-14-gcc gcc-toolset-14-gcc-c++
           else
             sudo apt-get install -y ninja-build;
           fi
@@ -78,7 +79,7 @@ runs:
 
     - name: Fix vulkan dependencies
       run: |
-        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
           dnf install -y \
           libXrandr-devel \
           libXrender-devel \
@@ -93,6 +94,9 @@ runs:
 
     - name: Build with conan
       run: |
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
+          scl enable gcc-toolset-14 bash
+        fi
         export CONAN_USER_HOME=`pwd`/_conan
         echo Add LKEB artifactory as remote
         conan remote add $CONAN_LKEB_ARTIFACTORY $CONAN_UPLOAD
