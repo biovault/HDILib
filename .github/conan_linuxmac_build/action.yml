@@ -54,7 +54,7 @@ runs:
           else
             sudo apt-get install -y ninja-build
           fi
-          export NINJAVER=`ninja-build --version`
+          export NINJAVER=`ninja --version`
           echo ninja-build version $NINJAVER
         fi
 
@@ -82,15 +82,19 @@ runs:
     - name: Fix vulkan dependencies
       run: |
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
-          dnf install -y \
-          libXrandr-devel \
-          libXrender-devel \
-          libXcursor-devel \
-          libXinerama-devel \
-          libXi-devel \
-          libXext-devel \
-          libX11-devel \
-          libxkbcommon-devel
+          if [[ ${{ inputs.conan-channel }} == "python" ]]; then
+            dnf install -y \
+            libXrandr-devel \
+            libXrender-devel \
+            libXcursor-devel \
+            libXinerama-devel \
+            libXi-devel \
+            libXext-devel \
+            libX11-devel \
+            libxkbcommon-devel
+          else
+            sudo apt install libx11-dev
+          fi
         fi
       shell: bash
 
