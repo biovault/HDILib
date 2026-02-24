@@ -82,20 +82,18 @@ if(TARGET kompute::kompute)
     get_target_property(kompute_type kompute::kompute TYPE)
     message(STATUS "  TYPE: ${kompute_type}")
 
-    get_target_property(kompute_sources kompute::kompute SOURCES)
-    message(STATUS "  SOURCES: ${kompute_sources}")
-
     get_target_property(kompute_include_dirs kompute::kompute INTERFACE_INCLUDE_DIRECTORIES)
     message(STATUS "  INTERFACE_INCLUDE_DIRECTORIES: ${kompute_include_dirs}")
 
     get_target_property(kompute_link_libs kompute::kompute INTERFACE_LINK_LIBRARIES)
     message(STATUS "  INTERFACE_LINK_LIBRARIES: ${kompute_link_libs}")
 
-    get_target_property(kompute_compile_defs kompute::kompute INTERFACE_COMPILE_DEFINITIONS)
-    message(STATUS "  INTERFACE_COMPILE_DEFINITIONS: ${kompute_compile_defs}")
+    get_target_property(kompute_location kompute::kompute IMPORTED_LOCATION_RELEASE)
+    message(STATUS "  INTERFACE_COMPILE_DEFINITIONS: ${kompute_location}")
 
-    get_target_property(kompute_compile_opts kompute::kompute INTERFACE_COMPILE_OPTIONS)
-    message(STATUS "  INTERFACE_COMPILE_OPTIONS: ${kompute_compile_opts}")
+    get_target_property(kompute_location_dbg kompute::kompute IMPORTED_LOCATION_DEBUG)
+    message(STATUS "  INTERFACE_COMPILE_DEFINITIONS: ${kompute_location_dbg}")
+
 else()
     message(WARNING "kompute::kompute target not found. Check your kompute installation.")
 endif()
