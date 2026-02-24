@@ -92,7 +92,7 @@ runs:
             libX11-devel \
             libxkbcommon-devel
           else
-            sudo apt install libx11-dev
+            sudo apt install libx11-dev xrandr xrender x11 xproto libxrandr-dev libxrender-dev
           fi
         fi
       shell: bash
