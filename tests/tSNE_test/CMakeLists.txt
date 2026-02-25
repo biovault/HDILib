@@ -73,7 +73,7 @@ if(APPLE AND TSNETESTER_GPUDEBUG_CAPTURE)
     target_sources(tsne_tester PRIVATE ${METALCAPTURE_SOURCES})
 endif()
 
-find_package(Vulkan CONFIG REQUIRED)
+# find_package(Vulkan CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(kompute CONFIG REQUIRED)
 find_package(glfw3 REQUIRED)
