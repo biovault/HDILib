@@ -89,6 +89,9 @@ if(TARGET kompute::kompute)
     get_target_property(kompute_link_libs kompute::kompute INTERFACE_LINK_LIBRARIES)
     message(STATUS "  INTERFACE_LINK_LIBRARIES: ${kompute_link_libs}")
 
+    get_target_property(kompute_default_location kompute::kompute IMPORTED_LOCATION)
+    message(STATUS "  IMPORTED_LOCATION (default): ${kompute_default_location}")
+
     get_target_property(kompute_location kompute::kompute IMPORTED_LOCATION_RELEASE)
     message(STATUS "  IMPORTED_LOCATION_RELEASE: ${kompute_location}")
     execute_process(COMMAND nm ${kompute_location} OUTPUT_VARIABLE KOMPUTE_SYMBOLS)
