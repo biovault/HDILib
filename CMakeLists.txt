@@ -252,6 +252,7 @@ function(add_config_to_cmake_target_files)
       string(FIND "${_upper_file}" "DEBUG.CMAKE" _found)
       if (_found GREATER -1)
         # Eliminate the "debug" element - we package this differently
+        message(STATUS "Change debug/lib for ${fix_arg_LIB_NAME} in ${_upper_file}")
         patch_file(
           INPUT_PATH "${_cmake_config_file}" 
           MATCH_EXPRESSION "debug/lib/${fix_arg_LIB_NAME}" 
@@ -299,11 +300,11 @@ if(${HDILib_INSTALL})
       # Install the config.cmake files for the vcpkg dependencies
       message("Fix config in ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake")
       add_config_to_cmake_target_files(
-        LIB_NAME "kompute.lib" 
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}" 
         PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake"
       )
       add_config_to_cmake_target_files(
-        LIB_NAME "kp_logger.lib" 
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}kp_logger${CMAKE_STATIC_LIBRARY_SUFFIX}" 
         PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake"
       )
       fix_include_path(
@@ -313,10 +314,10 @@ if(${HDILib_INSTALL})
       install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute" 
         DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
       add_config_to_cmake_target_files(
-        LIB_NAME "fmtd.lib" 
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}fmtd${CMAKE_STATIC_LIBRARY_SUFFIX}" 
         PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt/fmt-targets-*.cmake")
       add_config_to_cmake_target_files(
-        LIB_NAME "fmt.lib" 
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}fmt${CMAKE_STATIC_LIBRARY_SUFFIX}" 
         PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt/fmt-targets-*.cmake")
       fix_include_path(
         DEPENDENCY_NAME "fmt"
@@ -325,7 +326,7 @@ if(${HDILib_INSTALL})
       install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt" 
         DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
       add_config_to_cmake_target_files(
-        LIB_NAME "glfw3.lib" 
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}" 
         PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glfw3/glfw3Targets-*.cmake")
       install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glfw3" 
         DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
