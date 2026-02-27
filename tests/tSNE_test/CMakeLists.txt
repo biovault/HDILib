@@ -78,27 +78,28 @@ find_package(fmt CONFIG REQUIRED)
 find_package(kompute CONFIG REQUIRED)
 find_package(glfw3 REQUIRED)
 
+# debug
 if(TARGET kompute::kompute)
     message(STATUS "Found kompute::kompute target. Linking is possible.")
-    get_target_property(kompute_type kompute::kompute TYPE)
-    message(STATUS "  TYPE: ${kompute_type}")
+    # get_target_property(kompute_type kompute::kompute TYPE)
+    # message(STATUS "  TYPE: ${kompute_type}")
 
-    get_target_property(kompute_include_dirs kompute::kompute INTERFACE_INCLUDE_DIRECTORIES)
-    message(STATUS "  INTERFACE_INCLUDE_DIRECTORIES: ${kompute_include_dirs}")
+    # get_target_property(kompute_include_dirs kompute::kompute INTERFACE_INCLUDE_DIRECTORIES)
+    # message(STATUS "  INTERFACE_INCLUDE_DIRECTORIES: ${kompute_include_dirs}")
 
-    get_target_property(kompute_link_libs kompute::kompute INTERFACE_LINK_LIBRARIES)
-    message(STATUS "  INTERFACE_LINK_LIBRARIES: ${kompute_link_libs}")
+    # get_target_property(kompute_link_libs kompute::kompute INTERFACE_LINK_LIBRARIES)
+    # message(STATUS "  INTERFACE_LINK_LIBRARIES: ${kompute_link_libs}")
 
-    get_target_property(kompute_default_location kompute::kompute IMPORTED_LOCATION)
-    message(STATUS "  IMPORTED_LOCATION (default): ${kompute_default_location}")
+    # get_target_property(kompute_default_location kompute::kompute IMPORTED_LOCATION)
+    # message(STATUS "  IMPORTED_LOCATION (default): ${kompute_default_location}")
 
-    get_target_property(kompute_location kompute::kompute IMPORTED_LOCATION_RELEASE)
-    message(STATUS "  IMPORTED_LOCATION_RELEASE: ${kompute_location}")
-    execute_process(COMMAND nm ${kompute_location} OUTPUT_VARIABLE KOMPUTE_SYMBOLS)
-    message(STATUS "Kompute symbols ${KOMPUTE_SYMBOLS}")
+    # get_target_property(kompute_location kompute::kompute IMPORTED_LOCATION_RELEASE)
+    # message(STATUS "  IMPORTED_LOCATION_RELEASE: ${kompute_location}")
+    # #${kompute_location} OUTPUT_VARIABLE KOMPUTE_SYMBOLS)
+    # #message(STATUS "Kompute symbols ${KOMPUTE_SYMBOLS}")
 
-    get_target_property(kompute_location_dbg kompute::kompute IMPORTED_LOCATION_DEBUG)
-    message(STATUS "  IMPORTED_LOCATION_DEBUG: ${kompute_location_dbg}")
+    # get_target_property(kompute_location_dbg kompute::kompute IMPORTED_LOCATION_DEBUG)
+    # message(STATUS "  IMPORTED_LOCATION_DEBUG: ${kompute_location_dbg}")
 
 else()
     message(WARNING "kompute::kompute target not found. Check your kompute installation.")
