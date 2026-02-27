@@ -104,7 +104,7 @@ runs:
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
           scl enable gcc-toolset-14 bash
-          export VCPKG_INSTALLATION_ROOT=${{ github.workspace }}/vcpkg
+          export VCPKG_INSTALLATION_ROOT=$RUNVCPKG_VCPKG_ROOT
           echo check vcpkg root
           ls $VCPKG_INSTALLATION_ROOT
         fi
