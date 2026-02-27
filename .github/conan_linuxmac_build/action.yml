@@ -91,7 +91,8 @@ runs:
             libXi-devel \
             libXext-devel \
             libX11-devel \
-            libxkbcommon-devel
+            libxkbcommon-devel \
+            vulkan-loader
           else
             sudo apt install libx11-dev libxrandr-dev libxrender-dev libxinerama-dev libxcursor-dev libxi-dev
           fi
