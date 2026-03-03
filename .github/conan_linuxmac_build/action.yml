@@ -50,7 +50,7 @@ runs:
           if [[ ${{ inputs.conan-channel }} == "python" ]]; then 
             dnf install -y ninja-build
             yum install -y libomp
-            dnf install gcc-toolset-14-gcc gcc-toolset-14-gcc-c++
+            dnf install gcc-toolset-${{ inputs.conan-compiler-version}}-gcc gcc-toolset-${{ inputs.conan-compiler-version}}-gcc-c++
           else
             sudo apt-get install -y ninja-build
           fi
@@ -103,7 +103,7 @@ runs:
       run: |
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
-          scl enable gcc-toolset-14 bash
+          scl enable gcc-toolset-${{ inputs.conan-compiler-version }} bash
           export VCPKG_INSTALLATION_ROOT=$RUNVCPKG_VCPKG_ROOT
           echo check vcpkg root
           ls $VCPKG_INSTALLATION_ROOT
