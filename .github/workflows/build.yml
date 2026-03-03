@@ -215,7 +215,7 @@ jobs:
           submodules: recursive
       
       - name: Mark repo as safe
-        run: git config --global --add safe.directory /__w/HDILib/HDILib
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
           
       - name: Verify default Python installation
         run: |
