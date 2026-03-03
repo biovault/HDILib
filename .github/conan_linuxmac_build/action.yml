@@ -49,7 +49,7 @@ runs:
           if [[ ${{ inputs.conan-channel }} == "python" ]]; then 
             dnf install -y ninja-build
             yum install -y libomp
-            dnf install gcc-toolset-${{ inputs.conan-compiler-version}}-gcc gcc-toolset-${{ inputs.conan-compiler-version}}-gcc-c++
+            dnf install -y gcc-toolset-${{ inputs.conan-compiler-version}}-gcc gcc-toolset-${{ inputs.conan-compiler-version}}-gcc-c++
           else
             sudo apt-get install -y ninja-build
           fi
