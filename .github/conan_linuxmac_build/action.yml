@@ -102,7 +102,9 @@ runs:
       run: |
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
-          scl enable gcc-toolset-${{ inputs.conan-compiler-version }} bash
+          source scl_source enable gcc-toolset-${{ inputs.conan-compiler-version }}
+          export CC=`which gcc`  
+          export CXX=`which g++`
           export VCPKG_INSTALLATION_ROOT=$RUNVCPKG_VCPKG_ROOT
           echo check vcpkg root
           ls $VCPKG_INSTALLATION_ROOT
