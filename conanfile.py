@@ -37,7 +37,6 @@ class HDILibConan(ConanFile):
     # Note : This should only be built with: shared=False, fPIC=True
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
-    requires = "flann/1.9.2@lkeb/stable"
 
     # scm = {
     #    "type": "git",dir
@@ -63,6 +62,8 @@ class HDILibConan(ConanFile):
             return cmakePath
         return "cmake"
 
+    def requirements(self): 
+        self.requires("flann/1.9.2@lkeb/%s" % self.channel)
     def system_requirements(self):
         if os_info.is_macos:
             installer = SystemPackageTool()
