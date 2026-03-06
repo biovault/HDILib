@@ -51,7 +51,8 @@ class HDILibConan(ConanFile):
         return "cmake"
 
     def requirements(self): 
-        self.requires("flann/1.9.2@lkeb/%s" % self.channel)
+        self.requires.add("flann/1.9.2@lkeb/%s" % self.channel)
+
     def system_requirements(self):
         if os_info.is_macos:
             installer = SystemPackageTool()
