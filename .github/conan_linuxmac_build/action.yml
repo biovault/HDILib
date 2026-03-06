@@ -37,6 +37,7 @@ inputs:
     description: "pass secrets.LKEB_ARTIFACTORY_PASSWORD"
     required: true
 
+# Assume many_linux_2_28 is gcc14
 runs:
   using: "composite"
   steps:
@@ -49,7 +50,9 @@ runs:
           if [[ ${{ inputs.conan-channel }} == "python" ]]; then 
             dnf install -y ninja-build
             yum install -y libomp
-            dnf install -y gcc-toolset-${{ inputs.conan-compiler-version}}-gcc gcc-toolset-${{ inputs.conan-compiler-version}}-gcc-c++
+            if [[ inputs.conan-compiler-version != "14" ]]; then
+              dnf install -y gcc-toolset-${{ inputs.conan-compiler-version}}-gcc gcc-toolset-${{ inputs.conan-compiler-version}}-gcc-c++
+            fi
           else
             sudo apt-get install -y ninja-build
           fi
@@ -101,7 +104,7 @@ runs:
     - name: Build with conan
       run: |
 
-        if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]]; then
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]] && [[ inputs.conan-compiler-version != "14" ]]; then
           source scl_source enable gcc-toolset-${{ inputs.conan-compiler-version }}
           export CC=`which gcc`  
           export CXX=`which g++`
