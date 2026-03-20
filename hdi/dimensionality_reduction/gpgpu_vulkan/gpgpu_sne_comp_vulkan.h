@@ -13,6 +13,7 @@
 
 #include <kompute/Kompute.hpp>
 #include <memory>
+#include <iostream>
 
 namespace hdi {
   namespace dr {
