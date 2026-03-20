@@ -59,9 +59,9 @@ namespace hdi {
         "VK_KHR_portability_subset",
         "VK_EXT_metal_objects"})));
 #else
-          auto mgr = std::make_unique<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({
+          std::unique_ptr<kp::Manager> mgr = std::unique_ptr<kp::Manager>(new kp::Manager(0, std::vector<uint32_t>(), std::vector<std::string>({
           "VK_KHR_synchronization2",
-          "VK_KHR_shader_float_controls2" }));
+          "VK_KHR_shader_float_controls2" })));
 #endif     
         }
         catch(const std::exception& e) {
