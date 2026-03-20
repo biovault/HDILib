@@ -12,6 +12,7 @@
 #include "shaders/shader_progs.h"
 
 #include <kompute/Kompute.hpp>
+#include <memory>
 
 namespace hdi {
   namespace dr {
@@ -46,6 +47,27 @@ namespace hdi {
       // For debug purposes only
       std::shared_ptr<vk::Device> getDevice() {
         return _mgr->getDevice();
+      }
+
+      static bool isVulkanSupported() {
+        try {
+
+#ifdef __APPLE__          
+        auto  mgr = std::make_uniquer<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({
+        "VK_KHR_synchronization2",
+        "VK_KHR_portability_subset",
+        "VK_EXT_metal_objects"}));
+#else
+          auto mgr = std::make_unique<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({
+          "VK_KHR_synchronization2",
+          "VK_KHR_shader_float_controls2" }));
+#endif     
+        }
+        catch(const std::exception& e) {
+          std::cout << "Vulkan not supported on device 0: " << e.what() << std::endl;
+          return false;
+        }
+        return true;
       }
 
     private:

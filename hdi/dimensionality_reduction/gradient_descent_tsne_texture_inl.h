@@ -75,6 +75,7 @@ namespace hdi {
     }
 
     void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
+      bool vulkan_supported = GpgpuSneVulkan::isVulkanSupported();
       if (tsne_type == AUTO_DETECT)
       {
         //resolve the optimal type to use based on the available OpenGL version
@@ -84,14 +85,48 @@ namespace hdi {
           _gpgpu_type = COMPUTE_SHADER;
         }
         else
+        // The current vulkan implementation is slightly slower (15%) than the OpenGL 
+        // computer shader version forlarge data (> 100K points). So it
+        // is the second choice.
+        if (vulkan_supported) {
+          _gpgpu_type = COMPUTE_SHADER_VULKAN;
+        }
+        else
         if (GLAD_GL_VERSION_3_3)
         {
           std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
           _gpgpu_type = RASTER;
         }
+#else
+        // if supported VUlkan is prefered to raster on Apple.
+        //Test for the correct Vulkan version and device capabilities
+        if (vulkan_supported) {
+          _gpgpu_type = COMPUTE_SHADER_VULKAN;
+        } else {
+          std::cout << "Vulkan not supported, using rasterization fallback" << std::endl;
+          _gpgpu_type = RASTER;
+        }
 #endif
       }
       else
+        if (tsne_type == COMPUTE_SHADER_VULKAN && !vulkan_supported) {
+          std::cout << "Vulkan not supported, using OpenGL fallback" << std::endl;
+#ifndef __APPLE__
+          if (GLAD_GL_VERSION_4_3)
+          {
+            _gpgpu_type = COMPUTE_SHADER;
+          }
+          else
+          if (GLAD_GL_VERSION_3_3)
+          {
+            std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
+            _gpgpu_type = RASTER;
+          }
+#else
+          std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
+          _gpgpu_type = RASTER;
+#endif
+        }
         _gpgpu_type = tsne_type;
     }
 
