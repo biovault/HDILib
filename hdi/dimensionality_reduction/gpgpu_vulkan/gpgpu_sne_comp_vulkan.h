@@ -54,10 +54,10 @@ namespace hdi {
         try {
 
 #ifdef __APPLE__          
-        auto  mgr = std::make_unique<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({
+        std::unique_ptr<kp::Manager> mgr = std::unique_ptr<kp::Manager>(new kp::Manager(0, std::vector<uint32_t>(), std::vector<std::string>({
         "VK_KHR_synchronization2",
         "VK_KHR_portability_subset",
-        "VK_EXT_metal_objects"}));
+        "VK_EXT_metal_objects"})));
 #else
           auto mgr = std::make_unique<kp::Manager>(0, std::vector<uint32_t>(), std::vector<std::string>({
           "VK_KHR_synchronization2",
