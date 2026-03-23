@@ -77,18 +77,23 @@ namespace hdi {
     void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
       bool vulkan_supported = GpgpuSneVulkan::isVulkanSupported();
 
-      
-      if (tsne_type == AUTO_DETECT)
+      #ifdef __APPLE__
+        std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER_VULKAN, RASTER };
+        bool glV43_supported = false; // Compute shaders are not supported on macOS.
+
+      #else
+        std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, RASTER };
+        bool glV43_supported = GLAD_GL_VERSION_4_3;
+      #endif
+        bool glV33_supported = GLAD_GL_VERSION_3_3;
+
+
+        if (tsne_type == AUTO_DETECT)
       {
         //resolve the optimal type to use based on the available OpenGL version
-    #ifdef __APPLE__
-      std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER_VULKAN, RASTER };
-    #else
-      std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, RASTER };
-    #endif
 
         for (const auto& type : priotitized_types) {
-          if (type == COMPUTE_SHADER && GLAD_GL_VERSION_4_3) {
+          if (type == COMPUTE_SHADER && glV43_supported) {
             _gpgpu_type = COMPUTE_SHADER;
             break;
           }
@@ -96,7 +101,7 @@ namespace hdi {
             _gpgpu_type = COMPUTE_SHADER_VULKAN;
             break;
           }
-          else if (type == RASTER && GLAD_GL_VERSION_3_3) {
+          else if (type == RASTER && glV33_supported) {
             std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
             _gpgpu_type = RASTER;
             break;
@@ -115,10 +120,10 @@ namespace hdi {
             std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
             _gpgpu_type = RASTER;
           #else
-            if (GLAD_GL_VERSION_4_3) {
+            if (glV43_supported) {
               _gpgpu_type = COMPUTE_SHADER;
             } else
-            if (GLAD_GL_VERSION_3_3) {
+            if (glV33_supported) {
               std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
               _gpgpu_type = RASTER;
             }
@@ -128,11 +133,11 @@ namespace hdi {
           #endif
           }
         }
-        else if (tsne_type == COMPUTE_SHADER && !GLAD_GL_VERSION_4_3) {
+        else if (tsne_type == COMPUTE_SHADER && !glV43_supported) {
           std::cout << "OpenGL 4.3 not supported, using rasterization fallback" << std::endl;
           _gpgpu_type = RASTER;
         }
-        else if (tsne_type == RASTER && !GLAD_GL_VERSION_3_3) {
+        else if (tsne_type == RASTER && !glV33_supported) {
           throw std::runtime_error("OpenGL 3.3 not supported, cannot use rasterization fallback");
         }
         else
