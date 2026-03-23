@@ -76,58 +76,69 @@ namespace hdi {
 
     void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
       bool vulkan_supported = GpgpuSneVulkan::isVulkanSupported();
+
+      
       if (tsne_type == AUTO_DETECT)
       {
         //resolve the optimal type to use based on the available OpenGL version
-#ifndef __APPLE__
-        if (GLAD_GL_VERSION_4_3)
-        {
-          _gpgpu_type = COMPUTE_SHADER;
-        }
-        else
-        // The current vulkan implementation is slightly slower (15%) than the OpenGL 
-        // computer shader version forlarge data (> 100K points). So it
-        // is the second choice.
-        if (vulkan_supported) {
-          _gpgpu_type = COMPUTE_SHADER_VULKAN;
-        }
-        else
-        if (GLAD_GL_VERSION_3_3)
-        {
-          std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
-          _gpgpu_type = RASTER;
-        }
-#else
-        // if supported VUlkan is prefered to raster on Apple.
-        //Test for the correct Vulkan version and device capabilities
-        if (vulkan_supported) {
-          _gpgpu_type = COMPUTE_SHADER_VULKAN;
-        } else {
-          std::cout << "Vulkan not supported, using rasterization fallback" << std::endl;
-          _gpgpu_type = RASTER;
-        }
-#endif
-      }
-      else
-        if (tsne_type == COMPUTE_SHADER_VULKAN && !vulkan_supported) {
-          std::cout << "Vulkan not supported, using OpenGL fallback" << std::endl;
-#ifndef __APPLE__
-          if (GLAD_GL_VERSION_4_3)
-          {
+    #ifdef __APPLE__
+      std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER_VULKAN, RASTER };
+    #else
+      std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, RASTER };
+    #endif
+
+        for (const auto& type : priotitized_types) {
+          if (type == COMPUTE_SHADER && GLAD_GL_VERSION_4_3) {
             _gpgpu_type = COMPUTE_SHADER;
+            break;
           }
-          else
-          if (GLAD_GL_VERSION_3_3)
-          {
+          else if (type == COMPUTE_SHADER_VULKAN && vulkan_supported) {
+            _gpgpu_type = COMPUTE_SHADER_VULKAN;
+            break;
+          }
+          else if (type == RASTER && GLAD_GL_VERSION_3_3) {
             std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
             _gpgpu_type = RASTER;
+            break;
           }
-#else
-          std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
-          _gpgpu_type = RASTER;
-#endif
         }
-        _gpgpu_type = tsne_type;
+      }
+      else
+        // Do our best to set what the user asked for. 
+        // Failing that choose a sensible fallback and log it.
+        if (tsne_type == COMPUTE_SHADER_VULKAN) {
+          if (vulkan_supported) {
+            _gpgpu_type = COMPUTE_SHADER_VULKAN;
+          } else {
+            std::cout << "Vulkan not supported, using OpenGL fallback" << std::endl;
+          #ifdef __APPLE__
+            std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
+            _gpgpu_type = RASTER;
+          #else
+            if (GLAD_GL_VERSION_4_3) {
+              _gpgpu_type = COMPUTE_SHADER;
+            } else
+            if (GLAD_GL_VERSION_3_3) {
+              std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
+              _gpgpu_type = RASTER;
+            }
+            else {
+              throw std::runtime_error("OpenGL 3.3 not supported, cannot use rasterization fallback");
+            }
+          #endif
+          }
+        }
+        else if (tsne_type == COMPUTE_SHADER && !GLAD_GL_VERSION_4_3) {
+          std::cout << "OpenGL 4.3 not supported, using rasterization fallback" << std::endl;
+          _gpgpu_type = RASTER;
+        }
+        else if (tsne_type == RASTER && !GLAD_GL_VERSION_3_3) {
+          throw std::runtime_error("OpenGL 3.3 not supported, cannot use rasterization fallback");
+        }
+        else
+        {
+          _gpgpu_type = tsne_type;
+        }
     }
 
     void GradientDescentTSNETexture::reset() {
