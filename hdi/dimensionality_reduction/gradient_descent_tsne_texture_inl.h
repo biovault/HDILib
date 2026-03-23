@@ -80,12 +80,13 @@ namespace hdi {
       #ifdef __APPLE__
         std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER_VULKAN, RASTER };
         bool glV43_supported = false; // Compute shaders are not supported on macOS.
-
+        bool glV33_supported = true;
       #else
         std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, RASTER };
         bool glV43_supported = GLAD_GL_VERSION_4_3;
-      #endif
         bool glV33_supported = GLAD_GL_VERSION_3_3;
+      #endif
+
 
 
         if (tsne_type == AUTO_DETECT)
