@@ -25,6 +25,7 @@ namespace hdi {
       _initialized(false),
       _adaptive_resolution(true),
       _resolutionScaling(RESOLUTION_SCALING),
+      // for performance reasons kl_divergence calculation is disabled.
       kl_divergence(-1.0f) // Initialize KL divergence to -1.0f
     {
 
@@ -118,7 +119,7 @@ namespace hdi {
       _tensors[ShaderBuffers::POSITION] = _mgr->tensorT(std::vector<float>(num_pnts * 2, 0.0f));
       _tensors[ShaderBuffers::INTERP_FIELDS] = _mgr->tensorT(std::vector<float>(num_pnts * 4, 0.0f));
       _tensors[ShaderBuffers::SUM_Q] = _mgr->tensorT(std::vector<float>(1, 0.0f));
-      _tensors[ShaderBuffers::KLDIV] = _mgr->tensorT(std::vector<float>(1, 0.0f));
+      _tensors[ShaderBuffers::KLDIV] = _mgr->tensorT(std::vector<float>(1, -1.0f));
       _tensors[ShaderBuffers::GRADIENTS] = _mgr->tensorT(std::vector<float>(num_pnts * 2, 0.0f));
       _tensors[ShaderBuffers::NEIGHBOUR] = _mgr->tensorT(linear_P.neighbours);
       _tensors[ShaderBuffers::PROBABILITIES] = _mgr->tensorT(linear_P.probabilities);
@@ -378,11 +379,7 @@ namespace hdi {
 
       auto positions = _tensors[ShaderBuffers::POSITION]->vector<float>();
       _bounds = _tensors[ShaderBuffers::BOUNDS]->vector<float>();
-      kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
-      //std::cout << "sumq: " << sum_q << " kl_div: " << kl_divergence << "\n";
-      /*if (kl_divergence < 0) {
-        std::cout << "Sequence KL Divergence is negative, at iteration: " << iteration;
-      }*/
+      //kl_divergence = _tensors[ShaderBuffers::KLDIV]->vector<float>()[0];
       memcpy(points, positions.data(), 2*num_points*sizeof(float));
 
     }
