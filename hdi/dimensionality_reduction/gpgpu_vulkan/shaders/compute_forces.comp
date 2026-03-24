@@ -22,6 +22,7 @@ layout(scalar, binding = 8 ) uniform ForcesPushConstants {
     float exaggeration;
 } pc;
 
+// Note: In this subgroup/warp optimized implementation KL calculation has been removed
 layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 shared vec2 sum_positive_red[8]; // should be big enough to cover number of subgroups in workgroup
