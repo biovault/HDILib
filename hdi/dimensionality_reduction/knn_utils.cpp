@@ -13,6 +13,7 @@
 #include <hnswlib/space_l2.h>
 
 #include <stdexcept>
+#include <thread>
 
 namespace hdi {
   namespace dr {
@@ -107,10 +108,11 @@ namespace hdi {
           utils::ScopedTimer<float, utils::Seconds> timer(knnStatistics._trees_construction_time);
           utils::secureLog(_logger, "\tBuilding the search structure...");
           appr_alg.addPoint((void*)high_dimensional_data, (std::size_t)0);
-          unsigned num_threads = std::thread::hardware_concurrency();
-          hnswlib::ParallelFor(1, num_dps, num_threads, [&](size_t i, size_t threadId) {
+          const unsigned num_threads = std::thread::hardware_concurrency();
+#pragma omp parallel for num_threads(num_threads) schedule(dynamic, 1)
+          for (int i = 1; i < num_dps; ++i) {
             appr_alg.addPoint((void*)(high_dimensional_data + (i * num_dim)), (hnswlib::labeltype)i);
-            });
+          }
         }
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
