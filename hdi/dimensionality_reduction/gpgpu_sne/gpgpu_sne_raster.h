@@ -88,7 +88,7 @@ namespace hdi {
 	  //!  Change the runtime configurable params
 	  void updateParams(TsneParameters params) {
 		  if (!_initialized) {
-			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
+			  throw std::runtime_error("(GpgpuSneRaster) GradientDescentComputation must be initialized before updating the tsne parameters");
 		  }
 		  _params = params;
 	  };
