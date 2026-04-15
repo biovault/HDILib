@@ -83,7 +83,7 @@ namespace hdi {
       void record_compute_sequence(float iteration, uint32_t width, uint32_t height, uint32_t num_points, float* bounds, float exaggeration, float mult);
       void update_compute_sequence(float iteration, uint32_t num_points, uint32_t width, uint32_t height, float* bounds, float exaggeration, float mult);
 
-      bool _initialized = false;
+      bool _initialized;
       double _totalTime = 0.0;
       float _resolutionScaling = 1.0f;
       uint32_t _numInterpWorkgroups;
