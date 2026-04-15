@@ -99,7 +99,7 @@ namespace hdi {
 
       // Initialize all Vulkan resources
       initializeVulkan(num_points, linear_P);
-
+      std::cout << "Vulkan set initialize /n";
       _initialized = true;
     }
 
@@ -173,6 +173,7 @@ namespace hdi {
       for (auto& n : _tensors)
         n.second->destroy();
       _tensors.clear();
+      std::cout << "Vulkan in clear initialize /n";
       _initialized = false;
       
       //std::cout << " Clearing vulkan resources\n";
