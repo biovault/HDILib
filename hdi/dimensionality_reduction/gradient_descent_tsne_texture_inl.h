@@ -261,14 +261,17 @@ namespace hdi {
         throw std::runtime_error("GradientDescentTSNETexture must be initialized before updating the tsne parameters");
       }
       _params = params;
-#ifndef __APPLE__
+
+      // vulkan is possible on any platform.
       if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
         _gpgpu_vulkan_compute_tsne.updateParams(params);
       else
-        _gpgpu_compute_tsne.updateParams(params);
+#ifndef __APPLE__ 
+        if (_gpgpu_type == COMPUTE_SHADER)
+          _gpgpu_compute_tsne.updateParams(params);
 #else
-
-      _gpgpu_raster_tsne.updateParams(params);
+        if (_gpgpu_type == RASTER)
+          _gpgpu_raster_tsne.updateParams(params);
 #endif
     }
 
