@@ -33,7 +33,7 @@ endif()
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${hnswlib_SOURCE_DIR}")
-target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}/src")
+target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}")
 #include the generated dr_config.h file and any others
 target_include_directories(${PROJECT} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
