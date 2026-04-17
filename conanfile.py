@@ -105,7 +105,7 @@ class HDILibConan(ConanFile):
 
 
     def generate(self):
-        print("In generate")
+        print(f"Generate for channel {self.channel}")
         generator = None
         if self.settings.os == "Macos":
             generator = "Xcode"
