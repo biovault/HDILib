@@ -4,15 +4,15 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp>
 
-#include <iostream>
 #include <cmath>
+#include <cstdint>
+#include <iostream>
 #include <queue>
 #include <random>
 #include <string>
 #include <span>
-#include <vector>
-#include <cstdint>
 #include <utility>
+#include <vector>
 
 namespace testing {
 
