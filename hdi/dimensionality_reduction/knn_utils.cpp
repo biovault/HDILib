@@ -12,6 +12,7 @@
 #include <hnswlib/hnswlib.h>
 #include <hnswlib/space_l2.h>
 
+#include <memory>
 #include <stdexcept>
 #include <thread>
 
@@ -90,20 +91,14 @@ namespace hdi {
       {
         hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
 
-        hnswlib::SpaceInterface<float>* space = NULL;
+        std::unique_ptr<hnswlib::SpaceInterface<float>> space;
         switch (knnParameters._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:
-          space = new hnswlib::L2Space(num_dim);
-          break;
-        case hdi::dr::KNN_METRIC_INNER_PRODUCT:
-          space = new hnswlib::InnerProductSpace(num_dim);
-          break;
-        default:
-          space = new hnswlib::L2Space(num_dim);
-          break;
+        case hdi::dr::KNN_METRIC_EUCLIDEAN:      space = std::make_unique<hnswlib::L2Space>(num_dim); break;
+        case hdi::dr::KNN_METRIC_INNER_PRODUCT:  space = std::make_unique<hnswlib::InnerProductSpace>(num_dim); break;
+        default:                                 space = std::make_unique<hnswlib::L2Space>(num_dim); break;
         }
 
-        hnswlib::HierarchicalNSW<float> appr_alg(space, num_dps, knnParameters._aknn_algorithmP1, knnParameters._aknn_algorithmP2, 0);
+        hnswlib::HierarchicalNSW<float> appr_alg(space.get(), num_dps, knnParameters._aknn_algorithmP1, knnParameters._aknn_algorithmP2);
         {
           utils::ScopedTimer<float, utils::Seconds> timer(knnStatistics._trees_construction_time);
           utils::secureLog(_logger, "\tBuilding the search structure...");
