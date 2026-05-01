@@ -128,7 +128,7 @@ namespace hdi {
             while (top_candidates.size() > 0) {
               auto rez = top_candidates.top();
               distances_offset[nn - j - 1] = rez.first;
-              indices_offset[nn - j - 1] = appr_alg.getExternalLabel(rez.second);
+              indices_offset[nn - j - 1] = rez.second;
               top_candidates.pop();
               ++j;
             }
