@@ -13,15 +13,15 @@ option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
 set(HDILib_VERSION "latest" CACHE STRING "HDILib Library version")
 
-if (HDILib_ENABLE_AVX)
+if(HDILib_ENABLE_AVX)
     message(STATUS "ENABLE_AVX is ON")
 endif()
 
-if (HDILib_ENABLE_CODE_ANALYSIS AND WIN32)
+if(HDILib_ENABLE_CODE_ANALYSIS AND WIN32)
     message(STATUS "Code Analysis ENABLED")
 endif()
 
-if (HDILib_ENABLE_PID)
+if(HDILib_ENABLE_PID)
     message(STATUS "Position independent code compilation ON")
 endif()
 
@@ -153,9 +153,9 @@ message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 # -----------------------------------------------------------------------------
 # Projects
 # -----------------------------------------------------------------------------
-add_subdirectory (hdi/utils)
-add_subdirectory (hdi/data)
-add_subdirectory (hdi/dimensionality_reduction)
+add_subdirectory(hdi/utils)
+add_subdirectory(hdi/data)
+add_subdirectory(hdi/dimensionality_reduction)
 
 # -----------------------------------------------------------------------------
 # Create HDILib find_package
