@@ -10,6 +10,7 @@ option(HDILib_ENABLE_AVX "Enable AVX support" OFF)
 option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC" OFF)
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
+option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
 set(HDILib_VERSION "latest" CACHE STRING "HDILib Library version")
 
@@ -197,3 +198,10 @@ if(${HDILib_INSTALL})
     )
 endif()
 
+# -----------------------------------------------------------------------------
+# Unit testing
+# -----------------------------------------------------------------------------
+if(HDILib_BUILD_TESTS)
+	message(STATUS "Build HDLIB unit tests")
+	add_subdirectory("test")
+endif()
