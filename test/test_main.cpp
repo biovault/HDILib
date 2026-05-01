@@ -146,8 +146,7 @@ TEST_CASE("Approximate knn") {
 					const bool I_same = I_exact_n[j] == I_test_n[j];
 					const bool D_same = nearlyEqual(D_exact_n[j], D_test_n[j]);
 
-					if (I_exact_n[j] == I_test_n[j] &&
-						nearlyEqual(D_exact_n[j], D_test_n[j])) {
+					if (I_same && D_same) {
 						correct++;
 					}
 
