@@ -109,6 +109,7 @@ namespace hdi {
             appr_alg.addPoint((void*)(high_dimensional_data + (i * num_dim)), i);
           }
         }
+        appr_alg.setEf(knnParameters._aknn_algorithmP2);
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
         {
