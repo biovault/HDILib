@@ -102,11 +102,11 @@ namespace hdi {
         {
           utils::ScopedTimer<float, utils::Seconds> timer(knnStatistics._trees_construction_time);
           utils::secureLog(_logger, "\tBuilding the search structure...");
-          appr_alg.addPoint((void*)high_dimensional_data, (std::size_t)0);
+          appr_alg.addPoint((void*)high_dimensional_data, 0);
           const unsigned num_threads = std::thread::hardware_concurrency();
 //#pragma omp parallel for num_threads(num_threads) schedule(dynamic, 1)
           for (int i = 1; i < num_dps; ++i) {
-            appr_alg.addPoint((void*)(high_dimensional_data + (i * num_dim)), (hnswlib::labeltype)i);
+            appr_alg.addPoint((void*)(high_dimensional_data + (i * num_dim)), i);
           }
         }
         distances_squared.resize(num_dps * nn);
@@ -117,7 +117,7 @@ namespace hdi {
 //#pragma omp parallel for
           for (int i = 0; i < num_dps; ++i)
           {
-            auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i * num_dim), (hnswlib::labeltype)nn);
+            auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i * num_dim), nn);
             while (top_candidates.size() > nn) {
               top_candidates.pop();
             }
