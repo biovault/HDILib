@@ -145,31 +145,31 @@ namespace hdi {
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
 
-        AnnoyIndexInterface<int32_t, float>* tree = nullptr;
+        std::unique_ptr<AnnoyIndexInterface<int32_t, float>> tree;
         switch (knnParameters._aknn_metric) {
         case hdi::dr::KNN_METRIC_EUCLIDEAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = std::make_unique<AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
           break;
         case hdi::dr::KNN_METRIC_COSINE:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new AnnoyIndex<int32_t, float, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = std::make_unique<AnnoyIndex<int32_t, float, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
           break;
         case hdi::dr::KNN_METRIC_MANHATTAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new AnnoyIndex<int32_t, float, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = std::make_unique<AnnoyIndex<int32_t, float, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
           break;
           //case hdi::dr::KNN_METRIC_HAMMING:
           //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //  tree = new AnnoyIndex<int32_t, float, Hamming, Kiss64Random>(num_dim);
+          //tree = std::make_unique<AnnoyIndex<int32_t, float, Hamming, Kiss64Random>>(num_dim);
           //  break;
         case hdi::dr::KNN_METRIC_DOT:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new AnnoyIndex<int32_t, float, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = std::make_unique<AnnoyIndex<int32_t, float, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
           break;
         default:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = std::make_unique<AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
           break;
         }
 
@@ -218,7 +218,6 @@ namespace hdi {
             }
           }
         }
-        delete tree;
       }
     }
 
