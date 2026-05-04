@@ -68,7 +68,7 @@ namespace hdi {
         flann::Matrix<float> dataset(high_dimensional_data, num_dps, num_dim);
         flann::Matrix<float> query(high_dimensional_data, num_dps, num_dim);
 
-        flann::Index<flann::L2<float> > index(dataset, flann::KDTreeIndexParams(knnParameters._num_trees));
+        flann::Index<flann::L2<float>> index(dataset, flann::KDTreeIndexParams(knnParameters._num_trees));
 
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
