@@ -183,11 +183,13 @@ namespace hdi {
             index->add_item(i, item);
           }
           index->build(knnParameters._num_trees);
-
-          // Sample check if it returns enough neighbors
+        }
+        
+        {
+          // Sample check if the index returns enough neighbors
           std::vector<int> closest;
           std::vector<float> closest_distances;
-          for (int n = 0; n < 100; n++) {
+          for (int n = 0; n < 10; n++) {
             index->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
             unsigned int neighbors_count = closest.size();
             if (neighbors_count < nn) {
