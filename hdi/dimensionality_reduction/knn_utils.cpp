@@ -140,7 +140,7 @@ namespace hdi {
         using namespace Annoy;
         hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy...");
 
-        int search_k = nn * knnParameters._num_trees;
+        const int search_k = nn * knnParameters._num_trees;
 
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
