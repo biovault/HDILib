@@ -82,7 +82,7 @@ namespace hdi {
           flann::Matrix<int> indices_mat(indices.data(), query.rows, nn);
           flann::Matrix<float> dists_mat(distances_squared.data(), query.rows, nn);
           flann::SearchParams flann_params(knnParameters._num_checks);
-          flann_params.cores = 1; // all cores
+          flann_params.cores = 0; // all cores
           utils::secureLog(_logger, "\tAKNN queries...");
           index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
         }
@@ -104,7 +104,7 @@ namespace hdi {
           utils::secureLog(_logger, "\tBuilding the search structure...");
           index.addPoint((void*)high_dimensional_data, 0);
           const unsigned num_threads = std::thread::hardware_concurrency();
-//#pragma omp parallel for num_threads(num_threads) schedule(dynamic, 1)
+#pragma omp parallel for num_threads(num_threads) schedule(dynamic, 1)
           for (int i = 1; i < num_dps; ++i) {
             index.addPoint((void*)(high_dimensional_data + (i * num_dim)), i);
           }
@@ -115,7 +115,8 @@ namespace hdi {
         {
           utils::ScopedTimer<float, utils::Seconds> timer(knnStatistics._aknn_time);
           utils::secureLog(_logger, "\tAKNN queries...");
-//#pragma omp parallel for
+
+#pragma omp parallel for
           for (int i = 0; i < num_dps; ++i)
           {
             auto top_candidates = index.searchKnn(high_dimensional_data + (i * num_dim), nn);
@@ -203,7 +204,7 @@ namespace hdi {
           utils::ScopedTimer<float, utils::Seconds> timer(knnStatistics._aknn_time);
           hdi::utils::secureLog(_logger, "AKNN queries...");
 
-//#pragma omp parallel for
+#pragma omp parallel for
           for (int n = 0; n < num_dps; n++)
           {
             // Find nearest neighbors
