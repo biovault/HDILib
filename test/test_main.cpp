@@ -44,7 +44,7 @@ TEST_CASE("Approximate knn") {
 		unsigned_int_type numNeighbors = nn;
 		knnParams._perplexity_multiplier = 3;
 		knnParams._perplexity = (numNeighbors - 1) / 3.f;
-		knnParams._num_trees = 8;
+		knnParams._num_trees = 64;
 		knnParams._num_checks = 512;
 		knnParams._aknn_algorithmP1 = 16;
 		knnParams._aknn_algorithmP2 = 200;
