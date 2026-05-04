@@ -32,5 +32,5 @@ conan profile show action_build
 
 conan install . -s build_type=Release --profile action_build
 conan install . -s build_type=Debug --profile action_build
-cd test_package
+cd example
 conan install . -s build_type=Release --profile action_build

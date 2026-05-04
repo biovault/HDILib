@@ -98,7 +98,7 @@ cmake  -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 
 ## Using the HDILib
 
-The subdirectory test_package builds an exammple that links agains the HDILib binaries. Check the CMakeLists.txt this shows how to consume the HDILib Cmake package.
+The subdirectory `example` builds an example that links against the HDILib binaries. Check the CMakeLists.txt this shows how to consume the HDILib CMake package.
 
 Find the package
 ```cmake
