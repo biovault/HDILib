@@ -179,11 +179,8 @@ namespace hdi {
           utils::secureLog(_logger, "\tBuilding the search structure...");
 
           for (unsigned int i = 0; i < num_dps; ++i) {
-            float* vec = new float[num_dim];
-            for (unsigned int z = 0; z < num_dim; ++z) {
-              vec[z] = high_dimensional_data[i * num_dim + z];
-            }
-            index->add_item(i, vec);
+            const float* item = high_dimensional_data + static_cast<size_t>(i * num_dim);
+            index->add_item(i, item);
           }
           index->build(knnParameters._num_trees);
 
