@@ -22,30 +22,30 @@ namespace hdi {
     std::map<std::string, int> supported_knn_libraries()
     {
       std::map<std::string, int> result;
-      result["FLANN"] = hdi::dr::KNN_FLANN;
-      result["HNSW"] = hdi::dr::KNN_HNSW;
-      result["ANNOY"] = hdi::dr::KNN_ANNOY;
+      result["FLANN"] = KNN_FLANN;
+      result["HNSW"] = KNN_HNSW;
+      result["ANNOY"] = KNN_ANNOY;
       return result;
     }
 
     std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib)
     {
       std::map<std::string, int> result;
-      result["Euclidean"] = hdi::dr::KNN_METRIC_EUCLIDEAN;
+      result["Euclidean"] = KNN_METRIC_EUCLIDEAN;
 
       switch (knn_lib)
       {
-      case hdi::dr::KNN_FLANN: {
+      case KNN_FLANN: {
         break;
       }
-      case hdi::dr::KNN_HNSW: {
-        result["Inner Product"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
+      case KNN_HNSW: {
+        result["Inner Product"] = KNN_METRIC_INNER_PRODUCT;
         break;
       }
-      case hdi::dr::KNN_ANNOY: {
-        result["Cosine"] = hdi::dr::KNN_METRIC_COSINE;
-        result["Manhattan"] = hdi::dr::KNN_METRIC_MANHATTAN;
-        result["Dot"] = hdi::dr::KNN_METRIC_DOT;
+      case KNN_ANNOY: {
+        result["Cosine"] = KNN_METRIC_COSINE;
+        result["Manhattan"] = KNN_METRIC_MANHATTAN;
+        result["Dot"] = KNN_METRIC_DOT;
         break;
       }
 
@@ -62,7 +62,7 @@ namespace hdi {
 
       const int nn = knnParameters._perplexity * knnParameters._perplexity_multiplier + 1;
 
-      if (knnParameters._aknn_algorithm == hdi::dr::KNN_FLANN)
+      if (knnParameters._aknn_algorithm == KNN_FLANN)
       {
         hdi::utils::secureLog(_logger, "Computing approximated knn with Flann...");
         flann::Matrix<float> dataset(high_dimensional_data, num_dps, num_dim);
@@ -87,15 +87,15 @@ namespace hdi {
           index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
         }
       }
-      else if (knnParameters._aknn_algorithm == hdi::dr::KNN_HNSW)
+      else if (knnParameters._aknn_algorithm == KNN_HNSW)
       {
         hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
 
         std::unique_ptr<hnswlib::SpaceInterface<float>> space;
         switch (knnParameters._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:      space = std::make_unique<hnswlib::L2Space>(num_dim); break;
-        case hdi::dr::KNN_METRIC_INNER_PRODUCT:  space = std::make_unique<hnswlib::InnerProductSpace>(num_dim); break;
-        default:                                 space = std::make_unique<hnswlib::L2Space>(num_dim); break;
+        case KNN_METRIC_EUCLIDEAN:      space = std::make_unique<hnswlib::L2Space>(num_dim); break;
+        case KNN_METRIC_INNER_PRODUCT:  space = std::make_unique<hnswlib::InnerProductSpace>(num_dim); break;
+        default:                        space = std::make_unique<hnswlib::L2Space>(num_dim); break;
         }
 
         hnswlib::HierarchicalNSW<float> index(space.get(), num_dps, knnParameters._aknn_algorithmP1, knnParameters._aknn_algorithmP2);
@@ -135,9 +135,10 @@ namespace hdi {
           }
         }
       }
-      else // (knnParameters._aknn_algorithm == hdi::dr::KNN_ANNOY)
+      else // (knnParameters._aknn_algorithm == KNN_ANNOY)
       {
-        using namespace Annoy;
+        using AnnoyThreadPolicy = Annoy::AnnoyIndexSingleThreadedBuildPolicy;
+        using AnnoyRng = Annoy::Kiss64Random;
         hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy...");
 
         const int search_k = nn * knnParameters._num_trees;
@@ -145,31 +146,31 @@ namespace hdi {
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
 
-        std::unique_ptr<AnnoyIndexInterface<int32_t, float>> index;
+        std::unique_ptr<Annoy::AnnoyIndexInterface<int32_t, float>> index;
         switch (knnParameters._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:
+        case KNN_METRIC_EUCLIDEAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          index = std::make_unique<AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Euclidean, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
-        case hdi::dr::KNN_METRIC_COSINE:
+        case KNN_METRIC_COSINE:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          index = std::make_unique<AnnoyIndex<int32_t, float, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Angular, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
-        case hdi::dr::KNN_METRIC_MANHATTAN:
+        case KNN_METRIC_MANHATTAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          index = std::make_unique<AnnoyIndex<int32_t, float, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Manhattan, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
-          //case hdi::dr::KNN_METRIC_HAMMING:
+          //case KNN_METRIC_HAMMING:
           //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //tree = std::make_unique<AnnoyIndex<int32_t, float, Hamming, Kiss64Random>>(num_dim);
+          //tree = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Hamming, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           //  break;
-        case hdi::dr::KNN_METRIC_DOT:
+        case KNN_METRIC_DOT:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          index = std::make_unique<AnnoyIndex<int32_t, float, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::DotProduct, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
         default:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          index = std::make_unique<AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Euclidean, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
         }
 
