@@ -125,7 +125,7 @@ namespace hdi {
             auto* distances_offset = distances_squared.data() + (i * nn);
             auto indices_offset = indices.data() + (i * nn);
             int j = 0;
-            while (top_candidates.size() > 0) {
+            while (!top_candidates.empty()) {
               auto rez = top_candidates.top();
               distances_offset[nn - j - 1] = rez.first;
               indices_offset[nn - j - 1] = rez.second;
