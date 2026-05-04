@@ -12,7 +12,9 @@
 #include <hnswlib/hnswlib.h>
 #include <hnswlib/space_l2.h>
 
+#include <memory>
 #include <stdexcept>
+#include <thread>
 
 namespace hdi {
   namespace dr {
@@ -20,30 +22,30 @@ namespace hdi {
     std::map<std::string, int> supported_knn_libraries()
     {
       std::map<std::string, int> result;
-      result["FLANN"] = hdi::dr::KNN_FLANN;
-      result["HNSW"] = hdi::dr::KNN_HNSW;
-      result["ANNOY"] = hdi::dr::KNN_ANNOY;
+      result["FLANN"] = KNN_FLANN;
+      result["HNSW"] = KNN_HNSW;
+      result["ANNOY"] = KNN_ANNOY;
       return result;
     }
 
     std::map<std::string, int> supported_knn_library_distance_metrics(int knn_lib)
     {
       std::map<std::string, int> result;
-      result["Euclidean"] = hdi::dr::KNN_METRIC_EUCLIDEAN;
+      result["Euclidean"] = KNN_METRIC_EUCLIDEAN;
 
       switch (knn_lib)
       {
-      case hdi::dr::KNN_FLANN: {
+      case KNN_FLANN: {
         break;
       }
-      case hdi::dr::KNN_HNSW: {
-        result["Inner Product"] = hdi::dr::KNN_METRIC_INNER_PRODUCT;
+      case KNN_HNSW: {
+        result["Inner Product"] = KNN_METRIC_INNER_PRODUCT;
         break;
       }
-      case hdi::dr::KNN_ANNOY: {
-        result["Cosine"] = hdi::dr::KNN_METRIC_COSINE;
-        result["Manhattan"] = hdi::dr::KNN_METRIC_MANHATTAN;
-        result["Dot"] = hdi::dr::KNN_METRIC_DOT;
+      case KNN_ANNOY: {
+        result["Cosine"] = KNN_METRIC_COSINE;
+        result["Manhattan"] = KNN_METRIC_MANHATTAN;
+        result["Dot"] = KNN_METRIC_DOT;
         break;
       }
 
@@ -60,13 +62,13 @@ namespace hdi {
 
       const int nn = knnParameters._perplexity * knnParameters._perplexity_multiplier + 1;
 
-      if (knnParameters._aknn_algorithm == hdi::dr::KNN_FLANN)
+      if (knnParameters._aknn_algorithm == KNN_FLANN)
       {
         hdi::utils::secureLog(_logger, "Computing approximated knn with Flann...");
         flann::Matrix<float> dataset(high_dimensional_data, num_dps, num_dim);
         flann::Matrix<float> query(high_dimensional_data, num_dps, num_dim);
 
-        flann::Index<flann::L2<float> > index(dataset, flann::KDTreeIndexParams(knnParameters._num_trees));
+        flann::Index<flann::L2<float>> index(dataset, flann::KDTreeIndexParams(knnParameters._num_trees));
 
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
@@ -85,93 +87,91 @@ namespace hdi {
           index.knnSearch(query, indices_mat, dists_mat, nn, flann_params);
         }
       }
-      else if (knnParameters._aknn_algorithm == hdi::dr::KNN_HNSW)
+      else if (knnParameters._aknn_algorithm == KNN_HNSW)
       {
         hdi::utils::secureLog(_logger, "Computing approximated knn with HNSWLIB...");
 
-        hnswlib::SpaceInterface<float>* space = NULL;
+        std::unique_ptr<hnswlib::SpaceInterface<float>> space;
         switch (knnParameters._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:
-          space = new hnswlib::L2Space(num_dim);
-          break;
-        case hdi::dr::KNN_METRIC_INNER_PRODUCT:
-          space = new hnswlib::InnerProductSpace(num_dim);
-          break;
-        default:
-          space = new hnswlib::L2Space(num_dim);
-          break;
+        case KNN_METRIC_EUCLIDEAN:      space = std::make_unique<hnswlib::L2Space>(num_dim); break;
+        case KNN_METRIC_INNER_PRODUCT:  space = std::make_unique<hnswlib::InnerProductSpace>(num_dim); break;
+        default:                        space = std::make_unique<hnswlib::L2Space>(num_dim); break;
         }
 
-        hnswlib::HierarchicalNSW<float> appr_alg(space, num_dps, knnParameters._aknn_algorithmP1, knnParameters._aknn_algorithmP2, 0);
+        hnswlib::HierarchicalNSW<float> index(space.get(), num_dps, knnParameters._aknn_algorithmP1, knnParameters._aknn_algorithmP2);
         {
           utils::ScopedTimer<float, utils::Seconds> timer(knnStatistics._trees_construction_time);
           utils::secureLog(_logger, "\tBuilding the search structure...");
-          appr_alg.addPoint((void*)high_dimensional_data, (std::size_t)0);
-          unsigned num_threads = std::thread::hardware_concurrency();
-          hnswlib::ParallelFor(1, num_dps, num_threads, [&](size_t i, size_t threadId) {
-            appr_alg.addPoint((void*)(high_dimensional_data + (i * num_dim)), (hnswlib::labeltype)i);
-            });
+          index.addPoint((void*)high_dimensional_data, 0);
+          const unsigned num_threads = std::thread::hardware_concurrency();
+#pragma omp parallel for num_threads(num_threads) schedule(dynamic, 1)
+          for (int i = 1; i < num_dps; ++i) {
+            index.addPoint((void*)(high_dimensional_data + (i * num_dim)), i);
+          }
         }
+        index.setEf(knnParameters._aknn_algorithmP2);
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
         {
           utils::ScopedTimer<float, utils::Seconds> timer(knnStatistics._aknn_time);
           utils::secureLog(_logger, "\tAKNN queries...");
+
 #pragma omp parallel for
           for (int i = 0; i < num_dps; ++i)
           {
-            auto top_candidates = appr_alg.searchKnn(high_dimensional_data + (i * num_dim), (hnswlib::labeltype)nn);
+            auto top_candidates = index.searchKnn(high_dimensional_data + (i * num_dim), nn);
             while (top_candidates.size() > nn) {
               top_candidates.pop();
             }
             auto* distances_offset = distances_squared.data() + (i * nn);
             auto indices_offset = indices.data() + (i * nn);
             int j = 0;
-            while (top_candidates.size() > 0) {
+            while (!top_candidates.empty()) {
               auto rez = top_candidates.top();
               distances_offset[nn - j - 1] = rez.first;
-              indices_offset[nn - j - 1] = appr_alg.getExternalLabel(rez.second);
+              indices_offset[nn - j - 1] = rez.second;
               top_candidates.pop();
               ++j;
             }
           }
         }
       }
-      else // (knnParameters._aknn_algorithm == hdi::dr::KNN_ANNOY)
+      else // (knnParameters._aknn_algorithm == KNN_ANNOY)
       {
-        using namespace Annoy;
+        using AnnoyThreadPolicy = Annoy::AnnoyIndexSingleThreadedBuildPolicy;
+        using AnnoyRng = Annoy::Kiss64Random;
         hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy...");
 
-        int search_k = nn * knnParameters._num_trees;
+        const int search_k = nn * knnParameters._num_trees;
 
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
 
-        AnnoyIndexInterface<int32_t, double>* tree = nullptr;
+        std::unique_ptr<Annoy::AnnoyIndexInterface<int32_t, float>> index;
         switch (knnParameters._aknn_metric) {
-        case hdi::dr::KNN_METRIC_EUCLIDEAN:
+        case KNN_METRIC_EUCLIDEAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Euclidean, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
-        case hdi::dr::KNN_METRIC_COSINE:
+        case KNN_METRIC_COSINE:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new AnnoyIndex<int32_t, double, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Angular, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
-        case hdi::dr::KNN_METRIC_MANHATTAN:
+        case KNN_METRIC_MANHATTAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new AnnoyIndex<int32_t, double, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Manhattan, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
-          //case hdi::dr::KNN_METRIC_HAMMING:
+          //case KNN_METRIC_HAMMING:
           //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //  tree = new AnnoyIndex<int32_t, double, Hamming, Kiss64Random>(num_dim);
+          //tree = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Hamming, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           //  break;
-        case hdi::dr::KNN_METRIC_DOT:
+        case KNN_METRIC_DOT:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new AnnoyIndex<int32_t, double, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::DotProduct, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
         default:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          index = std::make_unique<Annoy::AnnoyIndex<int32_t, float, Annoy::Euclidean, AnnoyRng, AnnoyThreadPolicy>>(num_dim);
           break;
         }
 
@@ -180,19 +180,18 @@ namespace hdi {
           utils::secureLog(_logger, "\tBuilding the search structure...");
 
           for (unsigned int i = 0; i < num_dps; ++i) {
-            double* vec = new double[num_dim];
-            for (unsigned int z = 0; z < num_dim; ++z) {
-              vec[z] = high_dimensional_data[i * num_dim + z];
-            }
-            tree->add_item(i, vec);
+            const float* item = high_dimensional_data + static_cast<size_t>(i * num_dim);
+            index->add_item(i, item);
           }
-          tree->build(knnParameters._num_trees);
-
-          // Sample check if it returns enough neighbors
+          index->build(knnParameters._num_trees);
+        }
+        
+        {
+          // Sample check if the index returns enough neighbors
           std::vector<int> closest;
-          std::vector<double> closest_distances;
-          for (int n = 0; n < 100; n++) {
-            tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
+          std::vector<float> closest_distances;
+          for (int n = 0; n < 10; n++) {
+            index->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
             unsigned int neighbors_count = closest.size();
             if (neighbors_count < nn) {
               printf("Requesting %d neighbors, but ANNOY returned only %u. Please increase search_k\n", nn, neighbors_count);
@@ -210,8 +209,10 @@ namespace hdi {
           {
             // Find nearest neighbors
             std::vector<int> closest;
-            std::vector<double> closest_distances;
-            tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
+            std::vector<float> closest_distances;
+            closest.reserve(nn); // reserve to avoid reallocations 
+            closest_distances.reserve(nn);
+            index->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
 
             // Copy current row
             for (unsigned int m = 0; m < nn; m++) {
@@ -220,7 +221,6 @@ namespace hdi {
             }
           }
         }
-        delete tree;
       }
     }
 
