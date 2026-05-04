@@ -145,31 +145,31 @@ namespace hdi {
         distances_squared.resize(num_dps * nn);
         indices.resize(num_dps * nn);
 
-        AnnoyIndexInterface<int32_t, double>* tree = nullptr;
+        AnnoyIndexInterface<int32_t, float>* tree = nullptr;
         switch (knnParameters._aknn_metric) {
         case hdi::dr::KNN_METRIC_EUCLIDEAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         case hdi::dr::KNN_METRIC_COSINE:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Cosine distances ...");
-          tree = new AnnoyIndex<int32_t, double, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, float, Angular, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         case hdi::dr::KNN_METRIC_MANHATTAN:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Manhattan distances ...");
-          tree = new AnnoyIndex<int32_t, double, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, float, Manhattan, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
           //case hdi::dr::KNN_METRIC_HAMMING:
           //  hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          //  tree = new AnnoyIndex<int32_t, double, Hamming, Kiss64Random>(num_dim);
+          //  tree = new AnnoyIndex<int32_t, float, Hamming, Kiss64Random>(num_dim);
           //  break;
         case hdi::dr::KNN_METRIC_DOT:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Dot product distances ...");
-          tree = new AnnoyIndex<int32_t, double, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, float, DotProduct, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         default:
           hdi::utils::secureLog(_logger, "Computing approximated knn with Annoy using Euclidean distances ...");
-          tree = new AnnoyIndex<int32_t, double, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
+          tree = new AnnoyIndex<int32_t, float, Euclidean, Kiss64Random, AnnoyIndexSingleThreadedBuildPolicy>(num_dim);
           break;
         }
 
@@ -178,7 +178,7 @@ namespace hdi {
           utils::secureLog(_logger, "\tBuilding the search structure...");
 
           for (unsigned int i = 0; i < num_dps; ++i) {
-            double* vec = new double[num_dim];
+            float* vec = new float[num_dim];
             for (unsigned int z = 0; z < num_dim; ++z) {
               vec[z] = high_dimensional_data[i * num_dim + z];
             }
@@ -188,7 +188,7 @@ namespace hdi {
 
           // Sample check if it returns enough neighbors
           std::vector<int> closest;
-          std::vector<double> closest_distances;
+          std::vector<float> closest_distances;
           for (int n = 0; n < 100; n++) {
             tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
             unsigned int neighbors_count = closest.size();
@@ -208,7 +208,7 @@ namespace hdi {
           {
             // Find nearest neighbors
             std::vector<int> closest;
-            std::vector<double> closest_distances;
+            std::vector<float> closest_distances;
             tree->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
 
             // Copy current row
