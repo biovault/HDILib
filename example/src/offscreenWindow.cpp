@@ -28,12 +28,10 @@ void OffscreenBufferGLFW::initialize()
 
     bindContext();
 
-#ifndef __APPLE__
     if (!gladLoadGL(glfwGetProcAddress)) {
         glfwTerminate();
         throw std::runtime_error("Failed to initialize OpenGL context");
     }
-#endif // Not __APPLE__
 
     _isInitialized = true;
 }
