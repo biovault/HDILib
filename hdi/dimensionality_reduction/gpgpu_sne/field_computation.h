@@ -2,8 +2,6 @@
 
 #include "hdi/data/shader.h"
 
-#include <iostream>
-
 class RasterFieldComputation
 {
 public:
