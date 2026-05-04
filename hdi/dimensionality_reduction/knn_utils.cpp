@@ -207,6 +207,8 @@ namespace hdi {
             // Find nearest neighbors
             std::vector<int> closest;
             std::vector<float> closest_distances;
+            closest.reserve(nn); // reserve to avoid reallocations 
+            closest_distances.reserve(nn);
             index->get_nns_by_item(n, nn, search_k, &closest, &closest_distances);
 
             // Copy current row
