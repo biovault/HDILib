@@ -91,16 +91,6 @@ jobs:
             build-libcxx: libc++
             build-arch: armv8
 
-          #- name: Macos_xcode14.3
-          #  os: macos-14
-          #  build-compiler: apple-clang
-          #  build-cversion: 14
-          #  build-config: Release
-          #  build-os: Macos
-          #  build-xcode-version: 15.0.1
-          #  build-libcxx: libc++
-          #  build-arch: armv8
-
           - name: Macos_xcode15
             os: macos-14
             build-compiler: apple-clang
@@ -240,3 +230,5 @@ jobs:
           build-arch: ${{matrix.build-arch}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+        env:
+          VCPKG_BINARY_SOURCES: "clear"
