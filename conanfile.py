@@ -106,7 +106,7 @@ class HDILibConan(ConanFile):
             omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
             tc.variables["OpenMP_ROOT"] = omp_prefix_path
 
-        tc.variables["HDILIB_ROOT"] = Path(self.build_folder).joinpath("install", "lib", "cmake", "HDILib")
+        tc.variables["HDILIB_ROOT"] = Path(self.build_folder).joinpath("install", "lib", "cmake", "HDILib").as_posix()
 
         print("Call toolchain generate")
         tc.generate()
@@ -141,8 +141,10 @@ class HDILibConan(ConanFile):
 
         # Build example
         cmake_example = CMake(self)
-        cmake_example.configure(source_folder=Path(self.build_folder).joinpath("example"))
-        cmake_example.build()
+        cmake_example.configure(
+            build_script_folder=Path(self.source_folder).joinpath("example").as_posix()
+            )
+        cmake_example.build(build_type="Debug")
 
     def package_id(self):
         # The package contains both Debug and Release build types
