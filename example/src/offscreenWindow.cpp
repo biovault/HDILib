@@ -5,6 +5,13 @@
 
 #include <stdexcept>
 
+OffscreenBufferGLFW::~OffscreenBufferGLFW()
+{
+    if (_isInitialized) {
+        destroyContext();
+    }
+}
+
 void OffscreenBufferGLFW::initialize()
 {
     if (!glfwInit()) {
@@ -19,9 +26,9 @@ void OffscreenBufferGLFW::initialize()
 #endif
 
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);  // invisible - ie offscreen, window
-    _offscreenWindow = glfwCreateWindow(640, 480, "", NULL, NULL);
+    _offscreenWindow = glfwCreateWindow(640, 480, "", nullptr, nullptr);
 
-    if (_offscreenWindow == NULL) {
+    if (_offscreenWindow == nullptr) {
         glfwTerminate();
         throw std::runtime_error("Failed to create GLFW window");
     }

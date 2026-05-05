@@ -5,7 +5,8 @@ struct GLFWwindow;
 class OffscreenBuffer
 {
 public:
-    OffscreenBuffer() : _isInitialized(false) {}
+    OffscreenBuffer() = default;
+    virtual ~OffscreenBuffer() = default;
 
     bool isInitialized() const { return _isInitialized; }
 
@@ -22,7 +23,7 @@ public:
     virtual void destroyContext() = 0;
 
 protected:
-    bool _isInitialized;
+    bool _isInitialized = false;
 
 };
 
@@ -30,6 +31,13 @@ class OffscreenBufferGLFW : public OffscreenBuffer
 {
 public:
     OffscreenBufferGLFW() = default;
+    ~OffscreenBufferGLFW() override;
+
+    OffscreenBufferGLFW(const OffscreenBufferGLFW&) = delete;
+    OffscreenBufferGLFW& operator=(const OffscreenBufferGLFW&) = delete;
+
+    OffscreenBufferGLFW(OffscreenBufferGLFW&& other) = delete;
+    OffscreenBufferGLFW& operator=(OffscreenBufferGLFW&& other) = delete;
 
     void initialize() override;
     void bindContext() override;
