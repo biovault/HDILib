@@ -312,7 +312,7 @@ if(${HDILib_INSTALL})
     if (USE_VULKAN_KOMPUTE)
       # TBD possibly move this to an external script
       # Install the config.cmake files for the vcpkg dependencies
-      message("Fix config in ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake")
+      message(STATUS "Fix config in ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake")
       add_config_to_cmake_target_files(
         LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}" 
         PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake"
