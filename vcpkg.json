@@ -15,7 +15,7 @@
   },
   "builtin-baseline":"d07689ef165f033de5c0710e4f67c193a85373e1",
   "overrides": [
-    { "name": "flann", "version": "2019-04-07#7"},
+    { "name": "flann", "version": "2022-10-28#0"},
     { "name": "fmt", "version": "11.0.2#1" },
     { "name": "glfw3", "version": "3.4.1#1" },
     { "name": "glslang", "version": "16.2.0#0" },
