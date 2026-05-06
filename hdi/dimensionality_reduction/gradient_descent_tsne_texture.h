@@ -42,6 +42,7 @@
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
 #include "gpgpu_sne/gpgpu_sne_compute.h"
+#include "gpgpu_vulkan/gpgpu_sne_comp_vulkan.h"
 #include "gpgpu_sne/gpgpu_sne_raster.h"
 #include "tsne_parameters.h"
 #include <array>
@@ -55,9 +56,9 @@ namespace hdi {
     */
     class GradientDescentTSNETexture {
     public:
-#ifndef __APPLE__
-      typedef enum { RASTER, COMPUTE_SHADER, AUTO_DETECT } GpgpuSneType;
-#endif
+    //#ifndef __APPLE__
+      typedef enum { RASTER, COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, AUTO_DETECT } GpgpuSneType;
+    //#endif
       typedef float scalar_type;
       typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
       typedef std::vector<scalar_type> scalar_vector_type;
@@ -66,10 +67,10 @@ namespace hdi {
     public:
       GradientDescentTSNETexture();
 
-#ifndef __APPLE__
+    //#ifndef __APPLE__
       //! Override the default compute type.
       void setType(GpgpuSneType _tsneType);
-#endif
+    //#endif
       //! Initialize the class with a list of distributions. A joint-probability distribution will be computed as in the tSNE algorithm
       void initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
       //! Initialize the class with a joint-probability distribution. Note that it must be provided non initialized and with the weight of each row equal to 2.
@@ -108,19 +109,32 @@ namespace hdi {
 
       //! Set the adaptive texture scaling
       void setResolutionFactor(float factor) {
-#ifndef __APPLE__
+      #ifndef __APPLE__
         if (_gpgpu_type == COMPUTE_SHADER)
           _gpgpu_compute_tsne.setScalingFactor(factor);
+        else if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+          _gpgpu_vulkan_compute_tsne.setScalingFactor(factor);
         else
           _gpgpu_raster_tsne.setScalingFactor(factor);
-#else
+      #else
         _gpgpu_raster_tsne.setScalingFactor(factor);
-#endif
+      #endif
       }
       bool isInitialized() { return _initialized == true; }
       //! Exageration baseline
       double& exaggeration_baseline() { return _exaggeration_baseline; }
       const double& exaggeration_baseline()const { return _exaggeration_baseline; }
+
+      // return Vulkan device
+      // only valid on APPLE VULKAN debug - otherwise returns nullptr
+      // The caller should cast back to vk::Device *
+      void *getDevice() {
+#ifdef __APPLE__
+        return _gpgpu_vulkan_compute_tsne.getDevice().get();
+#else
+        return nullptr;
+#endif
+      }
 
     private:
       //! Compute High-dimensional distribution
@@ -141,6 +155,7 @@ namespace hdi {
 
     public: //TODO remove
       sparse_scalar_matrix_type _P; //! Conditional probalility distribution in the High-dimensional space
+      float kl_divergence; //! Kullback-Leibler divergence - only computed in the compute shader version otherwise defaults to -1.0f
 
     private:
       data::Embedding<scalar_type>* _embedding; //! embedding
@@ -155,10 +170,12 @@ namespace hdi {
       scalar_vector_type _Q; //! Conditional probalility distribution in the Low-dimensional space
       scalar_type _normalization_Q; //! Normalization factor of Q - Z in the original paper
 
-#ifndef __APPLE__
+    #ifndef __APPLE__
       GpgpuSneCompute _gpgpu_compute_tsne;
+    #endif // __APPLE__
+      GpgpuSneVulkan _gpgpu_vulkan_compute_tsne;
       GpgpuSneType _gpgpu_type;
-#endif // __APPLE__
+
       GpgpuSneRaster _gpgpu_raster_tsne;
 
       std::array<scalar_type, 4> _temp;

@@ -1,0 +1,46 @@
+#version 450
+
+#extension GL_EXT_scalar_block_layout : require
+
+layout(local_size_x = 256) in;
+
+// Storage Buffers SSBO
+layout(std430, binding = 0) buffer Points {
+    vec2 points[]; // Input points
+};
+
+// If not using push constants, use a uniform buffer object UBO
+layout(scalar, binding = 1 ) uniform stencilParams {
+    vec2 rect_min; // min bounds of the points rectangle
+    vec2 rect_max; // max bounds of the points rectangle
+    vec2 imageSize; // dimensions of the output image
+} sp;
+
+// Output image
+layout(rgba32f, binding = 2) writeonly uniform image2D outImage;
+
+
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    vec2 point = points[id];
+
+    vec2 range = sp.rect_max - sp.rect_min;
+
+    // Convert point to normalized device coordinates in [0,1]
+    vec2 norm = (point - sp.rect_min) / range;
+    // Convert to nearest pixel coordinates
+    ivec2 pxCoord = ivec2(round(norm * sp.imageSize));
+    
+    // Draw a 3x3 region around the point
+    for (int dy = -1; dy <= 1; ++dy) {
+        for (int dx = -1; dx <= 1; ++dx) {
+            ivec2 target = pxCoord + ivec2(dx, dy);
+            // Bounds check
+            if (target.x >= 0 && target.x < sp.imageSize.x &&
+                target.y >= 0 && target.y < sp.imageSize.y) {
+                imageStore(outImage, target, vec4(1.0));
+            }
+        }
+    }
+}

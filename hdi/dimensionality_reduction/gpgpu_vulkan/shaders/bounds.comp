@@ -1,0 +1,75 @@
+  #version 450
+
+  #extension GL_KHR_shader_subgroup_arithmetic : enable
+  #extension GL_KHR_shader_subgroup_basic : enable
+
+  layout(std430, binding = 0) buffer BoundsInterface { vec2 Bounds[]; };
+  layout(std430, binding = 1) buffer Pos{ vec2 Positions[]; };
+  layout(local_size_x = 512, local_size_y = 1, local_size_z = 1) in;
+
+  shared vec2 subgroupMinBuf[16];  // max possible for local_size_x=512/32 
+  shared vec2 subgroupMaxBuf[16];  // 32 is smallest subgroup size we expect to encounter
+
+  layout(push_constant) uniform Params {
+      float padding; 
+      uint num_points;   
+  } pc;
+
+   void main() {
+    uint lid = gl_LocalInvocationIndex.x;
+    uint groupSize = gl_WorkGroupSize.x;
+    vec2 minBound = vec2(1e38);  // inf
+    vec2 maxBound = vec2(-1e38);  // -inf
+
+
+    //uint np = uint(round(num_points));
+    // Find min and max bounds by striding (by groupSize) across the positions in each thread.
+    for (uint i = lid; i < pc.num_points; i += groupSize)
+    {
+      vec2 pos = Positions[i];
+
+      minBound = min(pos, minBound);
+      maxBound = max(pos, maxBound);
+    }
+
+    vec2 sgMin = vec2(
+        subgroupMin(minBound.x),
+        subgroupMin(minBound.y)
+    );
+
+    vec2 sgMax = vec2(
+        subgroupMax(maxBound.x),
+        subgroupMax(maxBound.y)
+    );
+
+
+    uint sgID   = gl_SubgroupID;
+    uint sgLane = gl_SubgroupInvocationID;
+
+    if (sgLane == 0) {
+        subgroupMinBuf[sgID] = sgMin;
+        subgroupMaxBuf[sgID] = sgMax;
+    }
+
+    barrier();
+    if (sgID == 0) {
+      vec2 finalMin = vec2(1e38);
+      vec2 finalMax = vec2(-1e38);
+
+      if (lid < gl_NumSubgroups) {
+          finalMin = subgroupMinBuf[lid];
+          finalMax = subgroupMaxBuf[lid];
+      }
+
+      finalMin.x = subgroupMin(finalMin.x);
+      finalMin.y = subgroupMin(finalMin.y);
+      finalMax.x = subgroupMax(finalMax.x);
+      finalMax.y = subgroupMax(finalMax.y);
+
+      if (lid == 0) {
+          vec2 padding = (finalMax - finalMin) * pc.padding * 0.5;
+          Bounds[0] = finalMin - padding;
+          Bounds[1] = finalMax + padding;
+      }
+    }
+  }

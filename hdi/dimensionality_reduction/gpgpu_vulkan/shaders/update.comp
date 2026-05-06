@@ -1,0 +1,49 @@
+#version 430
+
+#extension GL_EXT_scalar_block_layout : require
+
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) buffer Pos{ vec2 Positions[]; };
+layout(std430, binding = 1) buffer GradientLayout { vec2 Gradients[]; };
+layout(std430, binding = 2) buffer PrevGradientLayout { vec2 PrevGradients[]; };
+layout(std430, binding = 3) buffer GainLayout { vec2 Gain[]; };
+
+layout(scalar, binding = 4 ) uniform FieldPushConstants {  
+    uint num_points;  
+    float eta;        // Learning rate
+    float minGain;   // Minimum gain value
+    float iter;      // Current iteration number
+    float mom_iter;  // Iteration number for momentum switch
+    float mom;       // Initial momentum value
+    float final_mom; // Final momentum value
+    float mult;      // Multiplier for position update
+} pc;
+
+void main() {
+    uint workGroupID = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+    uint i = workGroupID * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+    if (i >= pc.num_points)
+        return;
+
+    vec2 grad = Gradients[i];
+    vec2 pgrad = PrevGradients[i];
+    vec2 gain = Gain[i];
+
+    // Vectorized gain update - uses component-wise comparison
+    bvec2 signsDiffer = notEqual(sign(grad), sign(pgrad));
+    gain = mix(gain * 0.8, gain + 0.2, signsDiffer);
+    gain = max(gain, vec2(pc.minGain));
+
+    vec2 etaGain = pc.eta * gain;
+    
+    // Vectorized gradient normalization
+    grad = sign(grad) * abs(grad * etaGain) / etaGain;
+    
+    float momentum = (pc.iter < pc.mom_iter ? pc.mom : pc.final_mom);
+    pgrad = momentum * pgrad - etaGain * grad;
+
+    Gain[i] = gain;
+    PrevGradients[i] = pgrad;
+    Positions[i] += pgrad * pc.mult;
+}

@@ -68,6 +68,7 @@ namespace hdi {
 
       typedef hdi::data::Embedding<float> embedding_type;
       typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
+      float kl_divergence = -1.0f; // Kullback-Leibler divergence, only computed in the compute shader version otherwise defaults to -1.0f
 
     public:
       GpgpuSneCompute();
@@ -75,16 +76,17 @@ namespace hdi {
       void initialize(const embedding_type* embedding, TsneParameters params, const sparse_scalar_matrix_type& P);
       void clean();
 
+      // a single iteration of the tSNE algorithm involving field computation, forces computation and embedding update
       void compute(embedding_type* embedding, float exaggeration, float iteration, float mult);
 
       void setScalingFactor(float factor) { _resolutionScaling = factor; }
-	  //!  Change the runtime configurable params
-	  void updateParams(TsneParameters params) { 
-		  if (!_initialized) {
-			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
-		  }
-		  _params = params; 
-	  };
+      //!  Change the runtime configurable params
+      void updateParams(TsneParameters params) {
+        if (!_initialized) {
+          throw std::runtime_error("(GpgpuSneCompute) GradientDescentComputation must be initialized before updating the tsne parameters");
+        }
+        _params = params;
+      };
       bool isInitialized() { return _initialized == true; }
 
     private:
@@ -119,7 +121,7 @@ namespace hdi {
       ShaderProgram _center_and_scale_program;
 
       // SSBOs
-      std::array<GLuint, 10> _compute_buffers;
+      std::array<GLuint, 11> _compute_buffers;
 
       GLuint _timerQuery[2];
 

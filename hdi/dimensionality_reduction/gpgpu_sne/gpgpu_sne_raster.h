@@ -32,11 +32,13 @@
 
 #pragma once
 
+/*
+* // In shader.h
 #ifdef __APPLE__
     #include <OpenGL/gl3.h>
 #else // __APPLE__
     #include "hdi/utils/glad/glad.h"
-#endif // __APPLE__
+#endif // __APPLE__ */
 
 #include "hdi/data/shader.h"
 #include "hdi/data/embedding.h"
@@ -86,7 +88,7 @@ namespace hdi {
 	  //!  Change the runtime configurable params
 	  void updateParams(TsneParameters params) {
 		  if (!_initialized) {
-			  throw std::runtime_error("GradientDescentComputation must be initialized before updating the tsne parameters");
+			  throw std::runtime_error("(GpgpuSneRaster) GradientDescentComputation must be initialized before updating the tsne parameters");
 		  }
 		  _params = params;
 	  };

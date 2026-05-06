@@ -39,6 +39,7 @@
 #include "hdi/utils/log_helper_functions.h"
 #include "hdi/utils/scoped_timers.h"
 #include "sptree.h"
+#include "dr_config.h"
 #include <random>
 
 #pragma warning( push )
@@ -65,32 +66,86 @@ namespace hdi {
     GradientDescentTSNETexture::GradientDescentTSNETexture() :
       _initialized(false),
       _logger(nullptr),
-      _exaggeration_baseline(1)
+      _exaggeration_baseline(1),
+      kl_divergence(-1.0f)
     {
 #ifndef __APPLE__
       _gpgpu_type = AUTO_DETECT;
 #endif
     }
 
-#ifndef __APPLE__
     void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
+      bool vulkan_supported = GpgpuSneVulkan::isVulkanSupported();
+
+      #ifdef __APPLE__
+        std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER_VULKAN, RASTER };
+        bool glV43_supported = false; // Compute shaders are not supported on macOS.
+        bool glV33_supported = true;
+      #else
+        std::vector<GpgpuSneType> priotitized_types = { COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, RASTER };
+        bool glV43_supported = GLAD_GL_VERSION_4_3;
+        bool glV33_supported = GLAD_GL_VERSION_3_3;
+      #endif
+
+
+
       if (tsne_type == AUTO_DETECT)
       {
         //resolve the optimal type to use based on the available OpenGL version
-        if (GLAD_GL_VERSION_4_3)
-        {
-          _gpgpu_type = COMPUTE_SHADER;
-        }
-        else if (GLAD_GL_VERSION_3_3)
-        {
-          std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
-          _gpgpu_type = RASTER;
+
+        for (const auto& type : priotitized_types) {
+          if (type == COMPUTE_SHADER && glV43_supported) {
+            _gpgpu_type = COMPUTE_SHADER;
+            break;
+          }
+          else if (type == COMPUTE_SHADER_VULKAN && vulkan_supported) {
+            _gpgpu_type = COMPUTE_SHADER_VULKAN;
+            break;
+          }
+          else if (type == RASTER && glV33_supported) {
+            std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
+            _gpgpu_type = RASTER;
+            break;
+          }
         }
       }
       else
-        _gpgpu_type = tsne_type;
+        // Do our best to set what the user asked for. 
+        // Failing that choose a sensible fallback and log it.
+        if (tsne_type == COMPUTE_SHADER_VULKAN) {
+          if (vulkan_supported) {
+            _gpgpu_type = COMPUTE_SHADER_VULKAN;
+          } else {
+            std::cout << "Vulkan not supported, using OpenGL fallback" << std::endl;
+          #ifdef __APPLE__
+            std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
+            _gpgpu_type = RASTER;
+          #else
+            if (glV43_supported) {
+              _gpgpu_type = COMPUTE_SHADER;
+            } else
+            if (glV33_supported) {
+              std::cout << "Compute shaders not available, using rasterization fallback" << std::endl;
+              _gpgpu_type = RASTER;
+            }
+            else {
+              throw std::runtime_error("OpenGL 3.3 not supported, cannot use rasterization fallback");
+            }
+          #endif
+          }
+        }
+        else if (tsne_type == COMPUTE_SHADER && !glV43_supported) {
+          std::cout << "OpenGL 4.3 not supported, using rasterization fallback" << std::endl;
+          _gpgpu_type = RASTER;
+        }
+        else if (tsne_type == RASTER && !glV33_supported) {
+          throw std::runtime_error("OpenGL 3.3 not supported, cannot use rasterization fallback");
+        }
+        else
+        {
+          _gpgpu_type = tsne_type;
+        }
     }
-#endif
 
     void GradientDescentTSNETexture::reset() {
       _initialized = false;
@@ -98,6 +153,8 @@ namespace hdi {
 
     void GradientDescentTSNETexture::clear() {
       _embedding->clear();
+      if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+        _gpgpu_vulkan_compute_tsne.clean();
       _initialized = false;
     }
 
@@ -136,16 +193,21 @@ namespace hdi {
         initializeEmbeddingPosition(_params._seed, _params._rngRange);
       }
 
-#ifndef __APPLE__
       if (_gpgpu_type == AUTO_DETECT)
-        setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
+        setType(AUTO_DETECT); // resolves whether to use Compute Shader, Compute Shader VULKAN or Raster version
+#ifndef __APPLE__
       if (_gpgpu_type == COMPUTE_SHADER)
         _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
-      else// (_tsne_type == RASTER)
-        _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
-#else
-      _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+      else {
 #endif
+        if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+          _gpgpu_vulkan_compute_tsne.initialize(_embedding, _params, _P);
+        else// (_tsne_type == RASTER)
+          _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+#ifndef __APPLE__
+      }
+#endif
+
 
       _iteration = 0;
 
@@ -178,11 +240,15 @@ namespace hdi {
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
       if (_gpgpu_type == COMPUTE_SHADER)
         _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
+      else
+#endif
+      if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+        _gpgpu_vulkan_compute_tsne.initialize(_embedding, _params, _P);
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
-#else
-      _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
-#endif
+//#else
+//      _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
+//#endif
 
       _iteration = 0;
 
@@ -195,11 +261,17 @@ namespace hdi {
         throw std::runtime_error("GradientDescentTSNETexture must be initialized before updating the tsne parameters");
       }
       _params = params;
-#ifndef __APPLE__
-      _gpgpu_compute_tsne.updateParams(params);
-#else
 
-      _gpgpu_raster_tsne.updateParams(params);
+      // vulkan is possible on any platform.
+      if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
+        _gpgpu_vulkan_compute_tsne.updateParams(params);
+      else
+#ifndef __APPLE__ 
+        if (_gpgpu_type == COMPUTE_SHADER)
+          _gpgpu_compute_tsne.updateParams(params);
+#else
+        if (_gpgpu_type == RASTER)
+          _gpgpu_raster_tsne.updateParams(params);
 #endif
     }
 
@@ -284,13 +356,22 @@ namespace hdi {
     void GradientDescentTSNETexture::doAnIterationImpl(double mult) {
       // Compute gradient of the KL function using a compute shader approach
 #ifndef __APPLE__
-      if (_gpgpu_type == COMPUTE_SHADER)
+      if (_gpgpu_type == COMPUTE_SHADER) {
         _gpgpu_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+        kl_divergence = _gpgpu_compute_tsne.kl_divergence;
+      }
       else
-        _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
-#else
-      _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
 #endif
+      if (_gpgpu_type == COMPUTE_SHADER_VULKAN) {
+        _gpgpu_vulkan_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+        kl_divergence = _gpgpu_vulkan_compute_tsne.kl_divergence;
+      }
+      else {
+          _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+      }
+//#else
+//      _gpgpu_raster_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
+//#endif
       ++_iteration;
     }
 

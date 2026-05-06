@@ -28,12 +28,6 @@ jobs:
     strategy:
       matrix:
         include:
-          # This build is Debug + /analyze flag
-          #- name: Static Analysis Windows
-          #  os: windows-2019
-          #  compiler: msvc-2019
-          #  build-cversion: 16
-          #  build-config: Analysis
 
           - name: Windows-msvc2022
             os: windows-2022
@@ -43,27 +37,27 @@ jobs:
             build-config: Release
             build-arch: x86_64
 
-          - name: Linux_gcc10
-            os: ubuntu-22.04
-            build-cc: gcc
-            build-cxx: g++
-            build-compiler: gcc
-            build-cversion: 10
-            build-config: Release
-            build-os: Linux
-            build-libcxx: libstdc++11
-            build-arch: x86_64
+          #- name: Linux_gcc10
+          #  os: ubuntu-22.04
+          #  build-cc: gcc
+          #  build-cxx: g++
+          #  build-compiler: gcc
+          #  build-cversion: 10
+          #  build-config: Release
+          #  build-os: Linux
+          #  build-libcxx: libstdc++11
+          #  build-arch: x86_64
 
-          - name: Linux_gcc11
-            os: ubuntu-22.04
-            build-cc: gcc
-            build-cxx: g++
-            build-compiler: gcc
-            build-cversion: 11
-            build-config: Release
-            build-os: Linux
-            build-libcxx: libstdc++11
-            build-arch: x86_64
+          #- name: Linux_gcc11
+          #  os: ubuntu-22.04
+          #  build-cc: gcc
+          #  build-cxx: g++
+          #  build-compiler: gcc
+          #  build-cversion: 11
+          #  build-config: Release
+          #  build-os: Linux
+          #  build-libcxx: libstdc++11
+          #  build-arch: x86_64
 
           - name: Linux_gcc13
             os: ubuntu-24.04
@@ -170,13 +164,15 @@ jobs:
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
+  # This build for python on linux cannot be performed using the normal matrix
+  # becuse the C libs are not compatible with the python versions 
   Python-ManyLinux-2-28-Build:
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux_2_28_x86_64
     strategy:
       matrix:
         include: 
-          - name: python manylinux_2_28
+          - name: python manylinux_2_28_gcc14
             build-cc: gcc
             build-cxx: g++
             build-compiler: gcc
@@ -184,13 +180,24 @@ jobs:
             build-config: Release
             build-os: Linux
             build-libcxx: libstdc++11
-            build-arch: x86_64      
-
+            build-arch: x86_64    
+            
+          # - name: python manylinux_2_28_gcc12
+          #   build-cc: gcc
+          #   build-cxx: g++
+          #   build-compiler: gcc
+          #   build-cversion: 12
+          #   build-config: Release
+          #   build-os: Linux
+          #   build-libcxx: libstdc++11
+          #   build-arch: x86_64   
+    
     steps:
       - name: Checkout the source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
+          set-safe-directory: true
 
       - name: Verify default Python installation
         run: |
@@ -202,6 +209,15 @@ jobs:
         run: |
           python3 --version
           pip3 --version
+
+      # The version of vcpkg 
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        #This vcpkg baseline corresponds to tag 2025.04.09",
+        with: 
+          vcpkgGitCommitId: "ce613c41372b23b1f51333815feb3edd87ef8a8b"
+          vcpkgDirectory: ${{ runner.temp }}/vcpkg
+
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
         with:
@@ -214,4 +230,5 @@ jobs:
           build-arch: ${{matrix.build-arch}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
-  
+        env:
+          VCPKG_BINARY_SOURCES: "clear"

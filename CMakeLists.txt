@@ -1,5 +1,21 @@
 cmake_minimum_required (VERSION 3.22)
 
+option(USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
+
+if(USE_VULKAN_KOMPUTE)
+    list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
+
+    # Make sure vcpkg toolchain is picked up (or pass -DCMAKE_TOOLCHAIN_FILE=...)
+    # Example: cmake .. -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
+    set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
+
+    if(WIN32 AND NOT DEFINED VCPKG_LIBRARY_LINKAGE)
+        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "")
+        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
+        set(VCPKG_LIBRARY_LINKAGE "static" CACHE STRING "")
+    endif()
+endif()
+
 set(PROJECT "HDILib")
 PROJECT(${PROJECT})
 
@@ -151,12 +167,28 @@ endif()
 
 message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 
+if (USE_VULKAN_KOMPUTE)
+    # Neede for fmt library used in vulkan 
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif()
 # -----------------------------------------------------------------------------
 # Projects
 # -----------------------------------------------------------------------------
 add_subdirectory(hdi/utils)
 add_subdirectory(hdi/data)
 add_subdirectory(hdi/dimensionality_reduction)
+
+# -----------------------------------------------------------------------------
+# Tests
+# -----------------------------------------------------------------------------
+option(ENABLE_TESTS "Enable building the test executables" ON)
+if (ENABLE_TESTS)
+    add_subdirectory(tests)
+    add_dependencies(tsne_tester hdiutils hdidimensionalityreduction hdidata)
+endif()
+
+
 
 # -----------------------------------------------------------------------------
 # Create HDILib find_package
@@ -187,7 +219,88 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibConfig.cmake.in
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
-# install the package files files
+# install the package files
+# install the vcpkg build files
+function(patch_file)
+  # Step through the file line by line replacing 
+  # the match expression with the replace expression
+  # Overwrite the existing file
+  cmake_parse_arguments(PARSE_ARGV 0 "patch_arg" "" "INPUT_PATH;MATCH_EXPRESSION;REPLACE_EXPRESSION" "")
+  set(eol "\n")
+  set(patched_result "")
+  file(STRINGS "${patch_arg_INPUT_PATH}" input_lines)
+  #message("Unpatched file ${input_lines}")
+  foreach(line IN LISTS input_lines)
+    string(REPLACE "${patch_arg_MATCH_EXPRESSION}" "${patch_arg_REPLACE_EXPRESSION}" patched_line "${line}")
+    set(patched_result "${patched_result}${patched_line}${eol}")
+  endforeach()
+  #message("New patched file ${patched_result}")
+  file(WRITE "${patch_arg_INPUT_PATH}" "${patched_result}")
+endfunction()
+
+function(add_config_to_cmake_target_files)
+  # 1. Find CMake target files using a glob path (PATH_GLOB).
+  # 2. Patch each file found so that the lib path contains a 
+  # config (i.e. Release, Debug or RelWithDebInfo) element.
+  # This matches the convention we use in multi-build packages
+
+  cmake_parse_arguments(PARSE_ARGV 0 "fix_arg" "" "LIB_NAME;PATH_GLOB" "")
+  #message("globbing: ${fix_arg_PATH_GLOB}")
+  file(GLOB _cmake_config_files "${fix_arg_PATH_GLOB}")
+  #message("glob list: ${_cmake_config_files}")
+  foreach(_cmake_config_file IN LISTS _cmake_config_files)
+      set(_upper_file "")
+      string(TOUPPER "${_cmake_config_file}" _upper_file)
+      #message("Checking: ${_upper_file}")
+      # Identify if each file is a Release, Debug or RelWithDebugInfo
+      # and apply the appropriate patch
+      set(_found -1)
+      string(FIND "${_upper_file}" "RELEASE.CMAKE" _found)
+      if (_found GREATER -1)
+        patch_file(
+          INPUT_PATH "${_cmake_config_file}" 
+          MATCH_EXPRESSION "lib/${fix_arg_LIB_NAME}" 
+          REPLACE_EXPRESSION "Release/${fix_arg_LIB_NAME}"
+        )
+      endif()
+      string(FIND "${_upper_file}" "DEBUG.CMAKE" _found)
+      if (_found GREATER -1)
+        # Eliminate the "debug" element - we package this differently
+        message(STATUS "Change debug/lib for ${fix_arg_LIB_NAME} in ${_upper_file}")
+        patch_file(
+          INPUT_PATH "${_cmake_config_file}" 
+          MATCH_EXPRESSION "debug/lib/${fix_arg_LIB_NAME}" 
+          REPLACE_EXPRESSION "lib/${fix_arg_LIB_NAME}"
+        )
+        patch_file(
+          INPUT_PATH "${_cmake_config_file}" 
+          MATCH_EXPRESSION "lib/${fix_arg_LIB_NAME}" 
+          REPLACE_EXPRESSION "Debug/${fix_arg_LIB_NAME}"
+        )
+      endif()
+      string(FIND "${_upper_file}" "RELWITHDEBINFO.CMAKE" _found)
+      if (_found GREATER -1)
+        patch_file(
+          INPUT_PATH "${_cmake_config_file}" 
+          MATCH_EXPRESSION "lib/${fix_arg_LIB_NAME}" 
+          REPLACE_EXPRESSION "RelWithDebInfo/${fix_arg_LIB_NAME}"
+        )
+      endif()
+  endforeach()
+endfunction()
+
+function(fix_include_path)
+  # Insert a dependency name element into the include path
+  # In the package include each extra dependency has its own sub-dir
+  # under include. 
+  cmake_parse_arguments(PARSE_ARGV 0 "inc_arg" "" "DEPENDENCY_NAME;TARGET_PATH" "")
+
+  patch_file(
+    INPUT_PATH "${inc_arg_TARGET_PATH}" 
+    MATCH_EXPRESSION "\${_IMPORT_PREFIX}/include" 
+    REPLACE_EXPRESSION "\${_IMPORT_PREFIX}/../include"
+  )
+endfunction()
 
 if(${HDILib_INSTALL})
     install(FILES
@@ -196,6 +309,88 @@ if(${HDILib_INSTALL})
             DESTINATION lib/cmake/HDILib
             COMPONENT HDI_PACKAGE
     )
+    if (USE_VULKAN_KOMPUTE)
+      # TBD possibly move this to an external script
+      # Install the config.cmake files for the vcpkg dependencies
+      message("Fix config in ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake")
+      add_config_to_cmake_target_files(
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}" 
+        PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake"
+      )
+      add_config_to_cmake_target_files(
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}kp_logger${CMAKE_STATIC_LIBRARY_SUFFIX}" 
+        PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake"
+      )
+      fix_include_path(
+        DEPENDENCY_NAME "kompute"
+        TARGET_PATH "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets.cmake"
+      )
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute" 
+        DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
+      add_config_to_cmake_target_files(
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}fmtd${CMAKE_STATIC_LIBRARY_SUFFIX}" 
+        PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt/fmt-targets-*.cmake")
+      add_config_to_cmake_target_files(
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}fmt${CMAKE_STATIC_LIBRARY_SUFFIX}" 
+        PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt/fmt-targets-*.cmake")
+      fix_include_path(
+        DEPENDENCY_NAME "fmt"
+        TARGET_PATH "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt/fmt-targets.cmake"
+      )
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt" 
+        DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
+      add_config_to_cmake_target_files(
+        LIB_NAME "${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}" 
+        PATH_GLOB "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glfw3/glfw3Targets-*.cmake")
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glfw3" 
+        DESTINATION lib/cmake COMPONENT HDI_PACKAGE)
+
+      # Install the include files
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/kompute"
+        DESTINATION include)
+      # Additional generated kompute headers
+      install(FILES 
+        "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/ShaderLogisticRegression.hpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/ShaderOpMult.hpp"
+        DESTINATION include)
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/fmt"
+        DESTINATION include)
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/GLFW"
+        DESTINATION include)
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/vulkan"
+        DESTINATION include)
+      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/vk_video"
+        DESTINATION include)
+
+      # Install the static libraries
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Release COMPONENT HDI_PACKAGE)
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kp_logger${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Release COMPONENT HDI_PACKAGE)
+      # Install vulkan so lib?
+      install(CODE "
+        execute_process(COMMAND ls ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/)
+      ")
+      if(WIN32)
+        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}vulkan-1${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Release COMPONENT HDI_PACKAGE)
+      else()
+        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}vulkan${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        DESTINATION lib/Release COMPONENT HDI_PACKAGE)
+      endif()
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmt${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Release COMPONENT HDI_PACKAGE)
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Release COMPONENT HDI_PACKAGE)
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Debug COMPONENT HDI_PACKAGE)
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kp_logger${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Debug COMPONENT HDI_PACKAGE)
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmtd${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Debug COMPONENT HDI_PACKAGE)
+      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}"
+        DESTINATION lib/Debug COMPONENT HDI_PACKAGE)
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------

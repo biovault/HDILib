@@ -1,0 +1,86 @@
+#version 430
+
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_EXT_shader_atomic_float : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+#extension GL_KHR_shader_subgroup_basic : enable
+
+// Calculate the forces acting on a point i
+// this is the modified (by the exaggeration factor on the attractive force)
+// sum of the attractive forces (Eq 12) and the repulsive forces (Eq 14)
+
+layout(std430, binding = 0) readonly buffer Pos{ vec2 Positions[]; };
+layout(std430, binding = 1) readonly buffer Neigh { uint Neighbours[]; };
+layout(std430, binding = 2) readonly buffer Ind { uint Indices[]; };
+layout(std430, binding = 3) readonly buffer Prob { float Probabilities[]; };
+layout(std430, binding = 4) readonly buffer Fiel { vec4 Fields[]; };
+layout(std430, binding = 5) buffer Grad { vec2 Gradients[]; };
+layout(std430, binding = 6) readonly buffer SumQ { float SQ[]; };
+layout(std430, binding = 7) buffer SumBuf { float KL[]; };
+layout(scalar, binding = 8 ) uniform ForcesPushConstants {
+    uint num_points;
+    float exaggeration;
+} pc;
+
+// Note: In this subgroup/warp optimized implementation KL calculation has been removed
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+shared vec2 sum_positive_red[8]; // should be big enough to cover number of subgroups in workgroup
+
+void main() {
+    uint subgroup_id = gl_SubgroupID;
+    uint num_subgroups = gl_NumSubgroups; // number of subgroups in this workgroup
+    uint subgroupSize = gl_SubgroupSize; 
+    uint point_idx = gl_WorkGroupID.x * num_subgroups + subgroup_id; // point index per subgroup
+    bool activeSubgroup = (point_idx < pc.num_points);
+    float inv_num_points = 0.0;
+    float inv_sum_Q = 1.0 / SQ[0];
+    vec2 point_i = vec2(0.0);
+    uint index = 0;
+    uint size = 0;
+    // Each subgroup processes one point
+    if (activeSubgroup) {
+        inv_num_points = 1.0 / float(pc.num_points);
+        point_i = Positions[point_idx];
+        index = Indices[point_idx * 2 + 0]; // offset to start of nn list - in Neighbours
+        size = Indices[point_idx * 2 + 1]; // length of nn list
+
+        vec2 positive_force = vec2(0.0);
+
+        // Loop over neighbors (parallelized within the subgroup)
+        // Computing positive forces
+        // for all the (size) nearest neighbours
+        for (uint j = gl_SubgroupInvocationID; j < size; j+=subgroupSize) {
+            vec2 point_j = Positions[Neighbours[index + j]];
+            // The high dimensional probabilities provided are symmetrized 
+            // but not normalized
+            float norm_prob = Probabilities[index + j] * inv_num_points;
+            // Calculate 2D distance between the two points
+            vec2 dist = point_i - point_j;
+            // Similarity measure of the two embedding points - https://arxiv.org/pdf/1805.10817 Eq 5
+            // Not normalized
+            float inv_v = dot(dist, dist) + 1.0;
+            float v = 1.0 / inv_v;
+            // Calculate the attractive force  - https://arxiv.org/pdf/1805.10817 Eq 12
+            positive_force = fma(vec2(norm_prob * v), dist, positive_force);
+        }
+
+        // Subgroup reduction for this point
+        float sum_positive_x = subgroupAdd(positive_force.x);
+        float sum_positive_y = subgroupAdd(positive_force.y);
+
+        // One thread per subgroup writes the result
+        if (subgroupElect()) {
+            sum_positive_red[subgroup_id] = vec2(sum_positive_x, sum_positive_y);
+        }
+    }
+
+    barrier();
+
+    // One thread per subgroup writes the final result
+    if (activeSubgroup && subgroupElect()) {
+        vec2 sum_positive = sum_positive_red[subgroup_id];
+        vec2 sum_negative = Fields[point_idx].yz * inv_sum_Q;
+        Gradients[point_idx] = 4 * fma(vec2(pc.exaggeration), sum_positive, -sum_negative);
+    }
+}

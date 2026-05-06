@@ -1,0 +1,1861 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4bd75fc..99b42af 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -224,15 +224,15 @@ endif()
+ 
+ # pybind11
+ if(KOMPUTE_OPT_BUILD_PYTHON)
+-    if(KOMPUTE_OPT_USE_BUILT_IN_PYBIND11)
+-        FetchContent_Declare(pybind GIT_REPOSITORY https://github.com/pybind/pybind11.git
+-            GIT_TAG v2.9.2
+-            GIT_SHALLOW 1) # Source: https://github.com/pybind/pybind11/releases
+-        FetchContent_MakeAvailable(pybind)
++    if(KOMPUTE_OPT_USE_BUILT_IN_PYBIND11)   
++            FetchContent_Declare(pybind11 GIT_REPOSITORY https://github.com/pybind/pybind11.git
++                    GIT_TAG v2.9.2
++                    GIT_SHALLOW 1
++                    OVERRIDE_FIND_PACKAGE) # Source: https://github.com/pybind/pybind11/releases
++            FetchContent_MakeAvailable(pybind11)
+     else()
+-        find_package(pybind11 REQUIRED)
++            find_package(pybind11 REQUIRED)
+     endif()
+-
+     find_package(PythonLibs REQUIRED)
+ endif()
+ 
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 1ad0965..2d892d0 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -95,6 +95,9 @@ if(NOT KOMPUTE_OPT_ANDROID_BUILD AND KOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER)
+     target_link_libraries(kompute PUBLIC Vulkan-Headers)
+ endif()
+ 
++target_compile_definitions(kompute PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
++
++
+ # ####################################################
+ # Misc
+ # ####################################################
+diff --git a/src/include/kompute/Algorithm.hpp b/src/include/kompute/Algorithm.hpp
+index c459bab..d1823a9 100644
+--- a/src/include/kompute/Algorithm.hpp
++++ b/src/include/kompute/Algorithm.hpp
+@@ -38,6 +38,8 @@ class Algorithm
+      * when initializing the pipeline, which set the size of the push constants
+      * - these can be modified but all new values must have the same data type
+      * and length as otherwise it will result in errors.
++     *  @param required_subgroup_size (optional) The required subgroup size to use
++     * when creating the pipeline. If 0 there is no rquuired size.
+      */
+     template<typename S = float, typename P = float>
+     Algorithm(std::shared_ptr<vk::Device> device,
+@@ -45,7 +47,8 @@ class Algorithm
+               const std::vector<uint32_t>& spirv = {},
+               const Workgroup& workgroup = {},
+               const std::vector<S>& specializationConstants = {},
+-              const std::vector<P>& pushConstants = {}) noexcept
++              const std::vector<P>& pushConstants = {},
++              uint32_t required_subgroup_size=0 ) noexcept
+     {
+         KP_LOG_DEBUG("Kompute Algorithm Constructor with device");
+ 
+@@ -61,7 +64,8 @@ class Algorithm
+                           spirv,
+                           workgroup,
+                           specializationConstants,
+-                          pushConstants);
++                          pushConstants,
++                          required_subgroup_size);
+         } else {
+             KP_LOG_INFO(
+               "Kompute Algorithm constructor with empty mem objects and or "
+@@ -84,13 +88,16 @@ class Algorithm
+      * initializing the pipeline, which set the size of the push constants -
+      * these can be modified but all new values must have the same vector size
+      * as this initial value.
++     *  @param required_subgroup_size (optional) The required subgroup size to use
++     * when creating the pipeline. If 0 there is no required size.
+      */
+     template<typename S = float, typename P = float>
+     void rebuild(const std::vector<std::shared_ptr<Memory>>& memObjects,
+                  const std::vector<uint32_t>& spirv,
+                  const Workgroup& workgroup = {},
+                  const std::vector<S>& specializationConstants = {},
+-                 const std::vector<P>& pushConstants = {})
++                 const std::vector<P>& pushConstants = {},
++                 uint32_t required_subgroup_size=0 )
+     {
+         KP_LOG_DEBUG("Kompute Algorithm rebuild started");
+ 
+@@ -138,7 +145,7 @@ class Algorithm
+ 
+         this->createParameters();
+         this->createShaderModule();
+-        this->createPipeline();
++        this->createPipeline(required_subgroup_size);
+     }
+ 
+     /**
+@@ -291,6 +298,11 @@ class Algorithm
+ 
+     void destroy();
+ 
++    /**
++     * Gets descriptor set used by the algorithm.
++     */
++    std::shared_ptr<vk::DescriptorSet> getDescriptorSet() { return this->mDescriptorSet; }
++
+   private:
+     // -------------- NEVER OWNED RESOURCES
+     std::shared_ptr<vk::Device> mDevice;
+@@ -324,7 +336,7 @@ class Algorithm
+ 
+     // Create util functions
+     void createShaderModule();
+-    void createPipeline();
++    void createPipeline(uint32_t required_subgroup_size = 0);
+ 
+     // Parameters
+     void createParameters();
+diff --git a/src/Algorithm.cpp b/src/Algorithm.cpp
+index af12e09..ed724f0 100644
+--- a/src/Algorithm.cpp
++++ b/src/Algorithm.cpp
+@@ -1,5 +1,6 @@
+ // SPDX-License-Identifier: Apache-2.0
+ #include <fstream>
++#include <iostream>
+ 
+ #include "kompute/Algorithm.hpp"
+ #include "kompute/Image.hpp"
+@@ -128,17 +129,29 @@ Algorithm::destroy()
+ void
+ Algorithm::createParameters()
+ {
+-    uint32_t numImages = 0;
+-    uint32_t numTensors = 0;
++  uint32_t numImages = 0;
++  uint32_t numTensors = 0;
++  uint32_t numUboTensors = 0;
++  uint32_t numSampledImages = 0;
+ 
+     KP_LOG_DEBUG("Kompute Algorithm createParameters started");
+ 
+     for (const std::shared_ptr<Memory>& mem : this->mMemObjects) {
+-        if (mem->type() == Memory::Type::eImage) {
+-            numImages++;
++      if (mem->type() == Memory::Type::eImage) {
++        if (mem->getDescriptorType() == vk::DescriptorType::eCombinedImageSampler) {
++          numSampledImages++;
+         } else {
+-            numTensors++;
++          numImages++;
+         }
++      }
++      else {
++        auto tensor = std::dynamic_pointer_cast<Tensor>(mem);
++        if (tensor->getDescriptorType() == vk::DescriptorType::eUniformBuffer) {
++          numUboTensors++;
++        } else {
++          numTensors++;
++        }
++      }
+     }
+ 
+     std::vector<vk::DescriptorPoolSize> descriptorPoolSizes;
+@@ -147,6 +160,13 @@ Algorithm::createParameters()
+         descriptorPoolSizes.push_back(vk::DescriptorPoolSize(
+           vk::DescriptorType::eStorageBuffer,
+           static_cast<uint32_t>(numTensors) // Descriptor count
++        ));
++    }
++
++    if (numUboTensors > 0) {
++        descriptorPoolSizes.push_back(vk::DescriptorPoolSize(
++          vk::DescriptorType::eUniformBuffer,
++          static_cast<uint32_t>(numUboTensors) // Descriptor count
+           ));
+     }
+ 
+@@ -157,6 +177,13 @@ Algorithm::createParameters()
+           ));
+     };
+ 
++    if (numSampledImages > 0) {
++        descriptorPoolSizes.push_back(vk::DescriptorPoolSize(
++          vk::DescriptorType::eCombinedImageSampler,
++          static_cast<uint32_t>(numSampledImages) // Descriptor count
++        ));
++    };
++
+     vk::DescriptorPoolCreateInfo descriptorPoolInfo(
+       vk::DescriptorPoolCreateFlags(),
+       1, // Max sets
+@@ -210,7 +237,21 @@ Algorithm::createParameters()
+                                                        i);
+ 
+         computeWriteDescriptorSets.push_back(descriptorSet);
+-
++        // Debug output of descriptor sets
++        /*std::cout << "DescriptorSet size: " << computeWriteDescriptorSets.size() << "\n";
++
++        for (auto &dw : computeWriteDescriptorSets) {
++            std::cout << "Binding: " << dw.dstBinding << " type: " << uint32_t(dw.descriptorType)
++                      << " count: " << dw.descriptorCount << "\n";
++            if (dw.pImageInfo) {
++                for (uint32_t k=0;k<dw.descriptorCount;++k) {
++                    std::cout << "  imageView: " << (void*)dw.pImageInfo[k].imageView
++                              << " sampler: " << (void*)dw.pImageInfo[k].sampler
++                              << " layout: " << (int) dw.pImageInfo[k].imageLayout << "\n";
++                }
++            }
++        }*/
++        // End debug output
+         this->mDevice->updateDescriptorSets(computeWriteDescriptorSets,
+                                             nullptr);
+     }
+@@ -240,7 +281,7 @@ Algorithm::createShaderModule()
+ }
+ 
+ void
+-Algorithm::createPipeline()
++Algorithm::createPipeline(uint32_t required_subgroup_size)
+ {
+     KP_LOG_DEBUG("Kompute Algorithm calling create Pipeline");
+ 
+@@ -293,6 +334,12 @@ Algorithm::createPipeline()
+       "main",
+       &specializationInfo);
+ 
++    vk::PipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroupSizeCreateInfo;
++    if (required_subgroup_size > 0) {
++        subgroupSizeCreateInfo.requiredSubgroupSize = required_subgroup_size;
++        shaderStage.pNext = &subgroupSizeCreateInfo;
++    }
++
+     vk::ComputePipelineCreateInfo pipelineInfo(vk::PipelineCreateFlags(),
+                                                shaderStage,
+                                                *this->mPipelineLayout,
+diff --git a/src/include/kompute/Image.hpp b/src/include/kompute/Image.hpp
+index d254149..a1e0c3b 100644
+--- a/src/include/kompute/Image.hpp
++++ b/src/include/kompute/Image.hpp
+@@ -301,6 +301,11 @@ class Image : public Memory
+ 
+     std::shared_ptr<vk::Image> getPrimaryImage();
+     vk::ImageLayout getPrimaryImageLayout();
++    void setPrimaryImageLayout(vk::ImageLayout layout) {
++      mPrimaryImageLayout = layout;
++    };
++
++    void setSampler(vk::Sampler sampler);
+ 
+     /***
+      * Retreive the number of channels in the image
+@@ -311,6 +316,23 @@ class Image : public Memory
+ 
+     Type type() override { return Type::eImage; }
+ 
++    bool getSamplingMode() { return mSamplingMode; }
++    void initAsSampledImage(
++      std::shared_ptr<vk::Image> primaryImage,
++      vk::ImageLayout primaryImageLayout
++    ) {
++      mSamplingMode = true;
++
++        // Create image view
++      this->mImageView = nullptr;
++      this->mPrimaryImage = primaryImage;
++      this->mPrimaryImageLayout = primaryImageLayout;
++      mFreePrimaryImage = false;
++      mFreeStagingImage = false;
++      this->mDescriptorType = vk::DescriptorType::eCombinedImageSampler;
++      this->mDescriptorImageInfo = this->constructDescriptorImageInfo();
++    }
++
+   protected:
+     // -------------- ALWAYS OWNED RESOURCES
+     uint32_t mNumChannels;
+@@ -319,14 +341,16 @@ class Image : public Memory
+     vk::ImageLayout mStagingImageLayout = vk::ImageLayout::eUndefined;
+     std::shared_ptr<vk::ImageView> mImageView = nullptr;
+     vk::ImageTiling mTiling = vk::ImageTiling::eOptimal;
+-
+-  private:
++    vk::Sampler mSampler;
++    bool mSamplingMode = false;
+     // -------------- OPTIONALLY OWNED RESOURCES
+     std::shared_ptr<vk::Image> mPrimaryImage;
+     bool mFreePrimaryImage = false;
+     std::shared_ptr<vk::Image> mStagingImage;
+     bool mFreeStagingImage = false;
+ 
++  private:
++
+     void allocateMemoryCreateGPUResources(); // Creates the vulkan image
+     void createImage(std::shared_ptr<vk::Image> image,
+                      vk::ImageUsageFlags imageUsageFlags,
+@@ -515,6 +539,27 @@ class ImageT : public Image
+     std::vector<T> vector() { return Memory::vector<T>(); }
+ 
+     T& operator[](int index) { return *(Memory::data<T>() + index); }
++
++    std::shared_ptr<ImageT> createSampledView() {
++        /*if (!mSamplingMode) {
++            throw std::runtime_error(
++              "Cannot create sampled view from an image that is not in "
++              "sampling mode. Please enable sampling mode first.");
++        }*/
++
++        auto sampledImage = std::make_shared<ImageT>(
++          this->mPhysicalDevice,
++          this->mDevice,
++          this->mX,
++          this->mY,
++          this->mNumChannels);
++
++        sampledImage->initAsSampledImage(
++          this->mPrimaryImage,
++          this->mPrimaryImageLayout
++        );
++        return sampledImage;
++    }
+ };
+ 
+ } // End namespace kp
+diff --git a/src/Image.cpp b/src/Image.cpp
+index a9344c3..6681d7b 100644
+--- a/src/Image.cpp
++++ b/src/Image.cpp
+@@ -4,12 +4,11 @@
+ 
+ namespace kp {
+ 
+-void
+-Image::init(void* data,
+-            size_t dataSize,
+-            uint32_t numChannels,
+-            vk::ImageTiling tiling)
+-{
++  void
++    Image::init(void* data,
++      size_t dataSize,
++      uint32_t numChannels,
++      vk::ImageTiling tiling) {
+     KP_LOG_DEBUG(
+       "Kompute Image constructor data width: {}, height: {}, and type: {}",
+       this->getX(),
+@@ -17,29 +16,29 @@ Image::init(void* data,
+       Memory::toString(this->memoryType()));
+ 
+     if (numChannels == 0) {
+-        throw std::runtime_error(
+-          "Kompute Image attempted to create an image with no channels");
++      throw std::runtime_error(
++        "Kompute Image attempted to create an image with no channels");
+     }
+ 
+     if (data != nullptr &&
+-        dataSize < this->getX() * this->getY() * numChannels) {
+-        throw std::runtime_error(
+-          "Kompute Image data is smaller than the requested image size");
++      dataSize < this->getX() * this->getY() * numChannels) {
++      throw std::runtime_error(
++        "Kompute Image data is smaller than the requested image size");
+     }
+ 
+     if (numChannels > 4 || numChannels == 3) {
+-        // We don't support 3-channel images because they are not supported by
+-        // Metal or Mesa (llvmpipe) See comment here:
+-        // https://github.com/KomputeProject/kompute/pull/388#discussion_r1720959531
+-        throw std::runtime_error(
+-          "Kompute Images can only have up to 1, 2 or 4 channels");
++      // We don't support 3-channel images because they are not supported by
++      // Metal or Mesa (llvmpipe) See comment here:
++      // https://github.com/KomputeProject/kompute/pull/388#discussion_r1720959531
++      throw std::runtime_error(
++        "Kompute Images can only have up to 1, 2 or 4 channels");
+     }
+ 
+     if (tiling == vk::ImageTiling::eOptimal &&
+-        (this->memoryType() != Memory::MemoryTypes::eDevice &&
+-         this->memoryType() != Memory::MemoryTypes::eStorage)) {
+-        throw std::runtime_error("Kompute Image with optimal tiling is only "
+-                                 "supported for eDevice and eStorage images");
++      (this->memoryType() != Memory::MemoryTypes::eDevice &&
++      this->memoryType() != Memory::MemoryTypes::eStorage)) {
++      throw std::runtime_error("Kompute Image with optimal tiling is only "
++        "supported for eDevice and eStorage images");
+     }
+ 
+     this->mNumChannels = numChannels;
+@@ -49,54 +48,50 @@ Image::init(void* data,
+ 
+     this->reserve();
+     this->updateRawData(data);
+-}
++  }
+ 
+-Image::~Image()
+-{
++  Image::~Image() {
+     KP_LOG_DEBUG("Kompute Image destructor started. Type: {}",
+-                 Memory::toString(this->memoryType()));
++      Memory::toString(this->memoryType()));
+ 
+     if (this->mDevice) {
+-        this->destroy();
++      this->destroy();
+     }
+ 
+     KP_LOG_DEBUG("Kompute Image destructor success");
+-}
++  }
+ 
+-void
+-Image::reserve()
+-{
++  void
++    Image::reserve() {
+     KP_LOG_DEBUG("Reserving {} bytes for memory",
+-                 this->mSize * this->mDataTypeMemorySize);
++      this->mSize * this->mDataTypeMemorySize);
+ 
+     if (this->mPrimaryImage || this->mPrimaryMemory) {
+-        KP_LOG_DEBUG(
+-          "Kompute Image destroying existing resources before rebuild");
+-        this->destroy();
++      KP_LOG_DEBUG(
++        "Kompute Image destroying existing resources before rebuild");
++      this->destroy();
+     }
+ 
+     this->allocateMemoryCreateGPUResources();
+-}
++  }
+ 
+-bool
+-Image::isInit()
+-{
++  bool
++    Image::isInit() {
+     return this->mDevice && this->mPrimaryImage && this->mPrimaryMemory;
+-}
++  }
+ 
+-void
+-Image::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+-                      std::shared_ptr<Image> copyFromImage)
+-{
++  void
++    Image::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
++      std::shared_ptr<Image> copyFromImage) {
+     vk::ImageSubresourceLayers layer = {};
+     layer.aspectMask = vk::ImageAspectFlagBits::eColor;
+     layer.layerCount = 1;
+     vk::Offset3D offset = { 0, 0, 0 };
+ 
+     if (this->getX() != copyFromImage->getX() ||
+-        this->getY() != copyFromImage->getY()) {
+-        throw std::runtime_error(
+-          "Kompute Image recordCopyFrom image sizes do not match");
++      this->getY() != copyFromImage->getY()) {
++      throw std::runtime_error(
++        "Kompute Image recordCopyFrom image sizes do not match");
+     }
+ 
+     vk::Extent3D size = { this->getX(), this->getY(), 1 };
+@@ -108,31 +103,30 @@ Image::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+ 
+     copyFromImage->recordPrimaryImageBarrier(
+       commandBuffer,
+-      vk::AccessFlagBits::eMemoryRead,
+-      vk::AccessFlagBits::eMemoryWrite,
++      vk::AccessFlagBits::eTransferWrite,
++      vk::AccessFlagBits::eTransferRead,
+       vk::PipelineStageFlagBits::eTransfer,
+       vk::PipelineStageFlagBits::eTransfer,
+       vk::ImageLayout::eTransferSrcOptimal);
+ 
+     this->recordPrimaryImageBarrier(commandBuffer,
+-                                    vk::AccessFlagBits::eMemoryRead,
+-                                    vk::AccessFlagBits::eMemoryWrite,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::ImageLayout::eTransferDstOptimal);
++      vk::AccessFlagBits::eTransferRead,
++      vk::AccessFlagBits::eTransferWrite,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::ImageLayout::eTransferDstOptimal);
+ 
+     this->recordCopyImage(commandBuffer,
+-                          copyFromImage->mPrimaryImage,
+-                          this->mPrimaryImage,
+-                          copyFromImage->mPrimaryImageLayout,
+-                          this->mPrimaryImageLayout,
+-                          copyRegion);
+-}
+-
+-void
+-Image::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+-                      std::shared_ptr<Tensor> copyFromTensor)
+-{
++      copyFromImage->mPrimaryImage,
++      this->mPrimaryImage,
++      copyFromImage->mPrimaryImageLayout,
++      this->mPrimaryImageLayout,
++      copyRegion);
++  }
++
++  void
++    Image::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
++      std::shared_ptr<Tensor> copyFromTensor) {
+     vk::ImageSubresourceLayers layer = {};
+     layer.aspectMask = vk::ImageAspectFlagBits::eColor;
+     layer.layerCount = 1;
+@@ -146,22 +140,21 @@ Image::recordCopyFrom(const vk::CommandBuffer& commandBuffer,
+       "Kompute Image recordCopyFrom size {},{}.", size.width, size.height);
+ 
+     this->recordPrimaryImageBarrier(commandBuffer,
+-                                    vk::AccessFlagBits::eMemoryRead,
+-                                    vk::AccessFlagBits::eMemoryWrite,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::ImageLayout::eTransferDstOptimal);
++      vk::AccessFlagBits::eMemoryRead,
++      vk::AccessFlagBits::eMemoryWrite,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::ImageLayout::eTransferDstOptimal);
+ 
+     this->recordCopyImageFromTensor(commandBuffer,
+-                                    copyFromTensor->getPrimaryBuffer(),
+-                                    this->mPrimaryImage,
+-                                    this->mPrimaryImageLayout,
+-                                    copyRegion);
+-}
+-
+-void
+-Image::recordCopyFromStagingToDevice(const vk::CommandBuffer& commandBuffer)
+-{
++      copyFromTensor->getPrimaryBuffer(),
++      this->mPrimaryImage,
++      this->mPrimaryImageLayout,
++      copyRegion);
++  }
++
++  void
++    Image::recordCopyFromStagingToDevice(const vk::CommandBuffer& commandBuffer) {
+     vk::ImageSubresourceLayers layer = {};
+     layer.aspectMask = vk::ImageAspectFlagBits::eColor;
+     layer.layerCount = 1;
+@@ -174,30 +167,29 @@ Image::recordCopyFromStagingToDevice(const vk::CommandBuffer& commandBuffer)
+     KP_LOG_DEBUG("Kompute Image copying size {},{}.", size.width, size.height);
+ 
+     this->recordStagingImageBarrier(commandBuffer,
+-                                    vk::AccessFlagBits::eMemoryRead,
+-                                    vk::AccessFlagBits::eMemoryWrite,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::ImageLayout::eTransferSrcOptimal);
++      vk::AccessFlagBits::eTransferWrite,
++      vk::AccessFlagBits::eTransferRead,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::ImageLayout::eTransferSrcOptimal);
+ 
+     this->recordPrimaryImageBarrier(commandBuffer,
+-                                    vk::AccessFlagBits::eMemoryRead,
+-                                    vk::AccessFlagBits::eMemoryWrite,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::ImageLayout::eTransferDstOptimal);
++      vk::AccessFlagBits::eTransferRead,
++      vk::AccessFlagBits::eTransferWrite,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::ImageLayout::eTransferDstOptimal);
+ 
+     this->recordCopyImage(commandBuffer,
+-                          this->mStagingImage,
+-                          this->mPrimaryImage,
+-                          this->mStagingImageLayout,
+-                          this->mPrimaryImageLayout,
+-                          copyRegion);
+-}
+-
+-void
+-Image::recordCopyFromDeviceToStaging(const vk::CommandBuffer& commandBuffer)
+-{
++      this->mStagingImage,
++      this->mPrimaryImage,
++      this->mStagingImageLayout,
++      this->mPrimaryImageLayout,
++      copyRegion);
++  }
++
++  void
++    Image::recordCopyFromDeviceToStaging(const vk::CommandBuffer& commandBuffer) {
+     vk::ImageSubresourceLayers layer;
+     layer.aspectMask = vk::ImageAspectFlagBits::eColor;
+     layer.layerCount = 1;
+@@ -210,57 +202,54 @@ Image::recordCopyFromDeviceToStaging(const vk::CommandBuffer& commandBuffer)
+     KP_LOG_DEBUG("Kompute Image copying size {},{}.", size.width, size.height);
+ 
+     this->recordPrimaryImageBarrier(commandBuffer,
+-                                    vk::AccessFlagBits::eMemoryRead,
+-                                    vk::AccessFlagBits::eMemoryWrite,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::ImageLayout::eTransferSrcOptimal);
++      vk::AccessFlagBits::eTransferWrite,
++      vk::AccessFlagBits::eTransferRead,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::ImageLayout::eTransferSrcOptimal);
+ 
+     this->recordStagingImageBarrier(commandBuffer,
+-                                    vk::AccessFlagBits::eMemoryRead,
+-                                    vk::AccessFlagBits::eMemoryWrite,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::PipelineStageFlagBits::eTransfer,
+-                                    vk::ImageLayout::eTransferDstOptimal);
++      vk::AccessFlagBits::eTransferRead,
++      vk::AccessFlagBits::eTransferWrite,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::PipelineStageFlagBits::eTransfer,
++      vk::ImageLayout::eTransferDstOptimal);
+ 
+     this->recordCopyImage(commandBuffer,
+-                          this->mPrimaryImage,
+-                          this->mStagingImage,
+-                          this->mPrimaryImageLayout,
+-                          this->mStagingImageLayout,
+-                          copyRegion);
+-}
+-
+-void
+-Image::recordCopyImage(const vk::CommandBuffer& commandBuffer,
+-                       std::shared_ptr<vk::Image> srcImage,
+-                       std::shared_ptr<vk::Image> dstImage,
+-                       vk::ImageLayout srcLayout,
+-                       vk::ImageLayout dstLayout,
+-                       vk::ImageCopy copyRegion)
+-{
++      this->mPrimaryImage,
++      this->mStagingImage,
++      this->mPrimaryImageLayout,
++      this->mStagingImageLayout,
++      copyRegion);
++  }
++
++  void
++    Image::recordCopyImage(const vk::CommandBuffer& commandBuffer,
++      std::shared_ptr<vk::Image> srcImage,
++      std::shared_ptr<vk::Image> dstImage,
++      vk::ImageLayout srcLayout,
++      vk::ImageLayout dstLayout,
++      vk::ImageCopy copyRegion) {
+     commandBuffer.copyImage(
+       *srcImage, srcLayout, *dstImage, dstLayout, 1, &copyRegion);
+-}
+-
+-void
+-Image::recordCopyImageFromTensor(const vk::CommandBuffer& commandBuffer,
+-                                 std::shared_ptr<vk::Buffer> srcBuffer,
+-                                 std::shared_ptr<vk::Image> dstImage,
+-                                 vk::ImageLayout dstLayout,
+-                                 vk::BufferImageCopy copyRegion)
+-{
++  }
++
++  void
++    Image::recordCopyImageFromTensor(const vk::CommandBuffer& commandBuffer,
++      std::shared_ptr<vk::Buffer> srcBuffer,
++      std::shared_ptr<vk::Image> dstImage,
++      vk::ImageLayout dstLayout,
++      vk::BufferImageCopy copyRegion) {
+     commandBuffer.copyBufferToImage(
+       *srcBuffer, *dstImage, dstLayout, 1, &copyRegion);
+-}
+-
+-void
+-Image::recordPrimaryMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+-                                  vk::AccessFlagBits srcAccessMask,
+-                                  vk::AccessFlagBits dstAccessMask,
+-                                  vk::PipelineStageFlagBits srcStageMask,
+-                                  vk::PipelineStageFlagBits dstStageMask)
+-{
++  }
++
++  void
++    Image::recordPrimaryMemoryBarrier(const vk::CommandBuffer& commandBuffer,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask) {
+     vk::ImageLayout dstImageLayout;
+ 
+     // Ideally the image would be set to eGeneral as soon as it was created
+@@ -268,25 +257,24 @@ Image::recordPrimaryMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+     // creation time, so use the first memory barrier we see to also
+     // transition the image layout.
+     if (this->mPrimaryImageLayout == vk::ImageLayout::eUndefined)
+-        dstImageLayout = vk::ImageLayout::eGeneral;
++      dstImageLayout = vk::ImageLayout::eGeneral;
+     else
+-        dstImageLayout = this->mPrimaryImageLayout;
++      dstImageLayout = this->mPrimaryImageLayout;
+ 
+     this->recordPrimaryImageBarrier(commandBuffer,
+-                                    srcAccessMask,
+-                                    dstAccessMask,
+-                                    srcStageMask,
+-                                    dstStageMask,
+-                                    dstImageLayout);
+-}
+-
+-void
+-Image::recordStagingMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+-                                  vk::AccessFlagBits srcAccessMask,
+-                                  vk::AccessFlagBits dstAccessMask,
+-                                  vk::PipelineStageFlagBits srcStageMask,
+-                                  vk::PipelineStageFlagBits dstStageMask)
+-{
++      srcAccessMask,
++      dstAccessMask,
++      srcStageMask,
++      dstStageMask,
++      dstImageLayout);
++  }
++
++  void
++    Image::recordStagingMemoryBarrier(const vk::CommandBuffer& commandBuffer,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask) {
+     vk::ImageLayout dstImageLayout;
+ 
+     // Ideally the image would be set to eGeneral as soon as it was created
+@@ -294,72 +282,69 @@ Image::recordStagingMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+     // creation time, so use the first memory barrier we see to also
+     // transition the image layout.
+     if (this->mStagingImageLayout == vk::ImageLayout::eUndefined)
+-        dstImageLayout = vk::ImageLayout::eGeneral;
++      dstImageLayout = vk::ImageLayout::eGeneral;
+     else
+-        dstImageLayout = this->mStagingImageLayout;
++      dstImageLayout = this->mStagingImageLayout;
+ 
+     this->recordStagingImageBarrier(commandBuffer,
+-                                    srcAccessMask,
+-                                    dstAccessMask,
+-                                    srcStageMask,
+-                                    dstStageMask,
+-                                    dstImageLayout);
+-}
+-
+-void
+-Image::recordPrimaryImageBarrier(const vk::CommandBuffer& commandBuffer,
+-                                 vk::AccessFlagBits srcAccessMask,
+-                                 vk::AccessFlagBits dstAccessMask,
+-                                 vk::PipelineStageFlagBits srcStageMask,
+-                                 vk::PipelineStageFlagBits dstStageMask,
+-                                 vk::ImageLayout dstLayout)
+-{
++      srcAccessMask,
++      dstAccessMask,
++      srcStageMask,
++      dstStageMask,
++      dstImageLayout);
++  }
++
++  void
++    Image::recordPrimaryImageBarrier(const vk::CommandBuffer& commandBuffer,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask,
++      vk::ImageLayout dstLayout) {
+     KP_LOG_DEBUG("Kompute Image recording PRIMARY image memory barrier");
+ 
+     this->recordImageMemoryBarrier(commandBuffer,
+-                                   *this->mPrimaryImage,
+-                                   srcAccessMask,
+-                                   dstAccessMask,
+-                                   srcStageMask,
+-                                   dstStageMask,
+-                                   this->mPrimaryImageLayout,
+-                                   dstLayout);
++      *this->mPrimaryImage,
++      srcAccessMask,
++      dstAccessMask,
++      srcStageMask,
++      dstStageMask,
++      this->mPrimaryImageLayout,
++      dstLayout);
+ 
+     this->mPrimaryImageLayout = dstLayout;
+-}
+-
+-void
+-Image::recordStagingImageBarrier(const vk::CommandBuffer& commandBuffer,
+-                                 vk::AccessFlagBits srcAccessMask,
+-                                 vk::AccessFlagBits dstAccessMask,
+-                                 vk::PipelineStageFlagBits srcStageMask,
+-                                 vk::PipelineStageFlagBits dstStageMask,
+-                                 vk::ImageLayout dstLayout)
+-{
++  }
++
++  void
++    Image::recordStagingImageBarrier(const vk::CommandBuffer& commandBuffer,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask,
++      vk::ImageLayout dstLayout) {
+     KP_LOG_DEBUG("Kompute Image recording STAGING image memory barrier");
+ 
+     this->recordImageMemoryBarrier(commandBuffer,
+-                                   *this->mStagingImage,
+-                                   srcAccessMask,
+-                                   dstAccessMask,
+-                                   srcStageMask,
+-                                   dstStageMask,
+-                                   this->mStagingImageLayout,
+-                                   dstLayout);
++      *this->mStagingImage,
++      srcAccessMask,
++      dstAccessMask,
++      srcStageMask,
++      dstStageMask,
++      this->mStagingImageLayout,
++      dstLayout);
+ 
+     this->mStagingImageLayout = dstLayout;
+-}
+-
+-void
+-Image::recordImageMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+-                                const vk::Image& image,
+-                                vk::AccessFlagBits srcAccessMask,
+-                                vk::AccessFlagBits dstAccessMask,
+-                                vk::PipelineStageFlagBits srcStageMask,
+-                                vk::PipelineStageFlagBits dstStageMask,
+-                                vk::ImageLayout srcLayout,
+-                                vk::ImageLayout dstLayout)
+-{
++  }
++
++  void
++    Image::recordImageMemoryBarrier(const vk::CommandBuffer& commandBuffer,
++      const vk::Image& image,
++      vk::AccessFlagBits srcAccessMask,
++      vk::AccessFlagBits dstAccessMask,
++      vk::PipelineStageFlagBits srcStageMask,
++      vk::PipelineStageFlagBits dstStageMask,
++      vk::ImageLayout srcLayout,
++      vk::ImageLayout dstLayout) {
+     KP_LOG_DEBUG("Kompute Image recording image memory barrier");
+ 
+     vk::ImageMemoryBarrier imageMemoryBarrier;
+@@ -381,18 +366,17 @@ Image::recordImageMemoryBarrier(const vk::CommandBuffer& commandBuffer,
+     imageMemoryBarrier.newLayout = dstLayout;
+ 
+     commandBuffer.pipelineBarrier(srcStageMask,
+-                                  dstStageMask,
+-                                  vk::DependencyFlags(),
+-                                  nullptr,
+-                                  nullptr,
+-                                  imageMemoryBarrier);
+-}
+-
+-vk::DescriptorImageInfo
+-Image::constructDescriptorImageInfo()
+-{
++      dstStageMask,
++      vk::DependencyFlags(),
++      nullptr,
++      nullptr,
++      imageMemoryBarrier);
++  }
++
++  vk::DescriptorImageInfo
++    Image::constructDescriptorImageInfo() {
+     KP_LOG_DEBUG("Kompute Image construct descriptor image info size {}",
+-                 this->memorySize());
++      this->memorySize());
+ 
+     vk::ImageViewCreateInfo viewInfo;
+     viewInfo.image = *this->mPrimaryImage;
+@@ -408,98 +392,101 @@ Image::constructDescriptorImageInfo()
+ 
+     // This image object owns the image view
+     if (!this->mImageView) {
+-        mImageView = std::make_shared<vk::ImageView>(
+-          this->mDevice->createImageView(viewInfo));
++      mImageView = std::make_shared<vk::ImageView>(
++        this->mDevice->createImageView(viewInfo));
+     }
+ 
+     vk::DescriptorImageInfo descriptorInfo;
+ 
+     descriptorInfo.imageView = *(mImageView.get());
++    if (mSamplingMode) {
++      // initially nullptr, set when sampler is assigned
++      //assert(bool(mSampler));
++      descriptorInfo.sampler = mSampler;
++    }
+     descriptorInfo.imageLayout = this->mPrimaryImageLayout;
+     return descriptorInfo;
+-}
++  }
+ 
+-vk::WriteDescriptorSet
+-Image::constructDescriptorSet(vk::DescriptorSet descriptorSet, uint32_t binding)
+-{
++  vk::WriteDescriptorSet
++    Image::constructDescriptorSet(vk::DescriptorSet descriptorSet, uint32_t binding) {
+     KP_LOG_DEBUG("Kompute Image construct descriptor set for binding {}",
+-                 binding);
++      binding);
+ 
+     mDescriptorImageInfo = this->constructDescriptorImageInfo();
+-
++    vk::DescriptorType descriptorType = mSamplingMode ?
++      vk::DescriptorType::eCombinedImageSampler :
++      vk::DescriptorType::eStorageImage;
++    
+     return vk::WriteDescriptorSet(descriptorSet,
+-                                  binding, // Destination binding
+-                                  0,       // Destination array element
+-                                  1,       // Descriptor count
+-                                  vk::DescriptorType::eStorageImage,
+-                                  &mDescriptorImageInfo,
+-                                  nullptr); // Descriptor buffer info
+-}
+-
+-vk::ImageUsageFlags
+-Image::getPrimaryImageUsageFlags()
+-{
++      binding, // Destination binding
++      0,       // Destination array element
++      1,       // Descriptor count
++      descriptorType,
++      &mDescriptorImageInfo,
++      nullptr); // Descriptor buffer info
++  }
++
++  vk::ImageUsageFlags
++    Image::getPrimaryImageUsageFlags() {
+     switch (this->mMemoryType) {
+-        case MemoryTypes::eDevice:
+-        case MemoryTypes::eHost:
+-        case MemoryTypes::eDeviceAndHost:
+-            return vk::ImageUsageFlagBits::eStorage |
+-                   vk::ImageUsageFlagBits::eTransferSrc |
+-                   vk::ImageUsageFlagBits::eTransferDst;
+-            break;
+-        case MemoryTypes::eStorage:
+-            return vk::ImageUsageFlagBits::eStorage |
+-                   // You can still copy images to/from storage memory
+-                   // so set the transfer usage flags here.
+-                   vk::ImageUsageFlagBits::eTransferSrc |
+-                   vk::ImageUsageFlagBits::eTransferDst;
+-            break;
+-        default:
+-            throw std::runtime_error("Kompute Image invalid image type");
++    case MemoryTypes::eDevice:
++    case MemoryTypes::eHost:
++    case MemoryTypes::eDeviceAndHost:
++      return vk::ImageUsageFlagBits::eStorage |
++        vk::ImageUsageFlagBits::eSampled |
++        vk::ImageUsageFlagBits::eTransferSrc |
++        vk::ImageUsageFlagBits::eTransferDst;
++      break;
++    case MemoryTypes::eStorage:
++      return vk::ImageUsageFlagBits::eStorage |
++        vk::ImageUsageFlagBits::eSampled |
++        // You can still copy images to/from storage memory
++        // so set the transfer usage flags here.
++        vk::ImageUsageFlagBits::eTransferSrc |
++        vk::ImageUsageFlagBits::eTransferDst;
++      break;
++    default:
++      throw std::runtime_error("Kompute Image invalid image type");
+     }
+-}
++  }
+ 
+-vk::ImageUsageFlags
+-Image::getStagingImageUsageFlags()
+-{
++  vk::ImageUsageFlags
++    Image::getStagingImageUsageFlags() {
+     switch (this->mMemoryType) {
+-        case MemoryTypes::eDevice:
+-            return vk::ImageUsageFlagBits::eTransferSrc |
+-                   vk::ImageUsageFlagBits::eTransferDst;
+-            break;
+-        default:
+-            throw std::runtime_error("Kompute Image invalid image type");
++    case MemoryTypes::eDevice:
++      return vk::ImageUsageFlagBits::eTransferSrc |
++        vk::ImageUsageFlagBits::eTransferDst;
++      break;
++    default:
++      throw std::runtime_error("Kompute Image invalid image type");
+     }
+-}
++  }
+ 
+-std::shared_ptr<vk::Image>
+-Image::getPrimaryImage()
+-{
++  std::shared_ptr<vk::Image>
++    Image::getPrimaryImage() {
+     return this->mPrimaryImage;
+-}
++  }
+ 
+-vk::ImageLayout
+-Image::getPrimaryImageLayout()
+-{
++  vk::ImageLayout
++    Image::getPrimaryImageLayout() {
+     return this->mPrimaryImageLayout;
+-}
++  }
+ 
+-uint32_t
+-Image::getNumChannels()
+-{
++  uint32_t
++    Image::getNumChannels() {
+     return this->mNumChannels;
+-}
++  }
+ 
+-void
+-Image::allocateMemoryCreateGPUResources()
+-{
++  void
++    Image::allocateMemoryCreateGPUResources() {
+     KP_LOG_DEBUG("Kompute Image creating image");
+ 
+     if (!this->mPhysicalDevice) {
+-        throw std::runtime_error("Kompute Image phyisical device is null");
++      throw std::runtime_error("Kompute Image phyisical device is null");
+     }
+     if (!this->mDevice) {
+-        throw std::runtime_error("Kompute Image device is null");
++      throw std::runtime_error("Kompute Image device is null");
+     }
+ 
+     KP_LOG_DEBUG("Kompute Image creating primary image and memory");
+@@ -510,44 +497,43 @@ Image::allocateMemoryCreateGPUResources()
+     this->mFreePrimaryImage = true;
+     this->mPrimaryMemory = std::make_shared<vk::DeviceMemory>();
+     this->allocateBindMemory(this->mPrimaryImage,
+-                             this->mPrimaryMemory,
+-                             this->getPrimaryMemoryPropertyFlags());
++      this->mPrimaryMemory,
++      this->getPrimaryMemoryPropertyFlags());
+     this->mFreePrimaryMemory = true;
+ 
+     if (this->mMemoryType == MemoryTypes::eDevice) {
+-        KP_LOG_DEBUG("Kompute Image creating staging image and memory");
+-
+-        this->mStagingImage = std::make_shared<vk::Image>();
+-        this->createImage(this->mStagingImage,
+-                          this->getStagingImageUsageFlags(),
+-                          vk::ImageTiling::eLinear);
+-        this->mFreeStagingImage = true;
+-        this->mStagingMemory = std::make_shared<vk::DeviceMemory>();
+-        this->allocateBindMemory(this->mStagingImage,
+-                                 this->mStagingMemory,
+-                                 this->getStagingMemoryPropertyFlags());
+-        this->mFreeStagingMemory = true;
++      KP_LOG_DEBUG("Kompute Image creating staging image and memory");
++
++      this->mStagingImage = std::make_shared<vk::Image>();
++      this->createImage(this->mStagingImage,
++        this->getStagingImageUsageFlags(),
++        vk::ImageTiling::eLinear);
++      this->mFreeStagingImage = true;
++      this->mStagingMemory = std::make_shared<vk::DeviceMemory>();
++      this->allocateBindMemory(this->mStagingImage,
++        this->mStagingMemory,
++        this->getStagingMemoryPropertyFlags());
++      this->mFreeStagingMemory = true;
+     }
+ 
+     KP_LOG_DEBUG("Kompute Image image & memory creation successful");
+-}
++  }
+ 
+-void
+-Image::createImage(std::shared_ptr<vk::Image> image,
+-                   vk::ImageUsageFlags imageUsageFlags,
+-                   vk::ImageTiling imageTiling)
+-{
++  void
++    Image::createImage(std::shared_ptr<vk::Image> image,
++      vk::ImageUsageFlags imageUsageFlags,
++      vk::ImageTiling imageTiling) {
+     vk::DeviceSize imageSize = this->memorySize();
+ 
+     if (imageSize < 1) {
+-        throw std::runtime_error(
+-          "Kompute Image attempted to create a zero-sized image");
++      throw std::runtime_error(
++        "Kompute Image attempted to create a zero-sized image");
+     }
+ 
+     KP_LOG_DEBUG("Kompute Image creating image with memory size: {}, and "
+-                 "usage flags: {}",
+-                 imageSize,
+-                 vk::to_string(imageUsageFlags));
++      "usage flags: {}",
++      imageSize,
++      vk::to_string(imageUsageFlags));
+ 
+     // TODO: Explore having concurrent sharing mode (with option)
+     vk::ImageCreateInfo imageInfo;
+@@ -563,13 +549,12 @@ Image::createImage(std::shared_ptr<vk::Image> image,
+     imageInfo.tiling = imageTiling;
+ 
+     this->mDevice->createImage(&imageInfo, nullptr, image.get());
+-}
++  }
+ 
+-void
+-Image::allocateBindMemory(std::shared_ptr<vk::Image> image,
+-                          std::shared_ptr<vk::DeviceMemory> memory,
+-                          vk::MemoryPropertyFlags memoryPropertyFlags)
+-{
++  void
++    Image::allocateBindMemory(std::shared_ptr<vk::Image> image,
++      std::shared_ptr<vk::DeviceMemory> memory,
++      vk::MemoryPropertyFlags memoryPropertyFlags) {
+ 
+     KP_LOG_DEBUG("Kompute Image allocating and binding memory");
+ 
+@@ -582,18 +567,18 @@ Image::allocateBindMemory(std::shared_ptr<vk::Image> image,
+     uint32_t memoryTypeIndex = -1;
+     bool memoryTypeIndexFound = false;
+     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+-        if (memoryRequirements.memoryTypeBits & (1 << i)) {
+-            if (((memoryProperties.memoryTypes[i]).propertyFlags &
+-                 memoryPropertyFlags) == memoryPropertyFlags) {
+-                memoryTypeIndex = i;
+-                memoryTypeIndexFound = true;
+-                break;
+-            }
++      if (memoryRequirements.memoryTypeBits & (1 << i)) {
++        if (((memoryProperties.memoryTypes[i]).propertyFlags &
++          memoryPropertyFlags) == memoryPropertyFlags) {
++          memoryTypeIndex = i;
++          memoryTypeIndexFound = true;
++          break;
+         }
++      }
+     }
+     if (!memoryTypeIndexFound) {
+-        throw std::runtime_error(
+-          "Memory type index for image creation not found");
++      throw std::runtime_error(
++        "Memory type index for image creation not found");
+     }
+ 
+     KP_LOG_DEBUG(
+@@ -603,153 +588,157 @@ Image::allocateBindMemory(std::shared_ptr<vk::Image> image,
+       vk::to_string(memoryPropertyFlags));
+ 
+     vk::MemoryAllocateInfo memoryAllocateInfo(memoryRequirements.size,
+-                                              memoryTypeIndex);
++      memoryTypeIndex);
+ 
+     this->mDevice->allocateMemory(&memoryAllocateInfo, nullptr, memory.get());
+ 
+     this->mDevice->bindImageMemory(*image, *memory, 0);
+-}
++  }
+ 
+-void
+-Image::destroy()
+-{
++  void
++    Image::destroy() {
+     KP_LOG_DEBUG("Kompute Image started destroy()");
+ 
+     if (!this->mDevice) {
+-        KP_LOG_WARN(
+-          "Kompute Image destructor reached with null Device pointer");
+-        return;
++      KP_LOG_WARN(
++        "Kompute Image destructor reached with null Device pointer");
++      return;
+     }
+ 
+     if (this->mFreePrimaryImage) {
+-        if (!this->mPrimaryImage) {
+-            KP_LOG_WARN("Kompose Image expected to destroy primary image "
+-                        "but got null image");
+-        } else {
+-            KP_LOG_DEBUG("Kompose Image destroying primary image");
+-            this->mDevice->destroy(
+-              *this->mPrimaryImage,
+-              (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-            this->mPrimaryImage = nullptr;
+-            this->mFreePrimaryImage = false;
+-        }
++      if (!this->mPrimaryImage) {
++        KP_LOG_WARN("Kompose Image expected to destroy primary image "
++          "but got null image");
++      } else {
++        KP_LOG_DEBUG("Kompose Image destroying primary image");
++        this->mDevice->destroy(
++          *this->mPrimaryImage,
++          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++        this->mPrimaryImage = nullptr;
++        this->mFreePrimaryImage = false;
++      }
+     }
+ 
+     if (this->mFreeStagingImage) {
+-        if (!this->mStagingImage) {
+-            KP_LOG_WARN("Kompose Image expected to destroy staging image "
+-                        "but got null image");
+-        } else {
+-            KP_LOG_DEBUG("Kompose Image destroying staging image");
+-            this->mDevice->destroy(
+-              *this->mStagingImage,
+-              (vk::Optional<const vk::AllocationCallbacks>)nullptr);
+-            this->mStagingImage = nullptr;
+-            this->mFreeStagingImage = false;
+-        }
++      if (!this->mStagingImage) {
++        KP_LOG_WARN("Kompose Image expected to destroy staging image "
++          "but got null image");
++      } else {
++        KP_LOG_DEBUG("Kompose Image destroying staging image");
++        this->mDevice->destroy(
++          *this->mStagingImage,
++          (vk::Optional<const vk::AllocationCallbacks>)nullptr);
++        this->mStagingImage = nullptr;
++        this->mFreeStagingImage = false;
++      }
+     }
+ 
+-    if (this->mImageView) {
++    if (this->mFreeStagingImage || this->mFreePrimaryImage) {
++      if (this->mImageView) {
+         KP_LOG_DEBUG("Kompose Image freeing image view");
+         this->mDevice->destroyImageView(*this->mImageView);
+         this->mImageView = nullptr;
++      }
++      Memory::destroy();
+     }
+ 
+-    Memory::destroy();
+ 
+     KP_LOG_DEBUG("Kompute Image successful destroy()");
+-}
++  }
+ 
+-vk::Format
+-Image::getFormat()
+-{
++  vk::Format
++    Image::getFormat() {
+     switch (this->mDataType) {
+-        case Memory::DataTypes::eChar: {
+-            switch (this->mNumChannels) {
+-                case 1:
+-                    return vk::Format::eR8Sint;
+-                case 2:
+-                    return vk::Format::eR8G8Sint;
+-                case 4:
+-                    return vk::Format::eR8G8B8A8Sint;
+-                default:
+-                    return vk::Format::eUndefined;
+-            }
+-        }
+-        case Memory::DataTypes::eUnsignedChar: {
+-            switch (this->mNumChannels) {
+-                case 1:
+-                    return vk::Format::eR8Uint;
+-                case 2:
+-                    return vk::Format::eR8G8Uint;
+-                case 4:
+-                    return vk::Format::eR8G8B8A8Uint;
+-                default:
+-                    return vk::Format::eUndefined;
+-            }
+-        }
+-        case Memory::DataTypes::eUnsignedShort: {
+-            switch (this->mNumChannels) {
+-                case 1:
+-                    return vk::Format::eR16Uint;
+-                case 2:
+-                    return vk::Format::eR16G16Uint;
+-                case 4:
+-                    return vk::Format::eR16G16B16A16Uint;
+-                default:
+-                    return vk::Format::eUndefined;
+-            }
+-        }
+-        case Memory::DataTypes::eShort: {
+-            switch (this->mNumChannels) {
+-                case 1:
+-                    return vk::Format::eR16Sint;
+-                case 2:
+-                    return vk::Format::eR16G16Sint;
+-                case 4:
+-                    return vk::Format::eR16G16B16A16Sint;
+-                default:
+-                    return vk::Format::eUndefined;
+-            }
+-        }
+-        case Memory::DataTypes::eUnsignedInt: {
+-            switch (this->mNumChannels) {
+-                case 1:
+-                    return vk::Format::eR32Uint;
+-                case 2:
+-                    return vk::Format::eR32G32Uint;
+-                case 4:
+-                    return vk::Format::eR32G32B32A32Uint;
+-                default:
+-                    return vk::Format::eUndefined;
+-            }
+-        }
+-        case Memory::DataTypes::eInt: {
+-            switch (this->mNumChannels) {
+-                case 1:
+-                    return vk::Format::eR32Sint;
+-                case 2:
+-                    return vk::Format::eR32G32Sint;
+-                case 4:
+-                    return vk::Format::eR32G32B32A32Sint;
+-                default:
+-                    return vk::Format::eUndefined;
+-            }
+-        }
+-        case Memory::DataTypes::eFloat: {
+-            switch (this->mNumChannels) {
+-                case 1:
+-                    return vk::Format::eR32Sfloat;
+-                case 2:
+-                    return vk::Format::eR32G32Sfloat;
+-                case 4:
+-                    return vk::Format::eR32G32B32A32Sfloat;
+-                default:
+-                    return vk::Format::eUndefined;
+-            }
+-        }
+-        default:
+-            return vk::Format::eUndefined;
++    case Memory::DataTypes::eChar: {
++      switch (this->mNumChannels) {
++      case 1:
++        return vk::Format::eR8Sint;
++      case 2:
++        return vk::Format::eR8G8Sint;
++      case 4:
++        return vk::Format::eR8G8B8A8Sint;
++      default:
++        return vk::Format::eUndefined;
++      }
++    }
++    case Memory::DataTypes::eUnsignedChar: {
++      switch (this->mNumChannels) {
++      case 1:
++        return vk::Format::eR8Uint;
++      case 2:
++        return vk::Format::eR8G8Uint;
++      case 4:
++        return vk::Format::eR8G8B8A8Uint;
++      default:
++        return vk::Format::eUndefined;
++      }
++    }
++    case Memory::DataTypes::eUnsignedShort: {
++      switch (this->mNumChannels) {
++      case 1:
++        return vk::Format::eR16Uint;
++      case 2:
++        return vk::Format::eR16G16Uint;
++      case 4:
++        return vk::Format::eR16G16B16A16Uint;
++      default:
++        return vk::Format::eUndefined;
++      }
++    }
++    case Memory::DataTypes::eShort: {
++      switch (this->mNumChannels) {
++      case 1:
++        return vk::Format::eR16Sint;
++      case 2:
++        return vk::Format::eR16G16Sint;
++      case 4:
++        return vk::Format::eR16G16B16A16Sint;
++      default:
++        return vk::Format::eUndefined;
++      }
++    }
++    case Memory::DataTypes::eUnsignedInt: {
++      switch (this->mNumChannels) {
++      case 1:
++        return vk::Format::eR32Uint;
++      case 2:
++        return vk::Format::eR32G32Uint;
++      case 4:
++        return vk::Format::eR32G32B32A32Uint;
++      default:
++        return vk::Format::eUndefined;
++      }
+     }
+-}
+-}
++    case Memory::DataTypes::eInt: {
++      switch (this->mNumChannels) {
++      case 1:
++        return vk::Format::eR32Sint;
++      case 2:
++        return vk::Format::eR32G32Sint;
++      case 4:
++        return vk::Format::eR32G32B32A32Sint;
++      default:
++        return vk::Format::eUndefined;
++      }
++    }
++    case Memory::DataTypes::eFloat: {
++      switch (this->mNumChannels) {
++      case 1:
++        return vk::Format::eR32Sfloat;
++      case 2:
++        return vk::Format::eR32G32Sfloat;
++      case 4:
++        return vk::Format::eR32G32B32A32Sfloat;
++      default:
++        return vk::Format::eUndefined;
++      }
++    }
++    default:
++      return vk::Format::eUndefined;
++    }
++  }
++
++  void Image::setSampler(vk::Sampler sampler) {
++    this->mSampler = sampler;
++  }
++}
+\ No newline at end of file
+diff --git a/src/include/kompute/Tensor.hpp b/src/include/kompute/Tensor.hpp
+index 78814e3..946a335 100644
+--- a/src/include/kompute/Tensor.hpp
++++ b/src/include/kompute/Tensor.hpp
+@@ -38,7 +38,8 @@ class Tensor : public Memory
+            uint32_t elementTotalCount,
+            uint32_t elementMemorySize,
+            const DataTypes& dataType,
+-           const MemoryTypes& tensorType = MemoryTypes::eDevice);
++           const MemoryTypes& tensorType = MemoryTypes::eDevice,
++           vk::DescriptorType descriptorType = vk::DescriptorType::eStorageBuffer);
+ 
+     /**
+      *  Constructor with size provided which would be used to create the
+@@ -176,6 +177,8 @@ class Tensor : public Memory
+ 
+     Type type() override { return Type::eTensor; }
+ 
++    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
++
+   protected:
+     // -------------- ALWAYS OWNED RESOURCES
+     vk::DescriptorBufferInfo mDescriptorBufferInfo;
+@@ -215,8 +218,6 @@ class Tensor : public Memory
+     vk::BufferUsageFlags getPrimaryBufferUsageFlags();
+     vk::BufferUsageFlags getStagingBufferUsageFlags();
+ 
+-    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
+-
+     /**
+      * Function to reserve memory on the tensor. This does not copy any data, it
+      * just reserves memory, similarly to std::vector reserve() method.
+@@ -225,8 +226,7 @@ class Tensor : public Memory
+ };
+ 
+ template<typename T>
+-class TensorT : public Tensor
+-{
++class TensorT : public Tensor {
+   public:
+     TensorT(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+             std::shared_ptr<vk::Device> device,
+@@ -246,14 +246,16 @@ class TensorT : public Tensor
+       std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+       std::shared_ptr<vk::Device> device,
+       const std::vector<T>& data,
+-      const Memory::MemoryTypes& tensorType = Memory::MemoryTypes::eDevice)
++      const Memory::MemoryTypes& tensorType = Memory::MemoryTypes::eDevice,
++      vk::DescriptorType descriptorType = vk::DescriptorType::eStorageBuffer)
+       : Tensor(physicalDevice,
+                device,
+                (void*)data.data(),
+                static_cast<uint32_t>(data.size()),
+                sizeof(T),
+                Memory::dataType<T>(),
+-               tensorType)
++               tensorType,
++               descriptorType)
+     {
+         KP_LOG_DEBUG("Kompute TensorT filling constructor with data size {}",
+                      data.size());
+diff --git a/src/Tensor.cpp b/src/Tensor.cpp
+index a1eaccf..3df27e5 100644
+--- a/src/Tensor.cpp
++++ b/src/Tensor.cpp
+@@ -11,7 +11,8 @@ Tensor::Tensor(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+                uint32_t elementTotalCount,
+                uint32_t elementMemorySize,
+                const DataTypes& dataType,
+-               const MemoryTypes& memoryType)
++               const MemoryTypes& memoryType,
++               vk::DescriptorType descriptorType)
+   : Memory(physicalDevice, device, dataType, memoryType, elementTotalCount, 1)
+ {
+     this->mSize = elementTotalCount;
+@@ -23,7 +24,7 @@ Tensor::Tensor(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+                  elementTotalCount,
+                  Memory::toString(memoryType));
+ 
+-    this->mDescriptorType = vk::DescriptorType::eStorageBuffer;
++    this->mDescriptorType = descriptorType;
+ 
+     this->reserve();
+     this->updateRawData(data);
+@@ -275,7 +276,7 @@ Tensor::constructDescriptorSet(vk::DescriptorSet descriptorSet,
+       binding, // Destination binding
+       0,       // Destination array element
+       1,       // Descriptor count
+-      vk::DescriptorType::eStorageBuffer,
++      this->mDescriptorType,
+       nullptr, // Descriptor image info
+       // Using a member variable here means the address is still valid later
+       &mDescriptorBufferInfo);
+@@ -286,25 +287,34 @@ Tensor::constructDescriptorSet(vk::DescriptorSet descriptorSet,
+ vk::BufferUsageFlags
+ Tensor::getPrimaryBufferUsageFlags()
+ {
++    vk::BufferUsageFlags usage;
+     switch (this->mMemoryType) {
+         case MemoryTypes::eDevice:
+         case MemoryTypes::eHost:
+         case MemoryTypes::eDeviceAndHost:
+-            return vk::BufferUsageFlagBits::eStorageBuffer |
+-                   vk::BufferUsageFlagBits::eTransferSrc |
+-                   vk::BufferUsageFlagBits::eTransferDst;
++            usage =
++              vk::BufferUsageFlagBits::eTransferSrc |
++              vk::BufferUsageFlagBits::eTransferDst |
++              vk::BufferUsageFlagBits::eIndirectBuffer;
+             break;
+         case MemoryTypes::eStorage:
+-            return vk::BufferUsageFlagBits::eStorageBuffer |
+-                   // You can still copy buffers to/from storage memory
+-                   // so set the transfer usage flags here.
+-                   vk::BufferUsageFlagBits::eTransferSrc |
+-                   vk::BufferUsageFlagBits::eTransferDst;
++            usage =
++              // You can still copy buffers to/from storage memory
++              // so set the transfer usage flags here.
++              vk::BufferUsageFlagBits::eTransferSrc |
++              vk::BufferUsageFlagBits::eTransferDst |
++              vk::BufferUsageFlagBits::eIndirectBuffer;
+             break;
+         default:
+-            throw std::runtime_error("Kompute Tensor invalid tensor type");
+-    }
+-}
++          throw std::runtime_error("Kompute Tensor invalid tensor type");
++      }
++      if (this->mDescriptorType == vk::DescriptorType::eUniformBuffer) {
++        usage |= vk::BufferUsageFlagBits::eUniformBuffer;
++      } else {
++        usage |= vk::BufferUsageFlagBits::eStorageBuffer;
++      }
++      return usage;
++  }
+ 
+ vk::BufferUsageFlags
+ Tensor::getStagingBufferUsageFlags()
+diff --git a/src/include/kompute/Manager.hpp b/src/include/kompute/Manager.hpp
+index 5093c83..65a4075 100644
+--- a/src/include/kompute/Manager.hpp
++++ b/src/include/kompute/Manager.hpp
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: Apache-2.0
+ #pragma once
+ 
++
+ #include "kompute/Core.hpp"
+ 
+ #include "kompute/Image.hpp"
+@@ -127,6 +128,31 @@ class Manager
+ 
+         return tensor;
+     }
++
++    /**
++     * Create a managed ubo tensor that will be destroyed by this manager
++     * if it hasn't been destroyed by its reference count going to zero.
++     *
++     * @param data The data to initialize the tensor with
++     * @param tensorType The type of tensor to initialize
++     * @returns Shared pointer with initialised tensor
++     */
++    template<typename T>
++    std::shared_ptr<TensorT<T>> uboTensorT(
++      const std::vector<T>& data,
++      Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice) {
++      KP_LOG_DEBUG("Kompute Manager tensor creation triggered");
++
++      std::shared_ptr<TensorT<T>> tensor{ new kp::TensorT<T>(
++        this->mPhysicalDevice, this->mDevice, data, tensorType, vk::DescriptorType::eUniformBuffer) };
++
++      if (this->mManageResources) {
++        this->mManagedMemObjects.push_back(tensor);
++      }
++
++      return tensor;
++    }
++
+     std::shared_ptr<TensorT<float>> tensor(
+       const std::vector<float>& data,
+       Memory::MemoryTypes tensorType = Memory::MemoryTypes::eDevice)
+@@ -429,6 +455,18 @@ class Manager
+         return image;
+     }
+ 
++    vk::Sampler createLinearSampler() {
++      vk::SamplerCreateInfo info{};
++      info.magFilter = vk::Filter::eLinear;
++      info.minFilter = vk::Filter::eLinear;
++      info.mipmapMode = vk::SamplerMipmapMode::eLinear;
++      info.addressModeU = vk::SamplerAddressMode::eClampToEdge;
++      info.addressModeV = vk::SamplerAddressMode::eClampToEdge;
++      info.addressModeW = vk::SamplerAddressMode::eClampToEdge;
++      info.unnormalizedCoordinates = VK_FALSE;
++      return this->mDevice->createSampler(info);
++  }
++
+     /**
+      * Default non-template function that can be used to create algorithm
+      * objects which provides default types to the push and spec constants as
+@@ -443,6 +481,8 @@ class Manager
+      * specialization constants, and defaults to an empty constant
+      * @param pushConstants (optional) float vector to use for push constants,
+      * and defaults to an empty constant
++     * @param required_subgroup_size (optional) uint32_t to specify required subgroup size,
++     * defaults to 0 which means no required subgroup size
+      * @returns Shared pointer with initialised algorithm
+      */
+     std::shared_ptr<Algorithm> algorithm(
+@@ -450,10 +490,11 @@ class Manager
+       const std::vector<uint32_t>& spirv = {},
+       const Workgroup& workgroup = {},
+       const std::vector<float>& specializationConstants = {},
+-      const std::vector<float>& pushConstants = {})
++      const std::vector<float>& pushConstants = {},
++      uint32_t required_subgroup_size=0)
+     {
+         return this->algorithm<>(
+-          memObjects, spirv, workgroup, specializationConstants, pushConstants);
++          memObjects, spirv, workgroup, specializationConstants, pushConstants, required_subgroup_size);
+     }
+ 
+     /**
+@@ -477,7 +518,8 @@ class Manager
+       const std::vector<uint32_t>& spirv,
+       const Workgroup& workgroup,
+       const std::vector<S>& specializationConstants,
+-      const std::vector<P>& pushConstants)
++      const std::vector<P>& pushConstants,
++      uint32_t required_subgroup_size)
+     {
+ 
+         KP_LOG_DEBUG("Kompute Manager algorithm creation triggered");
+@@ -488,7 +530,8 @@ class Manager
+           spirv,
+           workgroup,
+           specializationConstants,
+-          pushConstants) };
++          pushConstants,
++          required_subgroup_size) };
+ 
+         if (this->mManageResources) {
+             this->mManagedAlgorithms.push_back(algorithm);
+@@ -530,6 +573,17 @@ class Manager
+      **/
+     std::shared_ptr<vk::Instance> getVkInstance() const;
+ 
++    /**
++     * Get the logical device
++     * */
++    std::shared_ptr<vk::Device> getDevice() {
++      return this->mDevice;
++    }
++
++    std::shared_ptr<vk::PhysicalDevice> getPhysicalDevice() {
++      return this->mPhysicalDevice;
++    }
++
+   private:
+     // -------------- OPTIONALLY OWNED RESOURCES
+     std::shared_ptr<vk::Instance> mInstance = nullptr;
+diff --git a/src/Manager.cpp b/src/Manager.cpp
+index b74dc59..5f17fbc 100644
+--- a/src/Manager.cpp
++++ b/src/Manager.cpp
+@@ -14,7 +14,9 @@
+ #include <sstream>
+ #include <string>
+ #include <unordered_map>
+-
++#ifdef __APPLE__
++#include <vulkan/vulkan_metal.h>
++#endif
+ namespace kp {
+ 
+ #ifndef KOMPUTE_DISABLE_VK_DEBUG_LAYERS
+@@ -61,8 +63,10 @@ Manager::Manager(uint32_t physicalDeviceIndex,
+ #endif
+ 
+     this->createInstance();
++    VULKAN_HPP_DEFAULT_DISPATCHER.init(*this->mInstance.get());
+     this->createDevice(
+       familyQueueIndices, physicalDeviceIndex, desiredExtensions);
++    VULKAN_HPP_DEFAULT_DISPATCHER.init(*this->mDevice.get());
+ }
+ 
+ Manager::Manager(std::shared_ptr<vk::Instance> instance,
+@@ -170,6 +174,13 @@ Manager::createInstance()
+ 
+     this->mFreeInstance = true;
+ 
++    // initialization to support dynamic dispatcher
++    static bool loaderInitialized = false;
++    if (!loaderInitialized) {
++        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
++        loaderInitialized = true;
++    }
++
+     vk::ApplicationInfo applicationInfo;
+     applicationInfo.pApplicationName = "Kompute";
+     applicationInfo.pEngineName = "Kompute";
+@@ -193,7 +204,15 @@ Manager::createInstance()
+       VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+     computeInstanceCreateInfo.flags |=
+       vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+-#endif
++
++    VkExportMetalObjectCreateInfoEXT metalExportCreateInfo{};
++    metalExportCreateInfo.sType =
++        VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;
++    metalExportCreateInfo.pNext = nullptr;
++    metalExportCreateInfo.exportObjectType =
++      VK_EXPORT_METAL_OBJECT_TYPE_METAL_DEVICE_BIT_EXT;
++    computeInstanceCreateInfo.pNext = &metalExportCreateInfo;
++  #endif
+ 
+     if (!applicationExtensions.empty()) {
+         computeInstanceCreateInfo.enabledExtensionCount =
+@@ -446,6 +465,35 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
+                      fmt::join(validExtensions, ", "));
+     }
+ 
++    vk::PhysicalDeviceSubgroupProperties subgroupProps;
++    vk::PhysicalDeviceProperties2 props2;
++    props2.pNext = &subgroupProps;
++
++    this->mPhysicalDevice->getProperties2(&props2);
++    if (!(subgroupProps.supportedOperations & vk::SubgroupFeatureFlagBits::eArithmetic)) {
++      KP_LOG_ERROR("Device does not support subgroup arithmetic operations!");
++    }
++
++    // ---------- Enable needed features (from Vulkan 1.1 and Vulkan 1.3) on the device ----------
++    // This constructs a chain of pNext structures to enable features
++    // If don't want Vulkan 1.3 we could restrict chain 
++    // to vk::PhysicalDeviceSynchronization2Features
++
++    // With c++20 we could use designated initializers here
++    vk::PhysicalDeviceFeatures2 deviceFeatures;
++    vk::PhysicalDeviceVulkan11Features vulkan11Features;
++    vk::PhysicalDeviceVulkan13Features vulkan13Features;
++    vulkan13Features.synchronization2 = true;
++
++    vk::StructureChain <
++      vk::PhysicalDeviceFeatures2,
++      vk::PhysicalDeviceVulkan11Features,
++      vk::PhysicalDeviceVulkan13Features> features2Chain = {
++      deviceFeatures,
++      vulkan11Features, // Vulkan 1.1 features
++      vulkan13Features, // Vulkan 1.3 features
++    };
++          
+     vk::DeviceCreateInfo deviceCreateInfo(vk::DeviceCreateFlags(),
+                                           deviceQueueCreateInfos.size(),
+                                           deviceQueueCreateInfos.data(),
+@@ -454,6 +502,9 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
+                                           validExtensions.size(),
+                                           validExtensions.data());
+ 
++    // Link in our features chain starting with the first element 
++    deviceCreateInfo.setPNext(&features2Chain.get<vk::PhysicalDeviceFeatures2>());
++
+     this->mDevice = std::make_shared<vk::Device>();
+     physicalDevice.createDevice(
+       &deviceCreateInfo, nullptr, this->mDevice.get());
+diff --git a/src/include/kompute/Memory.hpp b/src/include/kompute/Memory.hpp
+index eb93e57..5c061f4 100644
+--- a/src/include/kompute/Memory.hpp
++++ b/src/include/kompute/Memory.hpp
+@@ -226,6 +226,13 @@ class Memory
+ 
+     vk::DescriptorType getDescriptorType() { return mDescriptorType; }
+ 
++    /** Sets the descriptor type for this memory object.
++     * @param newType The new descriptor type to set.
++     *
++     * This is use to override the default Tensor type to support UNIFORM buffers (ubos)
++    */
++    void setDescriptorType(vk::DescriptorType newType) { mDescriptorType = newType; }
++
+     /**
+      * Retrieve the raw data via the pointer to the memory that contains the raw
+      * memory of this current tensor. This tensor gets changed to a nullptr when
+diff --git a/src/include/kompute/Sequence.hpp b/src/include/kompute/Sequence.hpp
+index ba0e90e..e8c83e1 100644
+--- a/src/include/kompute/Sequence.hpp
++++ b/src/include/kompute/Sequence.hpp
+@@ -276,7 +276,11 @@ class Sequence : public std::enable_shared_from_this<Sequence>
+      */
+     void destroy();
+ 
+-  private:
++    /**
++     * Getter for the command buffer used by the sequence for the creation of memory barriers
++     */
++    std::shared_ptr<vk::CommandBuffer> getCommandBuffer() const { return mCommandBuffer; };
++private:
+     // -------------- NEVER OWNED RESOURCES
+     std::shared_ptr<vk::PhysicalDevice> mPhysicalDevice = nullptr;
+     std::shared_ptr<vk::Device> mDevice = nullptr;

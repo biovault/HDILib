@@ -1,0 +1,52 @@
+#version 430
+
+#extension GL_EXT_scalar_block_layout : require
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+
+layout(local_size_x = 128) in;
+
+layout(std430, binding = 0) buffer PartialSums {
+    float partialSums[];  // Input: size = pc.num_workgroups
+};
+
+layout(std430, binding = 1) buffer SumBuf { float Sum[]; };
+layout(scalar, binding = 2 ) uniform FieldPushConstants {
+    uint num_workgroups; 
+} pc;
+
+shared float sharedData[128];
+
+void main() {
+    uint lid = gl_LocalInvocationID.x;
+    uint numPartials = pc.num_workgroups;  
+    
+    float localSum = 0.0;
+    
+    // Each thread sums its strided partials
+    for (uint i = lid; i < numPartials; i += 128) {
+        localSum += partialSums[i];
+    }
+    
+    // Subgroup reduction (no barriers needed within subgroup)
+    float subgroupSum = subgroupAdd(localSum);
+
+    uint subgroup_id = gl_SubgroupID;
+    uint num_subgroups = gl_NumSubgroups; // For 128 threads with 32-wide subgroups = 4
+
+    // One thread per subgroup writes result
+    if (subgroupElect()) {
+        sharedData[subgroup_id] = subgroupSum;
+    }
+
+    //memoryBarrierShared();
+    barrier();
+
+    // Final reduction across subgroups (only 4 values for 128 threads)
+    if (lid == 0) {
+        float finalSum = 0.0;
+        for (uint s = 0; s < num_subgroups; s++) {
+            finalSum += sharedData[s];
+        }
+        Sum[0] = finalSum;
+    }
+}

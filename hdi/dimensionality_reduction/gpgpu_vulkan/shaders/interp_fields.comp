@@ -1,0 +1,100 @@
+#version 430
+
+#extension GL_EXT_scalar_block_layout : require
+
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+// Sample the static field texture for all the points.
+// and sum the value to product the normalization factor Z-hat
+// see https://arxiv.org/pdf/1805.10817 Eq 13
+// This is subsequently used to calculate the repulsive forces Eq 14.
+layout(std430, binding = 0) readonly buffer PosBuf{ vec2 Positions[]; };
+layout(std430, binding = 1) readonly buffer BoundsInterface { vec2 Bounds[]; };
+layout(std430, binding = 2) buffer ValBuf { vec4 Values[]; };
+layout(std430, binding = 3) buffer SumBuf { float Sum[]; };
+//(binding = 4, rgba32f) readonly uniform image2D inputFields;
+layout(set = 0, binding = 4) uniform sampler2D inputSampler;
+
+
+layout(scalar, binding = 5 ) uniform FieldPushConstants {
+    uint num_points; 
+    vec2 imageSize; // scaled image size used for fields image
+} pc;
+layout(std430, binding = 6) buffer Debug { vec4 Dbg[]; };
+
+shared float reduction_array[64];
+
+void main() {
+    uint lid = gl_LocalInvocationIndex.x;
+    uint groupSize = gl_WorkGroupSize.x;
+    vec2 min_bounds = Bounds[0];
+    vec2 max_bounds = Bounds[1];
+
+    vec2 range = max_bounds - min_bounds;
+    vec2 inv_range = 1.0 / range;
+
+    float sum_Q = 0;
+    ivec2 samplerSize = textureSize(inputSampler, 0);
+    // The inputSampler is larger than the actual image used for fields
+    // so shrink the sampling range to the subrange as given by imageSize
+    vec2 sampleScale = inv_range * vec2(
+        float(pc.imageSize[0])/float(samplerSize[0]),
+        float(pc.imageSize[1])/float(samplerSize[1])
+    );
+    float step = 1.0/samplerSize[0];
+    for (uint i = lid; i < pc.num_points; i += groupSize)
+    {
+        // Normalized position of point in range [0,0] to [1.0, 1.0]
+        vec2 normPos = (Positions[i] - min_bounds) * sampleScale;
+        // Bilinearly sample the input texture 
+        // using GPU native texture operation
+        // see https://arxiv.org/pdf/1805.10817 5.1.2
+        //vec4 v = bilinearSample(normPos);
+        vec4 v = texture(inputSampler, normPos);
+        // SumQ (Z-hat) is the sum of the (static field -1)
+        // that is used as the normalization factor for 
+        // the repulsive forces.
+        sum_Q += max(v.x - 1.0, 0.0);
+        Values[i] = v;
+    }
+  
+    // Reduce add sum_Q to a single value
+    //uint reduction_size = 64;
+    if (lid >= 64) {
+        reduction_array[lid - 64] = sum_Q;
+    }
+    //memoryBarrierShared();
+    barrier();
+    if (lid < 64) {
+        reduction_array[lid] += sum_Q;
+    }
+    //memoryBarrierShared();
+    barrier();
+    if (lid < 32) {
+        reduction_array[lid] += reduction_array[lid + 32];
+    }
+    //memoryBarrierShared();
+    barrier();
+    if (lid < 16) {
+        reduction_array[lid] += reduction_array[lid + 16];
+    }
+    //memoryBarrierShared();
+    barrier();
+    if (lid < 8) {
+        reduction_array[lid] += reduction_array[lid + 8];
+    }
+    //memoryBarrierShared();
+    barrier();
+    if (lid < 4) {
+        reduction_array[lid] += reduction_array[lid + 4];
+    }
+    //memoryBarrierShared();
+    barrier();
+    if (lid < 2) {
+        reduction_array[lid] += reduction_array[lid + 2];
+    }
+    //memoryBarrierShared();
+    barrier();
+    if (lid < 1) {
+        Sum[0] = reduction_array[0] + reduction_array[1];
+    }
+}

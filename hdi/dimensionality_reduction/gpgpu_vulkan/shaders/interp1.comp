@@ -1,0 +1,67 @@
+#version 430
+
+#extension GL_EXT_scalar_block_layout : require
+
+layout(local_size_x = 128) in;
+
+layout(std430, binding = 0) readonly buffer PosBuf{ vec2 Positions[]; };
+layout(std430, binding = 1) readonly buffer BoundsInterface { vec2 Bounds[]; };
+layout(set = 0, binding = 2) uniform sampler2D inputSampler;
+layout(std430, binding = 3) buffer ValBuf { vec4 Values[]; };
+layout(std430, binding = 4) buffer PartialSums { float partialSums[];};   // One per workgroup
+layout(scalar, binding = 5 ) uniform FieldPushConstants {
+    uint num_points; 
+    vec2 imageSize; // scaled image size used for fields image
+} pc;
+
+// Per-workgroup reduction
+shared float sharedData[128];
+
+void main() {
+    uint gid = gl_GlobalInvocationID.x;
+    uint lid = gl_LocalInvocationID.x;
+    uint wgid = gl_WorkGroupID.x;
+    uint totalThreads = gl_NumWorkGroups.x * 128;
+
+    vec2 min_bounds = Bounds[0];
+    vec2 max_bounds = Bounds[1];
+
+    vec2 range = max_bounds - min_bounds;
+    vec2 inv_range = 1.0 / range;
+
+    ivec2 samplerSize = textureSize(inputSampler, 0);
+    // The inputSampler is larger than the actual image used for fields
+    // so shrink the sampling range to the subrange as given by imageSize
+    vec2 sampleScale = inv_range * vec2(
+        float(pc.imageSize[0])/float(samplerSize[0]),
+        float(pc.imageSize[1])/float(samplerSize[1])
+    );
+
+    float localSum = 0.0;
+  
+    // Each thread processes strided points across ALL workgroups
+    for (uint i = gid; i < pc.num_points; i += totalThreads) {
+        // Normalized position of point in range [0,0] to [1.0, 1.0]
+        vec2 normPos = (Positions[i] - min_bounds) * sampleScale;
+        vec4 v = texture(inputSampler, normPos);
+        Values[i] = v;
+        localSum += max(v.x - 1.0, 0.0);
+    }
+    
+    sharedData[lid] = localSum;
+    //memoryBarrierShared();
+    barrier();
+    
+    for (uint stride = 64; stride > 0; stride >>= 1) {
+        if (lid < stride) {
+            sharedData[lid] += sharedData[lid + stride];
+        }
+        //memoryBarrierShared();
+        barrier();
+    }
+    
+    // Write partial sum for this workgroup
+    if (lid == 0) {
+        partialSums[wgid] = sharedData[0];
+    }
+}

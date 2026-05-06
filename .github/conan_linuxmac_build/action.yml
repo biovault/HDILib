@@ -12,7 +12,8 @@ inputs:
     description: "g++ clang++"
     required: true
   conan-compiler-version:
-    description: "A number [gcc: 5 6 7 8 9 10 11 12 13 14] [clang: 39 40 50 60 7 8 9 10 11 12 13 14 15 16 17 18 19 20] [10.0]"
+    description: "A number [gcc: 5 6 7 8 9 10 11 12 13 14] [clang: 39 40 50 60 7 8 9
+      10 11 12 13 14 15 16 17 18 19 20] [10.0]"
     required: true
   conan-libcxx-version:
     description: "Linux: libstdc++ or Macos: libc++ "
@@ -37,6 +38,7 @@ inputs:
     description: "pass secrets.LKEB_ARTIFACTORY_PASSWORD"
     required: true
 
+# Assume many_linux_2_28 is gcc14
 runs:
   using: "composite"
   steps:
@@ -47,11 +49,16 @@ runs:
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
           if [[ ${{ inputs.conan-channel }} == "python" ]]; then 
-            dnf install -y ninja-build;
-            yum install -y libomp;
+            dnf install -y ninja-build
+            yum install -y libomp
+            if [[ inputs.conan-compiler-version != "14" ]]; then
+              dnf install -y gcc-toolset-${{ inputs.conan-compiler-version}}-gcc gcc-toolset-${{ inputs.conan-compiler-version}}-gcc-c++
+            fi
           else
-            sudo apt-get install -y ninja-build;
+            sudo apt-get install -y ninja-build
           fi
+          export NINJAVER=`ninja --version`
+          echo ninja-build version $NINJAVER
         fi
 
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-compiler-version }} == "10" ]]; then
@@ -74,8 +81,39 @@ runs:
 
       shell: bash
 
+
+    - name: Fix vulkan and glfw dependencies
+      run: |
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then
+          if [[ ${{ inputs.conan-channel }} == "python" ]]; then
+            dnf install -y \
+            libXrandr-devel \
+            libXrender-devel \
+            libXcursor-devel \
+            libXinerama-devel \
+            libXi-devel \
+            libXext-devel \
+            libX11-devel \
+            libxkbcommon-devel \
+            vulkan-loader
+          else
+            sudo apt install libx11-dev libxrandr-dev libxrender-dev libxinerama-dev libxcursor-dev libxi-dev
+          fi
+        fi
+      shell: bash
+
     - name: Build with conan
       run: |
+
+        if [[ ${{ inputs.conan-build-os }} == "Linux" ]] && [[ ${{ inputs.conan-channel }} == "python" ]] && [[ inputs.conan-compiler-version != "14" ]]; then
+          source scl_source enable gcc-toolset-${{ inputs.conan-compiler-version }}
+          export CC=`which gcc`  
+          export CXX=`which g++`
+          export VCPKG_INSTALLATION_ROOT=$RUNVCPKG_VCPKG_ROOT
+          echo check vcpkg root
+          ls $VCPKG_INSTALLATION_ROOT
+        fi
+
         export CONAN_USER_HOME=`pwd`/_conan
         echo Add LKEB artifactory as remote
         conan remote add $CONAN_LKEB_ARTIFACTORY $CONAN_UPLOAD
@@ -112,6 +150,7 @@ runs:
         CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
         CC: ${{inputs.conan-cc}}
         CXX: ${{inputs.conan-cxx}}
+        
 
     - name: Upload to artifactory with conan
       run: |

@@ -1,14 +1,42 @@
 set(PROJECT "hdidimensionalityreduction")
 
 # Gather list of all .h files in "/"
-file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
-file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
+configure_file(dr_config.h.in dr_config.h)
 
-add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
+if(USE_VULKAN_KOMPUTE)
+    file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h gpgpu_vulkan/*.h gpgpu_vulkan/shaders/*.h)
+    message(STATUS "################# ${HeaderFiles} ##############")
+    file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp gpgpu_vulkan/*.cpp gpgpu_vulkan/shaders/*.cpp)
+    message(STATUS "################# ${HeaderFiles} ##############")
+    file(GLOB_RECURSE ShaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} gpgpu_vulkan/shaders/*.comp)
+    # each *.comp file will be glslang converted to a SPIRV .hpp file
+    set(ShaderFileHeaders "")
+    foreach(_shader_comp IN LISTS ShaderFiles)
+      get_filename_component(_COMP_ROOT ${_shader_comp} NAME_WE)
+      list(APPEND ShaderFileHeaders "gpgpu_vulkan/shaders/${_COMP_ROOT}.hpp")
+    endforeach()
+    message("All shader headers: ${ShaderFileHeaders}")
+    add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${ShaderFiles})
+    source_group(Shaders FILES ${ShaderFiles})
+    add_dependencies(${PROJECT} compile_shaders)
+    find_package(fmt CONFIG REQUIRED)
+    find_package(kompute CONFIG REQUIRED)
+    target_compile_definitions(${PROJECT} PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+else()
+    file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
+    message(STATUS "################# ${HeaderFiles} ##############")
+    file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
+    add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
+endif()
+
+
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${hnswlib_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}")
+#include the generated dr_config.h file and any others
+target_include_directories(${PROJECT} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 
 # prefer static linking
 if(NOT FLANN_TARGET)
@@ -48,6 +76,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
+target_compile_definitions(${PROJECT} PRIVATE _ISOC99_SOURCE _GNU_SOURCE)
+
 if(HDILib_ENABLE_PID)
     set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
@@ -60,6 +90,10 @@ endif()
 
 hdi_check_and_set_AVX(${PROJECT} ${HDILib_ENABLE_AVX})
 hdi_set_optimization_level(${PROJECT} ${HDILib_OPTIMIZATION_LEVEL})
+
+if (USE_VULKAN_KOMPUTE)
+    target_link_libraries(${PROJECT} PRIVATE kompute::kompute)
+endif()
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -78,7 +112,9 @@ if(${HDILib_INSTALL})
 
     # Preserve the header hierarchy by explicit install
     # the CMake PUBLIC_HEADER target property flattens it if used.
-    install(CODE "foreach(DR_HEADER ${HeaderFiles})
+    set(_ALL_HEADERS ${HeaderFiles} ${ShaderFileHeaders})
+    # message("All headers ${DR_HEADER}")
+    install(CODE "foreach(DR_HEADER ${_ALL_HEADERS})
             message(STATUS \"Installing: \${DR_HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
             execute_process(
                 COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
@@ -97,4 +133,9 @@ if(${HDILib_INSTALL})
             DESTINATION lib/cmake/HDILib
             COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
     )
+endif()
+
+if(USE_VULKAN_KOMPUTE)
+    message(STATUS "Add vulkan subdir")
+    add_subdirectory(gpgpu_vulkan)
 endif()
