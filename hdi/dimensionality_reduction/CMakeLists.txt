@@ -94,12 +94,10 @@ if(USE_VULKAN_KOMPUTE)
       get_filename_component(_COMP_ROOT ${_shader_comp} NAME_WE)
       list(APPEND HeaderFilesVulkan "gpgpu_vulkan/shaders/${_COMP_ROOT}.hpp")
     endforeach()
-
+    
+    source_group(Shaders FILES ${ShaderFilesVulkan})
     message(STATUS "Add vulkan subdir")
     add_subdirectory(gpgpu_vulkan)
-
-    source_group(Shaders FILES ${ShaderFilesVulkan})
-    add_dependencies(${PROJECT} compile_shaders)
 endif()
 
 add_library(${PROJECT} STATIC ${HeaderFilesDR} ${SourceFilesDR} ${ShaderFilesVulkan})
@@ -150,6 +148,7 @@ endif()
 
 if (USE_VULKAN_KOMPUTE)
     target_link_libraries(${PROJECT} PRIVATE kompute::kompute)
+    add_dependencies(${PROJECT} compile_shaders)
 endif()
 
 if(UNIX)
