@@ -1,24 +1,5 @@
 cmake_minimum_required (VERSION 3.22)
 
-option(USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
-
-if(USE_VULKAN_KOMPUTE)
-    list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
-
-    # Make sure vcpkg toolchain is picked up (or pass -DCMAKE_TOOLCHAIN_FILE=...)
-    # Example: cmake .. -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
-    set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
-
-    if(WIN32 AND NOT DEFINED VCPKG_LIBRARY_LINKAGE)
-        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "")
-        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
-        set(VCPKG_LIBRARY_LINKAGE "static" CACHE STRING "")
-    endif()
-endif()
-
-set(PROJECT "HDILib")
-PROJECT(${PROJECT} LANGUAGES CXX C)
-
 # -----------------------------------------------------------------------------
 # User Options
 # -----------------------------------------------------------------------------
@@ -27,6 +8,8 @@ option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC"
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
+option(USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
+option(ENABLE_TESTS "Enable building the test executables" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
 set(HDILib_VERSION "latest" CACHE STRING "HDILib Library version")
 
@@ -42,8 +25,28 @@ if(HDILib_ENABLE_PID)
     message(STATUS "Position independent code compilation ON")
 endif()
 
+if(USE_VULKAN_KOMPUTE)
+    list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
+
+    # Make sure vcpkg toolchain is picked up (or pass -DCMAKE_TOOLCHAIN_FILE=...)
+    # Example: cmake .. -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
+    set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
+
+    if(WIN32 AND NOT DEFINED VCPKG_LIBRARY_LINKAGE)
+        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "")
+        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
+        set(VCPKG_LIBRARY_LINKAGE "static" CACHE STRING "")
+    endif()
+endif()
+
 message(STATUS "Building: HDILib ${HDILib_VERSION}")
 message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+
+# -----------------------------------------------------------------------------
+# CMake Project
+# -----------------------------------------------------------------------------
+set(PROJECT "HDILib")
+PROJECT(${PROJECT} LANGUAGES CXX C)
 
 # -----------------------------------------------------------------------------
 # CMake Options
@@ -172,6 +175,7 @@ if (USE_VULKAN_KOMPUTE)
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endif()
+
 # -----------------------------------------------------------------------------
 # Projects
 # -----------------------------------------------------------------------------
@@ -182,13 +186,10 @@ add_subdirectory(hdi/dimensionality_reduction)
 # -----------------------------------------------------------------------------
 # Tests
 # -----------------------------------------------------------------------------
-option(ENABLE_TESTS "Enable building the test executables" ON)
 if (ENABLE_TESTS)
     add_subdirectory(tests)
     add_dependencies(tsne_tester hdiutils hdidimensionalityreduction hdidata)
 endif()
-
-
 
 # -----------------------------------------------------------------------------
 # Create HDILib find_package
