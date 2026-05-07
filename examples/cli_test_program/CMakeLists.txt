@@ -120,7 +120,9 @@ endmacro()
 #message(STATUS "***********************************")
 target_include_directories(tsne_tester PRIVATE "${argparse_SOURCE_DIR}/include")
 target_include_directories(tsne_tester PRIVATE "${rapidcsv_SOURCE_DIR}/src")
-target_include_directories(tsne_tester PRIVATE "${CMAKE_SOURCE_DIR}")
+target_include_directories(tsne_tester PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(tsne_tester PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../..")
+
 # Debug
 #message(STATUS "A. Test binary at ${CMAKE_CURRENT_BINARY_DIR}")
 #file(GLOB CURBINDIRFILES "${CMAKE_CURRENT_BINARY_DIR}/*")
