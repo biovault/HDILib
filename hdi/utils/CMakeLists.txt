@@ -49,7 +49,7 @@ add_library(${PROJECT_UTILS} STATIC ${HeaderFilesUtils} ${SourceFilesUtils})
 
 target_include_directories(${PROJECT_UTILS} PRIVATE "${PROJECT_SOURCE_DIR}")
 
-#set_target_properties(${PROJECT_UTILS} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+#set_target_properties(${PROJECT_UTILS} PROPERTIES PUBLIC_HEADER "${HeaderFilesUtils}")
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
@@ -85,7 +85,7 @@ if(${HDILib_INSTALL})
 
     # Preserve the header hierarchy by explicit install
     # the CMake PUBLIC_HEADER target property flattens it if used.
-    install(CODE "foreach(HEADER ${HeaderFiles})
+    install(CODE "foreach(HEADER ${HeaderFilesUtils})
             message(STATUS \"Installing: \${HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/utils\")
             execute_process(
                 COMMAND \"${CMAKE_COMMAND}\" -E copy_if_different 
