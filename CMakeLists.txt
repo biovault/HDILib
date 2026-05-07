@@ -190,7 +190,7 @@ add_subdirectory(hdi/dimensionality_reduction)
 # Example project
 # -----------------------------------------------------------------------------
 if(HDILib_BUILD_EXAMPLE)
-    add_subdirectory(examples/tSNE_test)
+    add_subdirectory(examples/cli_test_program)
 endif()
 
 # -----------------------------------------------------------------------------
