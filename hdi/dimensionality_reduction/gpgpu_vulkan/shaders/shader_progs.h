@@ -1,10 +1,12 @@
 #pragma once
-#include "shaders.h"
-#include "../tensor_config.h"
+
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/shaders.h"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/vkUniformBufferHelper.h"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/tensor_config.h"
+
 #include <kompute/Kompute.hpp>
 #include <memory>
 #include <vector>
-#include "vkUniformBufferHelper.h"
 
 class ShaderImageHelper {
   public:

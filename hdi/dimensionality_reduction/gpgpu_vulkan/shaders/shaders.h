@@ -1,19 +1,21 @@
 #pragma once
+
 #include <map>
 #include <vector>
-#include "bounds.hpp"
-#include "compute_fields.hpp"
-#include "compute_fields_enh.hpp"
-#include "compute_forces.hpp"
-#include "interp_fields.hpp" 
-#include "interp1.hpp"
-#include "interp2.hpp"
-#include "stencil.hpp"
-#include "reset_counter.hpp"
-#include "stencil2active.hpp"
-#include "compute_field_workgroup.hpp"
-#include "update.hpp"   
-#include "center_scale.hpp"
+
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/bounds.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/compute_fields.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/compute_fields_enh.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/compute_forces.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/interp_fields.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/interp1.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/interp2.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/stencil.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/reset_counter.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/stencil2active.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/compute_field_workgroup.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/update.hpp"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/center_scale.hpp"
 
 enum class SPIRVShader {
   BOUNDS = 0,
