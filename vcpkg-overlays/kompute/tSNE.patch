@@ -1,17 +1,24 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 4bd75fc..99b42af 100644
+index 4bd75fc..0769432 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -224,15 +224,15 @@ endif()
+@@ -194,7 +194,7 @@ else()
+             GIT_SHALLOW 1) # Source: https://github.com/fmtlib/fmt/releases
+         FetchContent_MakeAvailable(fmt)
+     else()
+-        find_package(fmt REQUIRED)
++        find_package(fmt CONFIG REQUIRED)
+     endif()
+ endif()
  
+@@ -225,14 +225,14 @@ endif()
  # pybind11
  if(KOMPUTE_OPT_BUILD_PYTHON)
--    if(KOMPUTE_OPT_USE_BUILT_IN_PYBIND11)
+     if(KOMPUTE_OPT_USE_BUILT_IN_PYBIND11)
 -        FetchContent_Declare(pybind GIT_REPOSITORY https://github.com/pybind/pybind11.git
 -            GIT_TAG v2.9.2
 -            GIT_SHALLOW 1) # Source: https://github.com/pybind/pybind11/releases
 -        FetchContent_MakeAvailable(pybind)
-+    if(KOMPUTE_OPT_USE_BUILT_IN_PYBIND11)   
 +            FetchContent_Declare(pybind11 GIT_REPOSITORY https://github.com/pybind/pybind11.git
 +                    GIT_TAG v2.9.2
 +                    GIT_SHALLOW 1
@@ -25,101 +32,6 @@ index 4bd75fc..99b42af 100644
      find_package(PythonLibs REQUIRED)
  endif()
  
-diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 1ad0965..2d892d0 100644
---- a/src/CMakeLists.txt
-+++ b/src/CMakeLists.txt
-@@ -95,6 +95,9 @@ if(NOT KOMPUTE_OPT_ANDROID_BUILD AND KOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER)
-     target_link_libraries(kompute PUBLIC Vulkan-Headers)
- endif()
- 
-+target_compile_definitions(kompute PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
-+
-+
- # ####################################################
- # Misc
- # ####################################################
-diff --git a/src/include/kompute/Algorithm.hpp b/src/include/kompute/Algorithm.hpp
-index c459bab..d1823a9 100644
---- a/src/include/kompute/Algorithm.hpp
-+++ b/src/include/kompute/Algorithm.hpp
-@@ -38,6 +38,8 @@ class Algorithm
-      * when initializing the pipeline, which set the size of the push constants
-      * - these can be modified but all new values must have the same data type
-      * and length as otherwise it will result in errors.
-+     *  @param required_subgroup_size (optional) The required subgroup size to use
-+     * when creating the pipeline. If 0 there is no rquuired size.
-      */
-     template<typename S = float, typename P = float>
-     Algorithm(std::shared_ptr<vk::Device> device,
-@@ -45,7 +47,8 @@ class Algorithm
-               const std::vector<uint32_t>& spirv = {},
-               const Workgroup& workgroup = {},
-               const std::vector<S>& specializationConstants = {},
--              const std::vector<P>& pushConstants = {}) noexcept
-+              const std::vector<P>& pushConstants = {},
-+              uint32_t required_subgroup_size=0 ) noexcept
-     {
-         KP_LOG_DEBUG("Kompute Algorithm Constructor with device");
- 
-@@ -61,7 +64,8 @@ class Algorithm
-                           spirv,
-                           workgroup,
-                           specializationConstants,
--                          pushConstants);
-+                          pushConstants,
-+                          required_subgroup_size);
-         } else {
-             KP_LOG_INFO(
-               "Kompute Algorithm constructor with empty mem objects and or "
-@@ -84,13 +88,16 @@ class Algorithm
-      * initializing the pipeline, which set the size of the push constants -
-      * these can be modified but all new values must have the same vector size
-      * as this initial value.
-+     *  @param required_subgroup_size (optional) The required subgroup size to use
-+     * when creating the pipeline. If 0 there is no required size.
-      */
-     template<typename S = float, typename P = float>
-     void rebuild(const std::vector<std::shared_ptr<Memory>>& memObjects,
-                  const std::vector<uint32_t>& spirv,
-                  const Workgroup& workgroup = {},
-                  const std::vector<S>& specializationConstants = {},
--                 const std::vector<P>& pushConstants = {})
-+                 const std::vector<P>& pushConstants = {},
-+                 uint32_t required_subgroup_size=0 )
-     {
-         KP_LOG_DEBUG("Kompute Algorithm rebuild started");
- 
-@@ -138,7 +145,7 @@ class Algorithm
- 
-         this->createParameters();
-         this->createShaderModule();
--        this->createPipeline();
-+        this->createPipeline(required_subgroup_size);
-     }
- 
-     /**
-@@ -291,6 +298,11 @@ class Algorithm
- 
-     void destroy();
- 
-+    /**
-+     * Gets descriptor set used by the algorithm.
-+     */
-+    std::shared_ptr<vk::DescriptorSet> getDescriptorSet() { return this->mDescriptorSet; }
-+
-   private:
-     // -------------- NEVER OWNED RESOURCES
-     std::shared_ptr<vk::Device> mDevice;
-@@ -324,7 +336,7 @@ class Algorithm
- 
-     // Create util functions
-     void createShaderModule();
--    void createPipeline();
-+    void createPipeline(uint32_t required_subgroup_size = 0);
- 
-     // Parameters
-     void createParameters();
 diff --git a/src/Algorithm.cpp b/src/Algorithm.cpp
 index af12e09..ed724f0 100644
 --- a/src/Algorithm.cpp
@@ -239,95 +151,22 @@ index af12e09..ed724f0 100644
      vk::ComputePipelineCreateInfo pipelineInfo(vk::PipelineCreateFlags(),
                                                 shaderStage,
                                                 *this->mPipelineLayout,
-diff --git a/src/include/kompute/Image.hpp b/src/include/kompute/Image.hpp
-index d254149..a1e0c3b 100644
---- a/src/include/kompute/Image.hpp
-+++ b/src/include/kompute/Image.hpp
-@@ -301,6 +301,11 @@ class Image : public Memory
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 1ad0965..2d892d0 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -95,6 +95,9 @@ if(NOT KOMPUTE_OPT_ANDROID_BUILD AND KOMPUTE_OPT_USE_BUILT_IN_VULKAN_HEADER)
+     target_link_libraries(kompute PUBLIC Vulkan-Headers)
+ endif()
  
-     std::shared_ptr<vk::Image> getPrimaryImage();
-     vk::ImageLayout getPrimaryImageLayout();
-+    void setPrimaryImageLayout(vk::ImageLayout layout) {
-+      mPrimaryImageLayout = layout;
-+    };
++target_compile_definitions(kompute PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 +
-+    void setSampler(vk::Sampler sampler);
- 
-     /***
-      * Retreive the number of channels in the image
-@@ -311,6 +316,23 @@ class Image : public Memory
- 
-     Type type() override { return Type::eImage; }
- 
-+    bool getSamplingMode() { return mSamplingMode; }
-+    void initAsSampledImage(
-+      std::shared_ptr<vk::Image> primaryImage,
-+      vk::ImageLayout primaryImageLayout
-+    ) {
-+      mSamplingMode = true;
 +
-+        // Create image view
-+      this->mImageView = nullptr;
-+      this->mPrimaryImage = primaryImage;
-+      this->mPrimaryImageLayout = primaryImageLayout;
-+      mFreePrimaryImage = false;
-+      mFreeStagingImage = false;
-+      this->mDescriptorType = vk::DescriptorType::eCombinedImageSampler;
-+      this->mDescriptorImageInfo = this->constructDescriptorImageInfo();
-+    }
-+
-   protected:
-     // -------------- ALWAYS OWNED RESOURCES
-     uint32_t mNumChannels;
-@@ -319,14 +341,16 @@ class Image : public Memory
-     vk::ImageLayout mStagingImageLayout = vk::ImageLayout::eUndefined;
-     std::shared_ptr<vk::ImageView> mImageView = nullptr;
-     vk::ImageTiling mTiling = vk::ImageTiling::eOptimal;
--
--  private:
-+    vk::Sampler mSampler;
-+    bool mSamplingMode = false;
-     // -------------- OPTIONALLY OWNED RESOURCES
-     std::shared_ptr<vk::Image> mPrimaryImage;
-     bool mFreePrimaryImage = false;
-     std::shared_ptr<vk::Image> mStagingImage;
-     bool mFreeStagingImage = false;
- 
-+  private:
-+
-     void allocateMemoryCreateGPUResources(); // Creates the vulkan image
-     void createImage(std::shared_ptr<vk::Image> image,
-                      vk::ImageUsageFlags imageUsageFlags,
-@@ -515,6 +539,27 @@ class ImageT : public Image
-     std::vector<T> vector() { return Memory::vector<T>(); }
- 
-     T& operator[](int index) { return *(Memory::data<T>() + index); }
-+
-+    std::shared_ptr<ImageT> createSampledView() {
-+        /*if (!mSamplingMode) {
-+            throw std::runtime_error(
-+              "Cannot create sampled view from an image that is not in "
-+              "sampling mode. Please enable sampling mode first.");
-+        }*/
-+
-+        auto sampledImage = std::make_shared<ImageT>(
-+          this->mPhysicalDevice,
-+          this->mDevice,
-+          this->mX,
-+          this->mY,
-+          this->mNumChannels);
-+
-+        sampledImage->initAsSampledImage(
-+          this->mPrimaryImage,
-+          this->mPrimaryImageLayout
-+        );
-+        return sampledImage;
-+    }
- };
- 
- } // End namespace kp
+ # ####################################################
+ # Misc
+ # ####################################################
 diff --git a/src/Image.cpp b/src/Image.cpp
-index a9344c3..6681d7b 100644
+index a9344c3..0103fe0 100644
 --- a/src/Image.cpp
 +++ b/src/Image.cpp
 @@ -4,12 +4,11 @@
@@ -927,11 +766,10 @@ index a9344c3..6681d7b 100644
 +      binding);
  
      mDescriptorImageInfo = this->constructDescriptorImageInfo();
--
 +    vk::DescriptorType descriptorType = mSamplingMode ?
 +      vk::DescriptorType::eCombinedImageSampler :
 +      vk::DescriptorType::eStorageImage;
-+    
+ 
      return vk::WriteDescriptorSet(descriptorSet,
 -                                  binding, // Destination binding
 -                                  0,       // Destination array element
@@ -1458,67 +1296,109 @@ index a9344c3..6681d7b 100644
 +  }
 +}
 \ No newline at end of file
-diff --git a/src/include/kompute/Tensor.hpp b/src/include/kompute/Tensor.hpp
-index 78814e3..946a335 100644
---- a/src/include/kompute/Tensor.hpp
-+++ b/src/include/kompute/Tensor.hpp
-@@ -38,7 +38,8 @@ class Tensor : public Memory
-            uint32_t elementTotalCount,
-            uint32_t elementMemorySize,
-            const DataTypes& dataType,
--           const MemoryTypes& tensorType = MemoryTypes::eDevice);
-+           const MemoryTypes& tensorType = MemoryTypes::eDevice,
-+           vk::DescriptorType descriptorType = vk::DescriptorType::eStorageBuffer);
- 
-     /**
-      *  Constructor with size provided which would be used to create the
-@@ -176,6 +177,8 @@ class Tensor : public Memory
- 
-     Type type() override { return Type::eTensor; }
- 
-+    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
-+
-   protected:
-     // -------------- ALWAYS OWNED RESOURCES
-     vk::DescriptorBufferInfo mDescriptorBufferInfo;
-@@ -215,8 +218,6 @@ class Tensor : public Memory
-     vk::BufferUsageFlags getPrimaryBufferUsageFlags();
-     vk::BufferUsageFlags getStagingBufferUsageFlags();
- 
--    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
+diff --git a/src/Manager.cpp b/src/Manager.cpp
+index b74dc59..155cebf 100644
+--- a/src/Manager.cpp
++++ b/src/Manager.cpp
+@@ -14,7 +14,9 @@
+ #include <sstream>
+ #include <string>
+ #include <unordered_map>
 -
-     /**
-      * Function to reserve memory on the tensor. This does not copy any data, it
-      * just reserves memory, similarly to std::vector reserve() method.
-@@ -225,8 +226,7 @@ class Tensor : public Memory
- };
++#ifdef __APPLE__
++#include <vulkan/vulkan_metal.h>
++#endif
+ namespace kp {
  
- template<typename T>
--class TensorT : public Tensor
--{
-+class TensorT : public Tensor {
-   public:
-     TensorT(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
-             std::shared_ptr<vk::Device> device,
-@@ -246,14 +246,16 @@ class TensorT : public Tensor
-       std::shared_ptr<vk::PhysicalDevice> physicalDevice,
-       std::shared_ptr<vk::Device> device,
-       const std::vector<T>& data,
--      const Memory::MemoryTypes& tensorType = Memory::MemoryTypes::eDevice)
-+      const Memory::MemoryTypes& tensorType = Memory::MemoryTypes::eDevice,
-+      vk::DescriptorType descriptorType = vk::DescriptorType::eStorageBuffer)
-       : Tensor(physicalDevice,
-                device,
-                (void*)data.data(),
-                static_cast<uint32_t>(data.size()),
-                sizeof(T),
-                Memory::dataType<T>(),
--               tensorType)
-+               tensorType,
-+               descriptorType)
-     {
-         KP_LOG_DEBUG("Kompute TensorT filling constructor with data size {}",
-                      data.size());
+ #ifndef KOMPUTE_DISABLE_VK_DEBUG_LAYERS
+@@ -61,8 +63,10 @@ Manager::Manager(uint32_t physicalDeviceIndex,
+ #endif
+ 
+     this->createInstance();
++    VULKAN_HPP_DEFAULT_DISPATCHER.init(*this->mInstance.get());
+     this->createDevice(
+       familyQueueIndices, physicalDeviceIndex, desiredExtensions);
++    VULKAN_HPP_DEFAULT_DISPATCHER.init(*this->mDevice.get());
+ }
+ 
+ Manager::Manager(std::shared_ptr<vk::Instance> instance,
+@@ -170,6 +174,13 @@ Manager::createInstance()
+ 
+     this->mFreeInstance = true;
+ 
++    // initialization to support dynamic dispatcher
++    static bool loaderInitialized = false;
++    if (!loaderInitialized) {
++        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
++        loaderInitialized = true;
++    }
++
+     vk::ApplicationInfo applicationInfo;
+     applicationInfo.pApplicationName = "Kompute";
+     applicationInfo.pEngineName = "Kompute";
+@@ -193,7 +204,15 @@ Manager::createInstance()
+       VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+     computeInstanceCreateInfo.flags |=
+       vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+-#endif
++
++    VkExportMetalObjectCreateInfoEXT metalExportCreateInfo{};
++    metalExportCreateInfo.sType =
++        VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;
++    metalExportCreateInfo.pNext = nullptr;
++    metalExportCreateInfo.exportObjectType =
++      VK_EXPORT_METAL_OBJECT_TYPE_METAL_DEVICE_BIT_EXT;
++    computeInstanceCreateInfo.pNext = &metalExportCreateInfo;
++  #endif
+ 
+     if (!applicationExtensions.empty()) {
+         computeInstanceCreateInfo.enabledExtensionCount =
+@@ -446,6 +465,35 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
+                      fmt::join(validExtensions, ", "));
+     }
+ 
++    vk::PhysicalDeviceSubgroupProperties subgroupProps;
++    vk::PhysicalDeviceProperties2 props2;
++    props2.pNext = &subgroupProps;
++
++    this->mPhysicalDevice->getProperties2(&props2);
++    if (!(subgroupProps.supportedOperations & vk::SubgroupFeatureFlagBits::eArithmetic)) {
++      KP_LOG_ERROR("Device does not support subgroup arithmetic operations!");
++    }
++
++    // ---------- Enable needed features (from Vulkan 1.1 and Vulkan 1.3) on the device ----------
++    // This constructs a chain of pNext structures to enable features
++    // If don't want Vulkan 1.3 we could restrict chain
++    // to vk::PhysicalDeviceSynchronization2Features
++
++    // With c++20 we could use designated initializers here
++    vk::PhysicalDeviceFeatures2 deviceFeatures;
++    vk::PhysicalDeviceVulkan11Features vulkan11Features;
++    vk::PhysicalDeviceVulkan13Features vulkan13Features;
++    vulkan13Features.synchronization2 = true;
++
++    vk::StructureChain <
++      vk::PhysicalDeviceFeatures2,
++      vk::PhysicalDeviceVulkan11Features,
++      vk::PhysicalDeviceVulkan13Features> features2Chain = {
++      deviceFeatures,
++      vulkan11Features, // Vulkan 1.1 features
++      vulkan13Features, // Vulkan 1.3 features
++    };
++
+     vk::DeviceCreateInfo deviceCreateInfo(vk::DeviceCreateFlags(),
+                                           deviceQueueCreateInfos.size(),
+                                           deviceQueueCreateInfos.data(),
+@@ -454,6 +502,9 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
+                                           validExtensions.size(),
+                                           validExtensions.data());
+ 
++    // Link in our features chain starting with the first element
++    deviceCreateInfo.setPNext(&features2Chain.get<vk::PhysicalDeviceFeatures2>());
++
+     this->mDevice = std::make_shared<vk::Device>();
+     physicalDevice.createDevice(
+       &deviceCreateInfo, nullptr, this->mDevice.get());
 diff --git a/src/Tensor.cpp b/src/Tensor.cpp
 index a1eaccf..3df27e5 100644
 --- a/src/Tensor.cpp
@@ -1597,8 +1477,176 @@ index a1eaccf..3df27e5 100644
  
  vk::BufferUsageFlags
  Tensor::getStagingBufferUsageFlags()
+diff --git a/src/include/kompute/Algorithm.hpp b/src/include/kompute/Algorithm.hpp
+index c459bab..d1823a9 100644
+--- a/src/include/kompute/Algorithm.hpp
++++ b/src/include/kompute/Algorithm.hpp
+@@ -38,6 +38,8 @@ class Algorithm
+      * when initializing the pipeline, which set the size of the push constants
+      * - these can be modified but all new values must have the same data type
+      * and length as otherwise it will result in errors.
++     *  @param required_subgroup_size (optional) The required subgroup size to use
++     * when creating the pipeline. If 0 there is no rquuired size.
+      */
+     template<typename S = float, typename P = float>
+     Algorithm(std::shared_ptr<vk::Device> device,
+@@ -45,7 +47,8 @@ class Algorithm
+               const std::vector<uint32_t>& spirv = {},
+               const Workgroup& workgroup = {},
+               const std::vector<S>& specializationConstants = {},
+-              const std::vector<P>& pushConstants = {}) noexcept
++              const std::vector<P>& pushConstants = {},
++              uint32_t required_subgroup_size=0 ) noexcept
+     {
+         KP_LOG_DEBUG("Kompute Algorithm Constructor with device");
+ 
+@@ -61,7 +64,8 @@ class Algorithm
+                           spirv,
+                           workgroup,
+                           specializationConstants,
+-                          pushConstants);
++                          pushConstants,
++                          required_subgroup_size);
+         } else {
+             KP_LOG_INFO(
+               "Kompute Algorithm constructor with empty mem objects and or "
+@@ -84,13 +88,16 @@ class Algorithm
+      * initializing the pipeline, which set the size of the push constants -
+      * these can be modified but all new values must have the same vector size
+      * as this initial value.
++     *  @param required_subgroup_size (optional) The required subgroup size to use
++     * when creating the pipeline. If 0 there is no required size.
+      */
+     template<typename S = float, typename P = float>
+     void rebuild(const std::vector<std::shared_ptr<Memory>>& memObjects,
+                  const std::vector<uint32_t>& spirv,
+                  const Workgroup& workgroup = {},
+                  const std::vector<S>& specializationConstants = {},
+-                 const std::vector<P>& pushConstants = {})
++                 const std::vector<P>& pushConstants = {},
++                 uint32_t required_subgroup_size=0 )
+     {
+         KP_LOG_DEBUG("Kompute Algorithm rebuild started");
+ 
+@@ -138,7 +145,7 @@ class Algorithm
+ 
+         this->createParameters();
+         this->createShaderModule();
+-        this->createPipeline();
++        this->createPipeline(required_subgroup_size);
+     }
+ 
+     /**
+@@ -291,6 +298,11 @@ class Algorithm
+ 
+     void destroy();
+ 
++    /**
++     * Gets descriptor set used by the algorithm.
++     */
++    std::shared_ptr<vk::DescriptorSet> getDescriptorSet() { return this->mDescriptorSet; }
++
+   private:
+     // -------------- NEVER OWNED RESOURCES
+     std::shared_ptr<vk::Device> mDevice;
+@@ -324,7 +336,7 @@ class Algorithm
+ 
+     // Create util functions
+     void createShaderModule();
+-    void createPipeline();
++    void createPipeline(uint32_t required_subgroup_size = 0);
+ 
+     // Parameters
+     void createParameters();
+diff --git a/src/include/kompute/Image.hpp b/src/include/kompute/Image.hpp
+index d254149..a1e0c3b 100644
+--- a/src/include/kompute/Image.hpp
++++ b/src/include/kompute/Image.hpp
+@@ -301,6 +301,11 @@ class Image : public Memory
+ 
+     std::shared_ptr<vk::Image> getPrimaryImage();
+     vk::ImageLayout getPrimaryImageLayout();
++    void setPrimaryImageLayout(vk::ImageLayout layout) {
++      mPrimaryImageLayout = layout;
++    };
++
++    void setSampler(vk::Sampler sampler);
+ 
+     /***
+      * Retreive the number of channels in the image
+@@ -311,6 +316,23 @@ class Image : public Memory
+ 
+     Type type() override { return Type::eImage; }
+ 
++    bool getSamplingMode() { return mSamplingMode; }
++    void initAsSampledImage(
++      std::shared_ptr<vk::Image> primaryImage,
++      vk::ImageLayout primaryImageLayout
++    ) {
++      mSamplingMode = true;
++
++        // Create image view
++      this->mImageView = nullptr;
++      this->mPrimaryImage = primaryImage;
++      this->mPrimaryImageLayout = primaryImageLayout;
++      mFreePrimaryImage = false;
++      mFreeStagingImage = false;
++      this->mDescriptorType = vk::DescriptorType::eCombinedImageSampler;
++      this->mDescriptorImageInfo = this->constructDescriptorImageInfo();
++    }
++
+   protected:
+     // -------------- ALWAYS OWNED RESOURCES
+     uint32_t mNumChannels;
+@@ -319,14 +341,16 @@ class Image : public Memory
+     vk::ImageLayout mStagingImageLayout = vk::ImageLayout::eUndefined;
+     std::shared_ptr<vk::ImageView> mImageView = nullptr;
+     vk::ImageTiling mTiling = vk::ImageTiling::eOptimal;
+-
+-  private:
++    vk::Sampler mSampler;
++    bool mSamplingMode = false;
+     // -------------- OPTIONALLY OWNED RESOURCES
+     std::shared_ptr<vk::Image> mPrimaryImage;
+     bool mFreePrimaryImage = false;
+     std::shared_ptr<vk::Image> mStagingImage;
+     bool mFreeStagingImage = false;
+ 
++  private:
++
+     void allocateMemoryCreateGPUResources(); // Creates the vulkan image
+     void createImage(std::shared_ptr<vk::Image> image,
+                      vk::ImageUsageFlags imageUsageFlags,
+@@ -515,6 +539,27 @@ class ImageT : public Image
+     std::vector<T> vector() { return Memory::vector<T>(); }
+ 
+     T& operator[](int index) { return *(Memory::data<T>() + index); }
++
++    std::shared_ptr<ImageT> createSampledView() {
++        /*if (!mSamplingMode) {
++            throw std::runtime_error(
++              "Cannot create sampled view from an image that is not in "
++              "sampling mode. Please enable sampling mode first.");
++        }*/
++
++        auto sampledImage = std::make_shared<ImageT>(
++          this->mPhysicalDevice,
++          this->mDevice,
++          this->mX,
++          this->mY,
++          this->mNumChannels);
++
++        sampledImage->initAsSampledImage(
++          this->mPrimaryImage,
++          this->mPrimaryImageLayout
++        );
++        return sampledImage;
++    }
+ };
+ 
+ } // End namespace kp
 diff --git a/src/include/kompute/Manager.hpp b/src/include/kompute/Manager.hpp
-index 5093c83..65a4075 100644
+index cc02df8..66e0976 100644
 --- a/src/include/kompute/Manager.hpp
 +++ b/src/include/kompute/Manager.hpp
 @@ -1,6 +1,7 @@
@@ -1721,109 +1769,6 @@ index 5093c83..65a4075 100644
    private:
      // -------------- OPTIONALLY OWNED RESOURCES
      std::shared_ptr<vk::Instance> mInstance = nullptr;
-diff --git a/src/Manager.cpp b/src/Manager.cpp
-index b74dc59..5f17fbc 100644
---- a/src/Manager.cpp
-+++ b/src/Manager.cpp
-@@ -14,7 +14,9 @@
- #include <sstream>
- #include <string>
- #include <unordered_map>
--
-+#ifdef __APPLE__
-+#include <vulkan/vulkan_metal.h>
-+#endif
- namespace kp {
- 
- #ifndef KOMPUTE_DISABLE_VK_DEBUG_LAYERS
-@@ -61,8 +63,10 @@ Manager::Manager(uint32_t physicalDeviceIndex,
- #endif
- 
-     this->createInstance();
-+    VULKAN_HPP_DEFAULT_DISPATCHER.init(*this->mInstance.get());
-     this->createDevice(
-       familyQueueIndices, physicalDeviceIndex, desiredExtensions);
-+    VULKAN_HPP_DEFAULT_DISPATCHER.init(*this->mDevice.get());
- }
- 
- Manager::Manager(std::shared_ptr<vk::Instance> instance,
-@@ -170,6 +174,13 @@ Manager::createInstance()
- 
-     this->mFreeInstance = true;
- 
-+    // initialization to support dynamic dispatcher
-+    static bool loaderInitialized = false;
-+    if (!loaderInitialized) {
-+        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
-+        loaderInitialized = true;
-+    }
-+
-     vk::ApplicationInfo applicationInfo;
-     applicationInfo.pApplicationName = "Kompute";
-     applicationInfo.pEngineName = "Kompute";
-@@ -193,7 +204,15 @@ Manager::createInstance()
-       VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-     computeInstanceCreateInfo.flags |=
-       vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
--#endif
-+
-+    VkExportMetalObjectCreateInfoEXT metalExportCreateInfo{};
-+    metalExportCreateInfo.sType =
-+        VK_STRUCTURE_TYPE_EXPORT_METAL_OBJECT_CREATE_INFO_EXT;
-+    metalExportCreateInfo.pNext = nullptr;
-+    metalExportCreateInfo.exportObjectType =
-+      VK_EXPORT_METAL_OBJECT_TYPE_METAL_DEVICE_BIT_EXT;
-+    computeInstanceCreateInfo.pNext = &metalExportCreateInfo;
-+  #endif
- 
-     if (!applicationExtensions.empty()) {
-         computeInstanceCreateInfo.enabledExtensionCount =
-@@ -446,6 +465,35 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
-                      fmt::join(validExtensions, ", "));
-     }
- 
-+    vk::PhysicalDeviceSubgroupProperties subgroupProps;
-+    vk::PhysicalDeviceProperties2 props2;
-+    props2.pNext = &subgroupProps;
-+
-+    this->mPhysicalDevice->getProperties2(&props2);
-+    if (!(subgroupProps.supportedOperations & vk::SubgroupFeatureFlagBits::eArithmetic)) {
-+      KP_LOG_ERROR("Device does not support subgroup arithmetic operations!");
-+    }
-+
-+    // ---------- Enable needed features (from Vulkan 1.1 and Vulkan 1.3) on the device ----------
-+    // This constructs a chain of pNext structures to enable features
-+    // If don't want Vulkan 1.3 we could restrict chain 
-+    // to vk::PhysicalDeviceSynchronization2Features
-+
-+    // With c++20 we could use designated initializers here
-+    vk::PhysicalDeviceFeatures2 deviceFeatures;
-+    vk::PhysicalDeviceVulkan11Features vulkan11Features;
-+    vk::PhysicalDeviceVulkan13Features vulkan13Features;
-+    vulkan13Features.synchronization2 = true;
-+
-+    vk::StructureChain <
-+      vk::PhysicalDeviceFeatures2,
-+      vk::PhysicalDeviceVulkan11Features,
-+      vk::PhysicalDeviceVulkan13Features> features2Chain = {
-+      deviceFeatures,
-+      vulkan11Features, // Vulkan 1.1 features
-+      vulkan13Features, // Vulkan 1.3 features
-+    };
-+          
-     vk::DeviceCreateInfo deviceCreateInfo(vk::DeviceCreateFlags(),
-                                           deviceQueueCreateInfos.size(),
-                                           deviceQueueCreateInfos.data(),
-@@ -454,6 +502,9 @@ Manager::createDevice(const std::vector<uint32_t>& familyQueueIndices,
-                                           validExtensions.size(),
-                                           validExtensions.data());
- 
-+    // Link in our features chain starting with the first element 
-+    deviceCreateInfo.setPNext(&features2Chain.get<vk::PhysicalDeviceFeatures2>());
-+
-     this->mDevice = std::make_shared<vk::Device>();
-     physicalDevice.createDevice(
-       &deviceCreateInfo, nullptr, this->mDevice.get());
 diff --git a/src/include/kompute/Memory.hpp b/src/include/kompute/Memory.hpp
 index eb93e57..5c061f4 100644
 --- a/src/include/kompute/Memory.hpp
@@ -1859,3 +1804,64 @@ index ba0e90e..e8c83e1 100644
      // -------------- NEVER OWNED RESOURCES
      std::shared_ptr<vk::PhysicalDevice> mPhysicalDevice = nullptr;
      std::shared_ptr<vk::Device> mDevice = nullptr;
+diff --git a/src/include/kompute/Tensor.hpp b/src/include/kompute/Tensor.hpp
+index 78814e3..946a335 100644
+--- a/src/include/kompute/Tensor.hpp
++++ b/src/include/kompute/Tensor.hpp
+@@ -38,7 +38,8 @@ class Tensor : public Memory
+            uint32_t elementTotalCount,
+            uint32_t elementMemorySize,
+            const DataTypes& dataType,
+-           const MemoryTypes& tensorType = MemoryTypes::eDevice);
++           const MemoryTypes& tensorType = MemoryTypes::eDevice,
++           vk::DescriptorType descriptorType = vk::DescriptorType::eStorageBuffer);
+ 
+     /**
+      *  Constructor with size provided which would be used to create the
+@@ -176,6 +177,8 @@ class Tensor : public Memory
+ 
+     Type type() override { return Type::eTensor; }
+ 
++    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
++
+   protected:
+     // -------------- ALWAYS OWNED RESOURCES
+     vk::DescriptorBufferInfo mDescriptorBufferInfo;
+@@ -215,8 +218,6 @@ class Tensor : public Memory
+     vk::BufferUsageFlags getPrimaryBufferUsageFlags();
+     vk::BufferUsageFlags getStagingBufferUsageFlags();
+ 
+-    vk::DescriptorBufferInfo constructDescriptorBufferInfo();
+-
+     /**
+      * Function to reserve memory on the tensor. This does not copy any data, it
+      * just reserves memory, similarly to std::vector reserve() method.
+@@ -225,8 +226,7 @@ class Tensor : public Memory
+ };
+ 
+ template<typename T>
+-class TensorT : public Tensor
+-{
++class TensorT : public Tensor {
+   public:
+     TensorT(std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+             std::shared_ptr<vk::Device> device,
+@@ -246,14 +246,16 @@ class TensorT : public Tensor
+       std::shared_ptr<vk::PhysicalDevice> physicalDevice,
+       std::shared_ptr<vk::Device> device,
+       const std::vector<T>& data,
+-      const Memory::MemoryTypes& tensorType = Memory::MemoryTypes::eDevice)
++      const Memory::MemoryTypes& tensorType = Memory::MemoryTypes::eDevice,
++      vk::DescriptorType descriptorType = vk::DescriptorType::eStorageBuffer)
+       : Tensor(physicalDevice,
+                device,
+                (void*)data.data(),
+                static_cast<uint32_t>(data.size()),
+                sizeof(T),
+                Memory::dataType<T>(),
+-               tensorType)
++               tensorType,
++               descriptorType)
+     {
+         KP_LOG_DEBUG("Kompute TensorT filling constructor with data size {}",
+                      data.size());
