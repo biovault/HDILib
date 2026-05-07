@@ -3,7 +3,6 @@ set(PROJECT_DATA "hdidata")
 set(HeaderFilesData
     abstract_data.h
     abstract_panel_data.h
-    cluster.h
     embedding.h
     embedding_inl.h
     empty_data.h
