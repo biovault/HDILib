@@ -190,8 +190,8 @@ add_subdirectory(hdi/dimensionality_reduction)
 # Example project
 # -----------------------------------------------------------------------------
 if(HDILib_BUILD_EXAMPLE)
-	message(STATUS "Build HDLIB test application")
-    add_subdirectory(examples/cli_test_program)
+	message(STATUS "Build HDLIB test application at: ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli_test_program")
+    add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/examples/cli_test_program")
 endif()
 
 # -----------------------------------------------------------------------------
