@@ -213,9 +213,9 @@ jobs:
       # The version of vcpkg 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
-        #This vcpkg baseline corresponds to tag 2026.04.27",
+        #This vcpkg baseline corresponds to tag 2026.03.18",
         with: 
-          vcpkgGitCommitId: "56bb2411609227288b70117ead2c47585ba07713"
+          vcpkgGitCommitId: "c3867e714dd3a51c272826eea77267876517ed99"
           vcpkgDirectory: ${{ runner.temp }}/vcpkg
 
       - name: Linux build
