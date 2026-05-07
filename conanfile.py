@@ -175,7 +175,7 @@ class HDILibConan(ConanFile):
             omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
             tc.variables["OpenMP_ROOT"] = omp_prefix_path
 
-        tc.variables["HDILib_BUILD_EXAMPLE"] = "ON"
+        tc.cache_variables["HDILib_BUILD_EXAMPLE"] = True
 
         print("Call toolchain generate")
         tc.generate()
