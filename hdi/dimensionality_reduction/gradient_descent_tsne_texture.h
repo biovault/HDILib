@@ -33,18 +33,19 @@
 #ifndef GRADIENT_DESCENT_TSNE_TEXTURE_H
 #define GRADIENT_DESCENT_TSNE_TEXTURE_H
 
-#include <vector>
-#include <stdint.h>
-#include "hdi/utils/assert_by_exception.h"
-#include "hdi/utils/abstract_log.h"
-#include <map>
-#include <unordered_map>
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
-#include "gpgpu_sne/gpgpu_sne_compute.h"
-#include "gpgpu_vulkan/gpgpu_sne_comp_vulkan.h"
-#include "gpgpu_sne/gpgpu_sne_raster.h"
-#include "tsne_parameters.h"
+#include "hdi/dimensionality_reduction/dr_config.h"
+#include "hdi/dimensionality_reduction/gpgpu_sne/gpgpu_sne_compute.h"
+#ifdef USE_VULKAN_KOMPUTE
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/gpgpu_sne_comp_vulkan.h"
+#endif
+#include "hdi/dimensionality_reduction/gpgpu_sne/gpgpu_sne_raster.h"
+#include "hdi/dimensionality_reduction/tsne_parameters.h"
+#include "hdi/utils/abstract_log.h"
+
+#include <vector>
+#include <stdint.h>
 #include <array>
 
 namespace hdi {
@@ -56,9 +57,17 @@ namespace hdi {
     */
     class GradientDescentTSNETexture {
     public:
-    //#ifndef __APPLE__
-      typedef enum { RASTER, COMPUTE_SHADER, COMPUTE_SHADER_VULKAN, AUTO_DETECT } GpgpuSneType;
-    //#endif
+      typedef enum
+      {
+        RASTER,
+#ifndef __APPLE__
+        COMPUTE_SHADER, 
+#endif
+        #ifdef USE_VULKAN_KOMPUTE
+        COMPUTE_SHADER_VULKAN,
+#endif
+        AUTO_DETECT
+      } GpgpuSneType;
       typedef float scalar_type;
       typedef std::vector<hdi::data::MapMemEff<uint32_t, float>> sparse_scalar_matrix_type;
       typedef std::vector<scalar_type> scalar_vector_type;
@@ -67,10 +76,8 @@ namespace hdi {
     public:
       GradientDescentTSNETexture();
 
-    //#ifndef __APPLE__
       //! Override the default compute type.
       void setType(GpgpuSneType _tsneType);
-    //#endif
       //! Initialize the class with a list of distributions. A joint-probability distribution will be computed as in the tSNE algorithm
       void initialize(const sparse_scalar_matrix_type& probabilities, data::Embedding<scalar_type>* embedding, TsneParameters params = TsneParameters());
       //! Initialize the class with a joint-probability distribution. Note that it must be provided non initialized and with the weight of each row equal to 2.
@@ -109,16 +116,18 @@ namespace hdi {
 
       //! Set the adaptive texture scaling
       void setResolutionFactor(float factor) {
-      #ifndef __APPLE__
+#ifndef __APPLE__
         if (_gpgpu_type == COMPUTE_SHADER)
           _gpgpu_compute_tsne.setScalingFactor(factor);
+#ifdef USE_VULKAN_KOMPUTE
         else if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
           _gpgpu_vulkan_compute_tsne.setScalingFactor(factor);
+#endif
         else
           _gpgpu_raster_tsne.setScalingFactor(factor);
-      #else
+#else
         _gpgpu_raster_tsne.setScalingFactor(factor);
-      #endif
+#endif
       }
       bool isInitialized() { return _initialized == true; }
       //! Exageration baseline
@@ -129,7 +138,7 @@ namespace hdi {
       // only valid on APPLE VULKAN debug - otherwise returns nullptr
       // The caller should cast back to vk::Device *
       void *getDevice() {
-#ifdef __APPLE__
+#if defined(__APPLE__) && defined(USE_VULKAN_KOMPUTE)
         return _gpgpu_vulkan_compute_tsne.getDevice().get();
 #else
         return nullptr;
@@ -170,10 +179,12 @@ namespace hdi {
       scalar_vector_type _Q; //! Conditional probalility distribution in the Low-dimensional space
       scalar_type _normalization_Q; //! Normalization factor of Q - Z in the original paper
 
-    #ifndef __APPLE__
+#ifndef __APPLE__
       GpgpuSneCompute _gpgpu_compute_tsne;
-    #endif // __APPLE__
+#endif
+#ifdef USE_VULKAN_KOMPUTE
       GpgpuSneVulkan _gpgpu_vulkan_compute_tsne;
+#endif
       GpgpuSneType _gpgpu_type;
 
       GpgpuSneRaster _gpgpu_raster_tsne;
