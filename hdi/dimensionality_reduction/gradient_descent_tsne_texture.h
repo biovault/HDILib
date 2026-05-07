@@ -37,7 +37,7 @@
 #include "hdi/data/map_mem_eff.h"
 #include "hdi/dimensionality_reduction/dr_config.h"
 #include "hdi/dimensionality_reduction/gpgpu_sne/gpgpu_sne_compute.h"
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
 #include "hdi/dimensionality_reduction/gpgpu_vulkan/gpgpu_sne_comp_vulkan.h"
 #endif
 #include "hdi/dimensionality_reduction/gpgpu_sne/gpgpu_sne_raster.h"
@@ -63,7 +63,7 @@ namespace hdi {
 #ifndef __APPLE__
         COMPUTE_SHADER, 
 #endif
-        #ifdef USE_VULKAN_KOMPUTE
+        #ifdef HDILib_USE_VULKAN_KOMPUTE
         COMPUTE_SHADER_VULKAN,
 #endif
         AUTO_DETECT
@@ -119,7 +119,7 @@ namespace hdi {
 #ifndef __APPLE__
         if (_gpgpu_type == COMPUTE_SHADER)
           _gpgpu_compute_tsne.setScalingFactor(factor);
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
         else if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
           _gpgpu_vulkan_compute_tsne.setScalingFactor(factor);
 #endif
@@ -138,7 +138,7 @@ namespace hdi {
       // only valid on APPLE VULKAN debug - otherwise returns nullptr
       // The caller should cast back to vk::Device *
       void *getDevice() {
-#if defined(__APPLE__) && defined(USE_VULKAN_KOMPUTE)
+#if defined(__APPLE__) && defined(HDILib_USE_VULKAN_KOMPUTE)
         return _gpgpu_vulkan_compute_tsne.getDevice().get();
 #else
         return nullptr;
@@ -182,7 +182,7 @@ namespace hdi {
 #ifndef __APPLE__
       GpgpuSneCompute _gpgpu_compute_tsne;
 #endif
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
       GpgpuSneVulkan _gpgpu_vulkan_compute_tsne;
 #endif
       GpgpuSneType _gpgpu_type;

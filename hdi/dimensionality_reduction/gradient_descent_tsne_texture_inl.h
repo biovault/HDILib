@@ -56,7 +56,7 @@ namespace hdi {
     }
 
     void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
       const bool vulkan_supported = GpgpuSneVulkan::isVulkanSupported();
 #else
       constexpr bool vulkan_supported = false;
@@ -69,7 +69,7 @@ namespace hdi {
       #else
         std::vector<GpgpuSneType> priotitized_types = {
           COMPUTE_SHADER, 
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
           COMPUTE_SHADER_VULKAN, 
 #endif
           RASTER
@@ -87,7 +87,7 @@ namespace hdi {
             _gpgpu_type = COMPUTE_SHADER;
             break;
           }
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
           else if (type == COMPUTE_SHADER_VULKAN && vulkan_supported) {
             _gpgpu_type = COMPUTE_SHADER_VULKAN;
             break;
@@ -110,7 +110,7 @@ namespace hdi {
         else if (tsne_type == RASTER && !glV33_supported) {
           throw std::runtime_error("OpenGL 3.3 not supported, cannot use rasterization fallback");
         }
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
         else if (tsne_type == COMPUTE_SHADER_VULKAN) {
           if (vulkan_supported) {
             _gpgpu_type = COMPUTE_SHADER_VULKAN;
@@ -146,7 +146,7 @@ namespace hdi {
 
     void GradientDescentTSNETexture::clear() {
       _embedding->clear();
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
       if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
         _gpgpu_vulkan_compute_tsne.clean();
 #endif
@@ -195,7 +195,7 @@ namespace hdi {
         _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
       else {
 #endif
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
         if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
           _gpgpu_vulkan_compute_tsne.initialize(_embedding, _params, _P);
         else// (_tsne_type == RASTER)
@@ -238,7 +238,7 @@ namespace hdi {
         _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
       else
 #endif
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
       if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
         _gpgpu_vulkan_compute_tsne.initialize(_embedding, _params, _P);
       else// (_tsne_type == RASTER)
@@ -257,7 +257,7 @@ namespace hdi {
       }
       _params = params;
 
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
       // vulkan is possible on any platform.
       if (_gpgpu_type == COMPUTE_SHADER_VULKAN)
         _gpgpu_vulkan_compute_tsne.updateParams(params);
@@ -359,7 +359,7 @@ namespace hdi {
       }
       else
 #endif
-#ifdef USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
       if (_gpgpu_type == COMPUTE_SHADER_VULKAN) {
         _gpgpu_vulkan_compute_tsne.compute(_embedding, exaggerationFactor(), _iteration, mult);
         kl_divergence = _gpgpu_vulkan_compute_tsne.kl_divergence;
