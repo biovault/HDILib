@@ -63,7 +63,7 @@ namespace hdi {
 #ifndef __APPLE__
         COMPUTE_SHADER, 
 #endif
-        #ifdef HDILib_USE_VULKAN_KOMPUTE
+#ifdef HDILib_USE_VULKAN_KOMPUTE
         COMPUTE_SHADER_VULKAN,
 #endif
         AUTO_DETECT
