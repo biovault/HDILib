@@ -175,6 +175,8 @@ class HDILibConan(ConanFile):
             omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
             tc.variables["OpenMP_ROOT"] = omp_prefix_path
 
+        tc.variables["HDILib_BUILD_EXAMPLE"] = "ON"
+
         print("Call toolchain generate")
         tc.generate()
         self._inject_vcpkg_in_cmake_presets()

@@ -8,8 +8,8 @@ option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC"
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
+option(HDILib_BUILD_EXAMPLE "Enable building the test executables" OFF)
 option(USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
-option(ENABLE_TESTS "Enable building the test executables" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
 set(HDILib_VERSION "latest" CACHE STRING "HDILib Library version")
 
@@ -187,11 +187,18 @@ add_subdirectory(hdi/data)
 add_subdirectory(hdi/dimensionality_reduction)
 
 # -----------------------------------------------------------------------------
-# Tests
+# Example project
 # -----------------------------------------------------------------------------
-if (ENABLE_TESTS)
-    add_subdirectory(tests)
-    add_dependencies(tsne_tester hdiutils hdidimensionalityreduction hdidata)
+if(HDILib_BUILD_EXAMPLE)
+    add_subdirectory(examples/tSNE_test)
+endif()
+
+# -----------------------------------------------------------------------------
+# Unit testing
+# -----------------------------------------------------------------------------
+if(HDILib_BUILD_TESTS)
+	message(STATUS "Build HDLIB unit tests")
+	add_subdirectory("test")
 endif()
 
 # -----------------------------------------------------------------------------
@@ -395,12 +402,4 @@ if(${HDILib_INSTALL})
       install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}"
         DESTINATION lib/Debug COMPONENT HDI_PACKAGE)
     endif()
-endif()
-
-# -----------------------------------------------------------------------------
-# Unit testing
-# -----------------------------------------------------------------------------
-if(HDILib_BUILD_TESTS)
-	message(STATUS "Build HDLIB unit tests")
-	add_subdirectory("test")
 endif()
