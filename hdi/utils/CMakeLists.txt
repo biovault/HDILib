@@ -1,19 +1,49 @@
 set(PROJECT "hdiutils")
 
-# Gather list of all .h files in "/"
-file(GLOB UtilsHeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
-file(GLOB GladHeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} glad/*.h glad/KHR/*.h)
-file(GLOB SourceFiles *.cpp)
+set(HeaderFilesUtils
+    abstract_log.h
+    assert_by_exception.h
+    cout_log.h
+    dataset_utils.h
+    graph_algorithms.h
+    graph_algorithms_inl.h
+    log_helper_functions.h
+    log_progress.h
+    math_utils.h
+    math_utils_inl.h
+    memory_utils.h
+    scoped_timers.h
+    scoped_timers_inl.h
+    timers.h
+    timing_utils.h
+    vector_utils.h
+)
+
+set(HeaderFilesGlad
+    glad/glad.h
+    glad/KHR/khrplatform.h
+)
+
+set(SourceFilesUtilsUtils
+    cout_log.cpp
+    dataset_utils.cpp
+    glad.cpp
+    graph_algorithms.cpp
+    log_progress.cpp
+    math_utils.cpp
+    memory_utils.cpp
+    timers.cpp
+)
 
 if(APPLE)
     # Do not include or build glad on Apple
-    set(HeaderFiles ${UtilsHeaderFiles})
-    list(REMOVE_ITEM SourceFiles "${CMAKE_CURRENT_SOURCE_DIR}/glad.cpp")
+    set(HeaderFiles ${HeaderFilesUtils})
+    list(REMOVE_ITEM SourceFilesUtils "glad.cpp")
 else()
-    set(HeaderFiles ${UtilsHeaderFiles} ${GladHeaderFiles})
+    set(HeaderFiles ${HeaderFilesUtils} ${HeaderFilesGlad})
 endif()
 
-add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
+add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFilesUtils} ${Resources} )
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 

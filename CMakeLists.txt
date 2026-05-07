@@ -171,7 +171,10 @@ endif()
 message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 
 if (USE_VULKAN_KOMPUTE)
-    # Neede for fmt library used in vulkan 
+    find_package(fmt CONFIG REQUIRED)
+    find_package(kompute CONFIG REQUIRED)
+
+    # Needed for fmt library used in vulkan 
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endif()

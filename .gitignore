@@ -8,4 +8,4 @@ ci/
 *.bak
 install
 out
-*.hpp
+hdi/dimensionality_reduction/dr_config.h

@@ -1,16 +1,44 @@
 set(PROJECT "hdidata")
 
-# Gather list of all .h files in "/"
-file(GLOB HeaderFiles *.h)
-file(GLOB SourceFiles *.cpp)
+set(HeaderFilesData
+    abstract_data.h
+    abstract_panel_data.h
+    cluster.h
+    embedding.h
+    embedding_inl.h
+    empty_data.h
+    flow_model.h
+    flow_model_inl.h
+    histogram.h
+    histogram_inl.h
+    io.h
+    map_helpers.h
+    map_mem_eff.h
+    nano_flann.h
+    panel_data.h
+    panel_data_inl.h
+    pixel_data.h
+    shader.h
+    text_data.h
+    voxel_data.h
+    vptree.h
+)
 
-add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
+set(SourceFilesData 
+    embedding.cpp
+    flow_model.cpp
+    histogram.cpp
+    panel_data.cpp
+    shader.cpp
+)
+
+add_library(${PROJECT} STATIC ${HeaderFilesData} ${SourceFilesData} )
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 
 target_link_libraries(${PROJECT} PRIVATE ${OPENGL_LIBRARIES})
 
-set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFilesData}")
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)

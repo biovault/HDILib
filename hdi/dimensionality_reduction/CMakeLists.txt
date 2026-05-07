@@ -1,44 +1,114 @@
 set(PROJECT "hdidimensionalityreduction")
 
-# Gather list of all .h files in "/"
-configure_file(dr_config.h.in dr_config.h)
+configure_file(dr_config.h.in "${CMAKE_CURRENT_LIST_DIR}/dr_config.h")
+
+set(HeaderFilesDR
+    dr_config.h
+    embedding_equalizer.h
+    embedding_equalizer_inl.h
+    evaluation.h
+    evaluation_inl.h
+    gpgpu_sne/field_computation.h
+    gpgpu_sne/gpgpu_sne_compute.h
+    gpgpu_sne/gpgpu_sne_raster.h
+    gradient_descent_tsne_texture.h
+    gradient_descent_tsne_texture_inl.h
+    hd_joint_probability_generator.h
+    hd_joint_probability_generator_inl.h
+    hierarchical_sne.h
+    hierarchical_sne_inl.h
+    knn_utils.h
+    sparse_tsne_user_def_probabilities.h
+    sparse_tsne_user_def_probabilities_inl.h
+    sptree.h
+    sptree_inl.h
+    tsne.h
+    tsne_inl.h
+    tsne_parameters.h
+    tsne_random_walks.h
+    tsne_random_walks_inl.h
+    weighted_sptree.h
+    weighted_sptree_inl.h
+    wtsne.h
+    wtsne_inl.h 
+)
+
+set(SourceFilesDR
+    embedding_equalizer.cpp
+    evaluation.cpp
+    gpgpu_sne/field_computation.cpp
+    gpgpu_sne/gpgpu_sne_compute.cpp
+    gpgpu_sne/gpgpu_sne_raster.cpp
+    gradient_descent_tsne_texture.cpp
+    hd_joint_probability_generator.cpp
+    hierarchical_sne.cpp
+    knn_utils.cpp
+    sparse_tsne_user_def_probabilities.cpp
+    sptree.cpp
+    tsne.cpp
+    tsne_random_walks.cpp
+    weighted_sptree.cpp
+    wtsne.cpp
+)
+
+set(ShaderFilesVulkan "")
+set(HeaderFilesVulkan "")
 
 if(USE_VULKAN_KOMPUTE)
-    file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h gpgpu_vulkan/*.h gpgpu_vulkan/shaders/*.h)
-    message(STATUS "################# ${HeaderFiles} ##############")
-    file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp gpgpu_vulkan/*.cpp gpgpu_vulkan/shaders/*.cpp)
-    message(STATUS "################# ${SourceFiles} ##############")
-    file(GLOB_RECURSE ShaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} gpgpu_vulkan/shaders/*.comp)
-    message(STATUS "################# ${ShaderFiles} ##############")
+    list(APPEND HeaderFilesDR
+        gpgpu_vulkan/gpgpu_sne_comp_vulkan.h
+        gpgpu_vulkan/shaders/shader_progs.h
+        gpgpu_vulkan/shaders/shaders.h
+        gpgpu_vulkan/shaders/vkUniformBufferHelper.h
+        gpgpu_vulkan/shaders/vulkan_extension.h
+        gpgpu_vulkan/tensor_config.h
+    )
+
+    list(APPEND SourceFilesDR
+        gpgpu_vulkan/gpgpu_sne_comp_vulkan.cpp
+        gpgpu_vulkan/shaders/shader_progs.cpp
+        gpgpu_vulkan/shaders/shaders.cpp
+        gpgpu_vulkan/shaders/vulkan_extension.cpp
+    )
+
+    list(APPEND ShaderFilesVulkan
+        gpgpu_vulkan/shaders/bounds.comp
+        gpgpu_vulkan/shaders/bounds_reduce.comp
+        gpgpu_vulkan/shaders/center_scale.comp
+        gpgpu_vulkan/shaders/compute_field_workgroup.comp
+        gpgpu_vulkan/shaders/compute_fields.comp
+        gpgpu_vulkan/shaders/compute_fields_enh.comp
+        gpgpu_vulkan/shaders/compute_forces.comp
+        gpgpu_vulkan/shaders/interp1.comp
+        gpgpu_vulkan/shaders/interp2.comp
+        gpgpu_vulkan/shaders/interp_fields.comp
+        gpgpu_vulkan/shaders/reset_counter.comp
+        gpgpu_vulkan/shaders/stencil.comp
+        gpgpu_vulkan/shaders/stencil2active.comp
+        gpgpu_vulkan/shaders/update.comp
+    )
+
     # each *.comp file will be glslang converted to a SPIRV .hpp file
-    set(ShaderFileHeaders "")
-    foreach(_shader_comp IN LISTS ShaderFiles)
+    set(HeaderFilesVulkan "")
+    foreach(_shader_comp IN LISTS ShaderFilesVulkan)
       get_filename_component(_COMP_ROOT ${_shader_comp} NAME_WE)
-      list(APPEND ShaderFileHeaders "gpgpu_vulkan/shaders/${_COMP_ROOT}.hpp")
+      list(APPEND HeaderFilesVulkan "gpgpu_vulkan/shaders/${_COMP_ROOT}.hpp")
     endforeach()
-    message(STATUS "################# ${ShaderFileHeaders} ##############")
-    add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${ShaderFiles})
-    source_group(Shaders FILES ${ShaderFiles})
+
+    message(STATUS "Add vulkan subdir")
+    add_subdirectory(gpgpu_vulkan)
+
+    source_group(Shaders FILES ${ShaderFilesVulkan})
     add_dependencies(${PROJECT} compile_shaders)
-    find_package(fmt CONFIG REQUIRED)
-    find_package(kompute CONFIG REQUIRED)
-    target_compile_definitions(${PROJECT} PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
-else()
-    file(GLOB HeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h gpgpu_sne/*.h)
-    message(STATUS "################# ${HeaderFiles} ##############")
-    file(GLOB SourceFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp gpgpu_sne/*.cpp)
-    message(STATUS "################# ${SourceFiles} ##############")
-    add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} )
 endif()
 
-
+add_library(${PROJECT} STATIC ${HeaderFilesDR} ${SourceFilesDR} ${ShaderFilesVulkan})
 
 target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${hnswlib_SOURCE_DIR}")
 target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}")
 #include the generated dr_config.h file and any others
 target_include_directories(${PROJECT} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
 
 # prefer static linking
 if(NOT FLANN_TARGET)
@@ -78,7 +148,21 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_compile_definitions(${PROJECT} PRIVATE _ISOC99_SOURCE _GNU_SOURCE)
+if (USE_VULKAN_KOMPUTE)
+    target_link_libraries(${PROJECT} PRIVATE kompute::kompute)
+endif()
+
+if(UNIX)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+    target_link_libraries(${PROJECT} PRIVATE Threads::Threads)
+endif(UNIX)
+
+target_compile_definitions(${PROJECT} PRIVATE 
+    _ISOC99_SOURCE 
+    _GNU_SOURCE
+    $<$<BOOL:${USE_VULKAN_KOMPUTE}>:VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1>
+)
 
 if(HDILib_ENABLE_PID)
     set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -93,16 +177,6 @@ endif()
 hdi_check_and_set_AVX(${PROJECT} ${HDILib_ENABLE_AVX})
 hdi_set_optimization_level(${PROJECT} ${HDILib_OPTIMIZATION_LEVEL})
 
-if (USE_VULKAN_KOMPUTE)
-    target_link_libraries(${PROJECT} PRIVATE kompute::kompute)
-endif()
-
-if(UNIX)
-    set(THREADS_PREFER_PTHREAD_FLAG ON)
-    find_package(Threads REQUIRED)
-    target_link_libraries(${PROJECT} PRIVATE Threads::Threads)
-endif(UNIX)
-
 ########### INSTALL ##############
 if(${HDILib_INSTALL})
     install(TARGETS ${PROJECT}
@@ -114,8 +188,8 @@ if(${HDILib_INSTALL})
 
     # Preserve the header hierarchy by explicit install
     # the CMake PUBLIC_HEADER target property flattens it if used.
-    set(_ALL_HEADERS ${HeaderFiles} ${ShaderFileHeaders})
-    # message("All headers ${DR_HEADER}")
+    set(_ALL_HEADERS ${HeaderFilesDR} ${HeaderFilesVulkan})
+
     install(CODE "foreach(DR_HEADER ${_ALL_HEADERS})
             message(STATUS \"Installing: \${DR_HEADER} to \${CMAKE_INSTALL_PREFIX}/include/hdi/dimensionality_reduction\")
             execute_process(
