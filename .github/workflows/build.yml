@@ -210,12 +210,16 @@ jobs:
           python3 --version
           pip3 --version
 
-      # The version of vcpkg 
+      # Ensure zip is available on manylinux before vcpkg setup
+      - name: Install zip
+        if: contains(matrix.name, 'manylinux')
+        run: |
+          dnf install -y zip
+
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
-        #This vcpkg baseline corresponds to tag 2026.03.18",
         with: 
-          vcpkgGitCommitId: "c3867e714dd3a51c272826eea77267876517ed99"
+          vcpkgGitCommitId: "c3867e714dd3a51c272826eea77267876517ed99" # corresponds to tag 2026.03.18
           vcpkgDirectory: ${{ runner.temp }}/vcpkg
 
       - name: Linux build
