@@ -9,7 +9,7 @@ option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
 option(HDILib_BUILD_EXAMPLE "Enable building the test executables" OFF)
-option(USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
+option(HDILib_USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
 set(HDILib_VERSION "latest" CACHE STRING "HDILib Library version")
 
@@ -25,7 +25,7 @@ if(HDILib_ENABLE_PID)
     message(STATUS "Position independent code compilation ON")
 endif()
 
-if(USE_VULKAN_KOMPUTE)
+if(HDILib_USE_VULKAN_KOMPUTE)
     list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
 
     # Make sure vcpkg toolchain is picked up (or pass -DCMAKE_TOOLCHAIN_FILE=...)
@@ -170,7 +170,7 @@ endif()
 
 message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
 
-if (USE_VULKAN_KOMPUTE)
+if (HDILib_USE_VULKAN_KOMPUTE)
     find_package(fmt CONFIG REQUIRED)
     find_package(kompute CONFIG REQUIRED)
 
@@ -320,7 +320,7 @@ if(${HDILib_INSTALL})
             DESTINATION lib/cmake/HDILib
             COMPONENT HDI_PACKAGE
     )
-    if (USE_VULKAN_KOMPUTE)
+    if (HDILib_USE_VULKAN_KOMPUTE)
       # TBD possibly move this to an external script
       # Install the config.cmake files for the vcpkg dependencies
       message(STATUS "Fix config in ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake")

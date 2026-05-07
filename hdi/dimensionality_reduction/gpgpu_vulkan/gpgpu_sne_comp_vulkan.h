@@ -1,7 +1,7 @@
 // This file contains the implementation of the GPGPU SNE computation using Vulkan.
 // The structure is similar to gpgpu_sne_compute.h but adapted for Vulkan API using the 
 // vulkan kompute library.
-//#ifdef USE_VULKAN_KOMPUTE 
+//#ifdef HDILib_USE_VULKAN_KOMPUTE 
 #pragma once
 
 #include "hdi/data/shader.h"

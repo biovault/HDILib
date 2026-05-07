@@ -54,7 +54,7 @@ set(SourceFilesDR
 set(ShaderFilesVulkan "")
 set(HeaderFilesVulkan "")
 
-if(USE_VULKAN_KOMPUTE)
+if(HDILib_USE_VULKAN_KOMPUTE)
     list(APPEND HeaderFilesDR
         gpgpu_vulkan/gpgpu_sne_comp_vulkan.h
         gpgpu_vulkan/shaders/shader_progs.h
@@ -146,7 +146,7 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-if (USE_VULKAN_KOMPUTE)
+if (HDILib_USE_VULKAN_KOMPUTE)
     target_link_libraries(${PROJECT_DR} PRIVATE kompute::kompute)
     add_dependencies(${PROJECT_DR} compile_shaders)
 endif()
@@ -160,7 +160,7 @@ endif(UNIX)
 target_compile_definitions(${PROJECT_DR} PRIVATE 
     _ISOC99_SOURCE 
     _GNU_SOURCE
-    $<$<BOOL:${USE_VULKAN_KOMPUTE}>:VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1>
+    $<$<BOOL:${HDILib_USE_VULKAN_KOMPUTE}>:VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1>
 )
 
 if(HDILib_ENABLE_PID)
