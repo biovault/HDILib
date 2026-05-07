@@ -98,16 +98,16 @@ cmake  -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 
 ## Using the HDILib
 
-The subdirectory test_package builds an exammple that links agains the HDILib binaries. Check the CMakeLists.txt this shows how to consume the HDILib Cmake package.
+The subdirectory `examples` contains two example projects that showcase how to setup and use the HDILib. Check the respective CMakeLists.txt to see how to consume the library.
 
 Find the package
 ```cmake
 find_package(HDILib COMPONENTS hdiutils hdidata hdidimensionalityreduction PATHS ${HDILib_ROOT} CONFIG REQUIRED)
 ```
 
-Consume the package and dependencies (Windows example)
+Consume the package and dependencies
 ```cmake
-target_link_libraries(example PRIVATE HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata ${CMAKE_DL_LIBS})
+target_link_libraries(example PRIVATE HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata)
 ```
 
 ## Applications
@@ -117,7 +117,6 @@ A suite of command line and visualization applications is available in the [orig
 ## CI/CD process
 
 Conan is used in the CI/CD process to retrieve a prebuilt flann from the lkeb-artifactory and to upload the completed HDILib to the artifactory. The conanfile uses the cmake tool as builder.
-
 
 ### CI/CD note on https
 OpenSSL in the python libraries does not have a recent list of CA-authorities, that includes the authority for lkeb-artifactory GEANT issued certificate. Therefore it is essential to append the lkeb-artifactory cert.pem to the cert.pem file in the conan home directory for a successful https connection. See the CI scripts for details.
@@ -135,14 +134,6 @@ The conan build creates three versions of the package, Release, Debug and
 
 ### GitHub Actions status
 ![master ci status](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg)
-
-Currently the following build matrix is performed:
-
-| OS                   | Architecture | Compiler  |
-| -------------------- | ------------ | --------- |
-| Windows              | x64          | MSVC 2019 |
-| Linux (ubuntu-22.04) | x86_64       | gcc 11    |
-| Macos (12)           | x86_64         | clang 13  |
 
 [![DOI](https://zenodo.org/badge/100361974.svg)](https://zenodo.org/badge/latestdoi/100361974)
 
