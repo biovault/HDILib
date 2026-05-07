@@ -46,13 +46,12 @@ class HDILibConan(ConanFile):
     # , "conanbuildinfo.txt", "conanbuildinfo_debug.cmake", "conanbuildinfo_release.cmake", "conanbuildinfo_multi.cmake"
     exports = (
         "hdi*",
-        "external*",
         "cmake*",
         "CMakeLists.txt",
         "LICENSE",
         "vcpkg.json",
         "vcpkg-overlays*",
-        "tests*",
+        "examples*",
     )
 
     def _get_python_cmake(self):
