@@ -209,8 +209,3 @@ if(${HDILib_INSTALL})
             COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
     )
 endif()
-
-if(USE_VULKAN_KOMPUTE)
-    message(STATUS "Add vulkan subdir")
-    add_subdirectory(gpgpu_vulkan)
-endif()
