@@ -37,28 +37,6 @@ jobs:
             build-config: Release
             build-arch: x86_64
 
-          #- name: Linux_gcc10
-          #  os: ubuntu-22.04
-          #  build-cc: gcc
-          #  build-cxx: g++
-          #  build-compiler: gcc
-          #  build-cversion: 10
-          #  build-config: Release
-          #  build-os: Linux
-          #  build-libcxx: libstdc++11
-          #  build-arch: x86_64
-
-          #- name: Linux_gcc11
-          #  os: ubuntu-22.04
-          #  build-cc: gcc
-          #  build-cxx: g++
-          #  build-compiler: gcc
-          #  build-cversion: 11
-          #  build-config: Release
-          #  build-os: Linux
-          #  build-libcxx: libstdc++11
-          #  build-arch: x86_64
-
           - name: Linux_gcc13
             os: ubuntu-24.04
             build-cc: gcc
@@ -165,7 +143,7 @@ jobs:
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
   # This build for python on linux cannot be performed using the normal matrix
-  # becuse the C libs are not compatible with the python versions 
+  # because the C libs are not compatible with the python versions 
   Python-ManyLinux-2-28-Build:
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux_2_28_x86_64
@@ -182,16 +160,6 @@ jobs:
             build-libcxx: libstdc++11
             build-arch: x86_64    
             
-          # - name: python manylinux_2_28_gcc12
-          #   build-cc: gcc
-          #   build-cxx: g++
-          #   build-compiler: gcc
-          #   build-cversion: 12
-          #   build-config: Release
-          #   build-os: Linux
-          #   build-libcxx: libstdc++11
-          #   build-arch: x86_64   
-    
     steps:
       - name: Checkout the source
         uses: actions/checkout@v6
