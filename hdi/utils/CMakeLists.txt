@@ -24,7 +24,7 @@ set(HeaderFilesGlad
     glad/KHR/khrplatform.h
 )
 
-set(SourceFilesUtilsUtils
+set(SourceFilesUtils
     cout_log.cpp
     dataset_utils.cpp
     glad.cpp
