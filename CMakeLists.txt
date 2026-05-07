@@ -199,7 +199,7 @@ endif()
 # -----------------------------------------------------------------------------
 if(HDILib_BUILD_TESTS)
 	message(STATUS "Build HDLIB unit tests")
-	add_subdirectory("test")
+	add_subdirectory(test)
 endif()
 
 # -----------------------------------------------------------------------------
