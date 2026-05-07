@@ -24,6 +24,8 @@ set(HeaderFilesGlad
     glad/KHR/khrplatform.h
 )
 
+list(APPEND HeaderFilesUtils ${HeaderFilesGlad})
+
 set(SourceFilesUtils
     cout_log.cpp
     dataset_utils.cpp
@@ -34,16 +36,6 @@ set(SourceFilesUtils
     memory_utils.cpp
     timers.cpp
 )
-
-if(APPLE)
-    # Do not include or build glad on Apple
-    list(REMOVE_ITEM SourceFilesUtils "glad.cpp")
-else()
-    list(APPEND HeaderFilesUtils ${HeaderFilesGlad})
-endif()
-
-message(STATUS "HeaderFilesUtils: ${HeaderFilesUtils}")
-message(STATUS "SourceFilesUtils: ${SourceFilesUtils}")
 
 add_library(${PROJECT_UTILS} STATIC ${HeaderFilesUtils} ${SourceFilesUtils})
 
