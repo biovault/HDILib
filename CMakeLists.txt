@@ -17,7 +17,7 @@ if(USE_VULKAN_KOMPUTE)
 endif()
 
 set(PROJECT "HDILib")
-PROJECT(${PROJECT})
+PROJECT(${PROJECT} LANGUAGES CXX C)
 
 # -----------------------------------------------------------------------------
 # User Options
