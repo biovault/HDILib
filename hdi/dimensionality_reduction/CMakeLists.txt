@@ -1,4 +1,4 @@
-set(PROJECT "hdidimensionalityreduction")
+set(PROJECT_DR "hdidimensionalityreduction")
 
 configure_file(dr_config.h.in "${CMAKE_CURRENT_LIST_DIR}/dr_config.h")
 
@@ -100,13 +100,13 @@ if(USE_VULKAN_KOMPUTE)
     add_subdirectory(gpgpu_vulkan)
 endif()
 
-add_library(${PROJECT} STATIC ${HeaderFilesDR} ${SourceFilesDR} ${ShaderFilesVulkan})
+add_library(${PROJECT_DR} STATIC ${HeaderFilesDR} ${SourceFilesDR} ${ShaderFilesVulkan})
 
-target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
-target_include_directories(${PROJECT} PRIVATE "${hnswlib_SOURCE_DIR}")
-target_include_directories(${PROJECT} PRIVATE "${Annoy_SOURCE_DIR}")
+target_include_directories(${PROJECT_DR} PRIVATE "${PROJECT_SOURCE_DIR}")
+target_include_directories(${PROJECT_DR} PRIVATE "${hnswlib_SOURCE_DIR}")
+target_include_directories(${PROJECT_DR} PRIVATE "${Annoy_SOURCE_DIR}")
 #include the generated dr_config.h file and any others
-target_include_directories(${PROJECT} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${PROJECT_DR} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # prefer static linking
 if(NOT FLANN_TARGET)
@@ -138,48 +138,48 @@ if(NOT LZ4_TARGET)
 endif()
 
 message (STATUS "Flann link library: " ${FLANN_TARGET})
-target_link_libraries(${PROJECT} PRIVATE ${FLANN_TARGET})
+target_link_libraries(${PROJECT_DR} PRIVATE ${FLANN_TARGET})
 message (STATUS "Linking lz4 library " ${LZ4_TARGET})
-target_link_libraries(${PROJECT} PRIVATE ${LZ4_TARGET})
+target_link_libraries(${PROJECT_DR} PRIVATE ${LZ4_TARGET})
 
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 if (USE_VULKAN_KOMPUTE)
-    target_link_libraries(${PROJECT} PRIVATE kompute::kompute)
-    add_dependencies(${PROJECT} compile_shaders)
+    target_link_libraries(${PROJECT_DR} PRIVATE kompute::kompute)
+    add_dependencies(${PROJECT_DR} compile_shaders)
 endif()
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads REQUIRED)
-    target_link_libraries(${PROJECT} PRIVATE Threads::Threads)
+    target_link_libraries(${PROJECT_DR} PRIVATE Threads::Threads)
 endif(UNIX)
 
-target_compile_definitions(${PROJECT} PRIVATE 
+target_compile_definitions(${PROJECT_DR} PRIVATE 
     _ISOC99_SOURCE 
     _GNU_SOURCE
     $<$<BOOL:${USE_VULKAN_KOMPUTE}>:VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1>
 )
 
 if(HDILib_ENABLE_PID)
-    set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(${PROJECT_DR} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 if(HDILib_ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        target_compile_options(${PROJECT} PRIVATE /analyze)
+        target_compile_options(${PROJECT_DR} PRIVATE /analyze)
     endif()
 endif()
 
-hdi_check_and_set_AVX(${PROJECT} ${HDILib_ENABLE_AVX})
-hdi_set_optimization_level(${PROJECT} ${HDILib_OPTIMIZATION_LEVEL})
+hdi_check_and_set_AVX(${PROJECT_DR} ${HDILib_ENABLE_AVX})
+hdi_set_optimization_level(${PROJECT_DR} ${HDILib_OPTIMIZATION_LEVEL})
 
 ########### INSTALL ##############
 if(${HDILib_INSTALL})
-    install(TARGETS ${PROJECT}
-        EXPORT ${PROJECT}Targets
+    install(TARGETS ${PROJECT_DR}
+        EXPORT ${PROJECT_DR}Targets
         LIBRARY DESTINATION lib/$<CONFIGURATION>
         ARCHIVE DESTINATION lib/$<CONFIGURATION>
         COMPONENT hdidimensionalityreduction
@@ -202,8 +202,8 @@ if(${HDILib_INSTALL})
     )
 
     # Install cmake targets file
-    install(EXPORT ${PROJECT}Targets
-            FILE ${PROJECT}Targets.cmake
+    install(EXPORT ${PROJECT_DR}Targets
+            FILE ${PROJECT_DR}Targets.cmake
             NAMESPACE HDI::
             DESTINATION lib/cmake/HDILib
             COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET

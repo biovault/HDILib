@@ -1,4 +1,4 @@
-set(PROJECT "hdiutils")
+set(PROJECT_UTILS "hdiutils")
 
 set(HeaderFilesUtils
     abstract_log.h
@@ -37,36 +37,38 @@ set(SourceFilesUtils
 
 if(APPLE)
     # Do not include or build glad on Apple
-    set(HeaderFiles ${HeaderFilesUtils})
     list(REMOVE_ITEM SourceFilesUtils "glad.cpp")
 else()
-    set(HeaderFiles ${HeaderFilesUtils} ${HeaderFilesGlad})
+    list(APPEND HeaderFilesUtils ${HeaderFilesGlad})
 endif()
 
-add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFilesUtils} ${Resources} )
+message(STATUS "HeaderFilesUtils: ${HeaderFilesUtils}")
+message(STATUS "SourceFilesUtils: ${SourceFilesUtils}")
 
-target_include_directories(${PROJECT} PRIVATE "${PROJECT_SOURCE_DIR}")
+add_library(${PROJECT_UTILS} STATIC ${HeaderFilesUtils} ${SourceFilesUtils})
 
-#set_target_properties(${PROJECT} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
+target_include_directories(${PROJECT_UTILS} PRIVATE "${PROJECT_SOURCE_DIR}")
+
+#set_target_properties(${PROJECT_UTILS} PROPERTIES PUBLIC_HEADER "${HeaderFiles}")
 
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(${PROJECT} PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(${PROJECT_UTILS} PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-target_compile_definitions(${PROJECT} PRIVATE _ISOC99_SOURCE _GNU_SOURCE)
+target_compile_definitions(${PROJECT_UTILS} PRIVATE _ISOC99_SOURCE _GNU_SOURCE)
 
 if(HDILib_ENABLE_PID)
-    set_target_properties(${PROJECT} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(${PROJECT_UTILS} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 if(HDILib_ENABLE_CODE_ANALYSIS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        target_compile_options(${PROJECT} PRIVATE /analyze)
+        target_compile_options(${PROJECT_UTILS} PRIVATE /analyze)
     endif()
 endif()
 
-hdi_check_and_set_AVX(${PROJECT} ${HDILib_ENABLE_AVX})
-hdi_set_optimization_level(${PROJECT} ${HDILib_OPTIMIZATION_LEVEL})
+hdi_check_and_set_AVX(${PROJECT_UTILS} ${HDILib_ENABLE_AVX})
+hdi_set_optimization_level(${PROJECT_UTILS} ${HDILib_OPTIMIZATION_LEVEL})
 
 if (UNIX)
     target_link_libraries (hdiutils PRIVATE ${CMAKE_DL_LIBS}) # glad.cpp requires -ldl
@@ -74,8 +76,8 @@ endif (UNIX)
 
 ########### INSTALL ##############
 if(${HDILib_INSTALL})
-    install(TARGETS ${PROJECT}
-        EXPORT ${PROJECT}Targets
+    install(TARGETS ${PROJECT_UTILS}
+        EXPORT ${PROJECT_UTILS}Targets
         LIBRARY DESTINATION lib/$<CONFIGURATION>
         ARCHIVE DESTINATION lib/$<CONFIGURATION>
         COMPONENT hdiutils
@@ -95,8 +97,8 @@ if(${HDILib_INSTALL})
         COMPONENT PUBLIC_HEADERS
     )
 
-    install(EXPORT ${PROJECT}Targets
-            FILE ${PROJECT}Targets.cmake
+    install(EXPORT ${PROJECT_UTILS}Targets
+            FILE ${PROJECT_UTILS}Targets.cmake
             NAMESPACE HDI::
             DESTINATION lib/cmake/HDILib
             COMPONENT HDIUTILS_TARGET
