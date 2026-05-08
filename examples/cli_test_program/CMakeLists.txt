@@ -159,9 +159,7 @@ file(GLOB_RECURSE ITEMS2
 target_link_libraries(tsne_tester PRIVATE Vulkan::Vulkan)
 target_link_libraries(tsne_tester PRIVATE glfw)
 target_link_libraries(tsne_tester PRIVATE ${OPENGL_LIBRARIES})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_BINARY_DIR}/hdi/dimensionality_reduction/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidimensionalityreduction${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_BINARY_DIR}/hdi/utils/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_BINARY_DIR}/hdi/data/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_link_libraries(tsne_tester PRIVATE hdidimensionalityreduction hdiutils hdidata)
 target_link_libraries(tsne_tester PRIVATE kompute::kompute)
 
 if (APPLE)
