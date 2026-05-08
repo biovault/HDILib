@@ -29,7 +29,7 @@ message(STATUS "rapidcsv at ${rapidcsv_SOURCE_DIR}")
 # If using RenderDoc (https://renderdoc.org) or XCode GPU debugging capturing
 # GPU calls is a powerful debugging tool for Vulkan
 option(TSNETESTER_GPUDEBUG_CAPTURE " Enable GPU debug capture for the test program (Windows or MacOS)" OFF)
-set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 configure_file(tSNETester_config.h.in tSNETester_config.h)
 if(APPLE AND TSNETESTER_GPUDEBUG_CAPTURE)
     enable_language(OBJCXX)
