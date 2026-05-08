@@ -11,13 +11,9 @@
 #endif
 
 
-#include "hdi/utils/cout_log.h"
 #include "hdi/utils/glad/glad.h"
 #include "hdi/dimensionality_reduction/knn_utils.h"
-#include "hdi/utils/log_helper_functions.h"
 #include "hdi/data/embedding.h"
-#include "hdi/data/panel_data.h"
-#include "hdi/data/io.h"
 #include "hdi/dimensionality_reduction/hd_joint_probability_generator.h"
 #include "hdi/dimensionality_reduction/gradient_descent_tsne_texture.h"
 #include "hdi/utils/scoped_timers.h"
