@@ -10,3 +10,4 @@ install
 out
 hdi/dimensionality_reduction/dr_config.h
 hdi/dimensionality_reduction/gpgpu_vulkan/shaders/*.hpp
+hdi/dimensionality_reduction/gpgpu_vulkan/shaders/config*
