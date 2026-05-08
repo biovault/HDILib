@@ -155,7 +155,6 @@ endforeach()
 #add_custom_command(TARGET tsne_tester PRE_LINK COMMAND nm ${CMAKE_BINARY_DIR}/hdi/data/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
 #add_custom_command(TARGET tsne_tester PRE_LINK COMMAND nm ${CMAKE_BINARY_DIR}/hdi/utils/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
 
-message(STATUS "hdi data symbols ${HDIDATA_SYMBOLS}")
 # For static library linking the consumer lib comes first (gcc)
 target_link_libraries(tsne_tester PRIVATE Vulkan::Vulkan)
 target_link_libraries(tsne_tester PRIVATE glfw)
