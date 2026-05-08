@@ -98,23 +98,6 @@ if(HDILib_USE_VULKAN_KOMPUTE)
     source_group(ShadersVulkan FILES ${ShaderFilesVulkan})
     message(STATUS "Add vulkan subdir")
     add_subdirectory(gpgpu_vulkan)
-    message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
-    # Sanity check that the generated headers align with our list above
-    file(GLOB GENERATED_VULKAN_SHADER_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-        "gpgpu_vulkan/shaders/*.hpp"
-    )
-    set(_lhs "${GENERATED_VULKAN_SHADER_HEADERS}")
-    set(_rhs "${HeaderFilesVulkan}")
-    list(SORT _lhs)
-    list(SORT _rhs)
-    if(NOT _lhs STREQUAL _rhs)
-    message(WARNING
-        "GENERATED_VULKAN_SHADER_HEADERS does not match HeaderFilesVulkan\n"
-        "GENERATED_VULKAN_SHADER_HEADERS = ${_lhs}\n"
-        "HeaderFilesVulkan               = ${_rhs}"
-    )
-    endif()
-    
 endif()
 
 add_library(${PROJECT_DR} STATIC ${HeaderFilesDR} ${SourceFilesDR} ${ShaderFilesVulkan})
