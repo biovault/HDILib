@@ -1,1 +1,0 @@
-#define SHADER_USE_PUSH_CONSTANTS @@

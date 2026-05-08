@@ -46,13 +46,12 @@ class HDILibConan(ConanFile):
     # , "conanbuildinfo.txt", "conanbuildinfo_debug.cmake", "conanbuildinfo_release.cmake", "conanbuildinfo_multi.cmake"
     exports = (
         "hdi*",
-        "external*",
         "cmake*",
         "CMakeLists.txt",
         "LICENSE",
         "vcpkg.json",
         "vcpkg-overlays*",
-        "tests*",
+        "examples*",
     )
 
     def _get_python_cmake(self):
@@ -175,7 +174,7 @@ class HDILibConan(ConanFile):
             omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
             tc.variables["OpenMP_ROOT"] = omp_prefix_path
 
-        tc.variables["HDILib_BUILD_EXAMPLE"] = "ON"
+        tc.cache_variables["HDILib_BUILD_EXAMPLE"] = True
 
         print("Call toolchain generate")
         tc.generate()

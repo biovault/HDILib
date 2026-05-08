@@ -14,7 +14,7 @@ FetchContent_Declare(
 
 )
 FetchContent_MakeAvailable(argparse)
-message(STATUS "hnswlib at ${argparse_SOURCE_DIR}")
+message(STATUS "argparse at ${argparse_SOURCE_DIR}")
 
 message (STATUS "Fetching rapidcsv...")
 FetchContent_Declare(
@@ -24,12 +24,12 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(rapidcsv)
-message(STATUS "hnswlib at ${rapidcsv_SOURCE_DIR}")
+message(STATUS "rapidcsv at ${rapidcsv_SOURCE_DIR}")
 
 # If using RenderDoc (https://renderdoc.org) or XCode GPU debugging capturing
 # GPU calls is a powerful debugging tool for Vulkan
 option(TSNETESTER_GPUDEBUG_CAPTURE " Enable GPU debug capture for the test program (Windows or MacOS)" OFF)
-set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 configure_file(tSNETester_config.h.in tSNETester_config.h)
 if(APPLE AND TSNETESTER_GPUDEBUG_CAPTURE)
     enable_language(OBJCXX)
@@ -120,7 +120,9 @@ endmacro()
 #message(STATUS "***********************************")
 target_include_directories(tsne_tester PRIVATE "${argparse_SOURCE_DIR}/include")
 target_include_directories(tsne_tester PRIVATE "${rapidcsv_SOURCE_DIR}/src")
-target_include_directories(tsne_tester PRIVATE "${CMAKE_SOURCE_DIR}")
+target_include_directories(tsne_tester PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
+target_include_directories(tsne_tester PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../..")
+
 # Debug
 #message(STATUS "A. Test binary at ${CMAKE_CURRENT_BINARY_DIR}")
 #file(GLOB CURBINDIRFILES "${CMAKE_CURRENT_BINARY_DIR}/*")
@@ -137,14 +139,11 @@ target_include_directories(tsne_tester PRIVATE "${CMAKE_SOURCE_DIR}")
 #add_custom_command(TARGET tsne_tester PRE_LINK COMMAND nm ${CMAKE_BINARY_DIR}/hdi/data/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
 #add_custom_command(TARGET tsne_tester PRE_LINK COMMAND nm ${CMAKE_BINARY_DIR}/hdi/utils/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
 
-message(STATUS "hdi data symbols ${HDIDATA_SYMBOLS}")
 # For static library linking the consumer lib comes first (gcc)
 target_link_libraries(tsne_tester PRIVATE Vulkan::Vulkan)
 target_link_libraries(tsne_tester PRIVATE glfw)
 target_link_libraries(tsne_tester PRIVATE ${OPENGL_LIBRARIES})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_BINARY_DIR}/hdi/dimensionality_reduction/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidimensionalityreduction${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_BINARY_DIR}/hdi/utils/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
-target_link_libraries(tsne_tester PRIVATE ${CMAKE_BINARY_DIR}/hdi/data/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_link_libraries(tsne_tester PRIVATE hdidimensionalityreduction hdiutils hdidata)
 target_link_libraries(tsne_tester PRIVATE kompute::kompute)
 
 if (APPLE)

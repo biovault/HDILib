@@ -190,7 +190,7 @@ add_subdirectory(hdi/dimensionality_reduction)
 # Example project
 # -----------------------------------------------------------------------------
 if(HDILib_BUILD_EXAMPLE)
-	message(STATUS "Build HDLIB test application")
+    message(STATUS "Build HDLIB test application")
     add_subdirectory(examples/cli_test_program)
 endif()
 
@@ -199,7 +199,7 @@ endif()
 # -----------------------------------------------------------------------------
 if(HDILib_BUILD_TESTS)
 	message(STATUS "Build HDLIB unit tests")
-	add_subdirectory("test")
+	add_subdirectory(test)
 endif()
 
 # -----------------------------------------------------------------------------

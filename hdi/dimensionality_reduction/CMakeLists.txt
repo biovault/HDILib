@@ -95,7 +95,7 @@ if(HDILib_USE_VULKAN_KOMPUTE)
       list(APPEND HeaderFilesVulkan "gpgpu_vulkan/shaders/${_COMP_ROOT}.hpp")
     endforeach()
     
-    source_group(Shaders FILES ${ShaderFilesVulkan})
+    source_group(ShadersVulkan FILES ${ShaderFilesVulkan})
     message(STATUS "Add vulkan subdir")
     add_subdirectory(gpgpu_vulkan)
 endif()
@@ -105,8 +105,6 @@ add_library(${PROJECT_DR} STATIC ${HeaderFilesDR} ${SourceFilesDR} ${ShaderFiles
 target_include_directories(${PROJECT_DR} PRIVATE "${PROJECT_SOURCE_DIR}")
 target_include_directories(${PROJECT_DR} PRIVATE "${hnswlib_SOURCE_DIR}")
 target_include_directories(${PROJECT_DR} PRIVATE "${Annoy_SOURCE_DIR}")
-#include the generated dr_config.h file and any others
-target_include_directories(${PROJECT_DR} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # prefer static linking
 if(NOT FLANN_TARGET)
