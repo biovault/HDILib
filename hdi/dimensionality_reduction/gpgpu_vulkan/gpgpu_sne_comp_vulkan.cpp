@@ -1,4 +1,4 @@
-#include "gpgpu_sne_comp_vulkan.h"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/gpgpu_sne_comp_vulkan.h"
 
 #include <vector>
 #include <limits> 

@@ -8,8 +8,8 @@
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
 #include "hdi/dimensionality_reduction/tsne_parameters.h"
-#include "tensor_config.h"
-#include "shaders/shader_progs.h"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/tensor_config.h"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/shader_progs.h"
 
 #include <kompute/Kompute.hpp>
 #include <memory>
