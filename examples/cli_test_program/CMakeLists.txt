@@ -14,7 +14,7 @@ FetchContent_Declare(
 
 )
 FetchContent_MakeAvailable(argparse)
-message(STATUS "hnswlib at ${argparse_SOURCE_DIR}")
+message(STATUS "argparse at ${argparse_SOURCE_DIR}")
 
 message (STATUS "Fetching rapidcsv...")
 FetchContent_Declare(
@@ -24,7 +24,7 @@ FetchContent_Declare(
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(rapidcsv)
-message(STATUS "hnswlib at ${rapidcsv_SOURCE_DIR}")
+message(STATUS "rapidcsv at ${rapidcsv_SOURCE_DIR}")
 
 # If using RenderDoc (https://renderdoc.org) or XCode GPU debugging capturing
 # GPU calls is a powerful debugging tool for Vulkan
