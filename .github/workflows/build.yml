@@ -189,7 +189,9 @@ jobs:
         with: 
           vcpkgGitCommitId: "c3867e714dd3a51c272826eea77267876517ed99" # corresponds to tag 2026.03.18
           vcpkgDirectory: ${{ runner.temp }}/vcpkg
-
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+          
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
         with:
@@ -203,4 +205,4 @@ jobs:
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
         env:
-          VCPKG_BINARY_SOURCES: "clear"
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
