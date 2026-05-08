@@ -4,6 +4,8 @@
 set_property(GLOBAL PROPERTY
     VULKAN_COMPILE_SHADER_CWD_PROPERTY "${CMAKE_CURRENT_LIST_DIR}")
 
+message(STATUS "VULKAN_COMPILE_SHADER_CWD_PROPERTY: ${VULKAN_COMPILE_SHADER_CWD_PROPERTY}")
+
 function(vulkan_compile_shader_13)
      find_program(GLS_LANG_VALIDATOR_PATH NAMES glslangValidator)
      if(GLS_LANG_VALIDATOR_PATH STREQUAL "GLS_LANG_VALIDATOR_PATH-NOTFOUND")
@@ -48,7 +50,12 @@ function(vulkan_compile_shader_13)
              add_custom_target(build-time-make-directory-${SHADER_COMPILE_SPV_FILENAME} ALL
              COMMAND ${CMAKE_COMMAND} -E make_directory ${SHADER_COMPILE_SPV_PATH})
      endif()
-
+    
+    message(STATUS "VULKAN_COMPILE_SHADER_CWD: ${VULKAN_COMPILE_SHADER_CWD}")
+    message(STATUS "SHADER_COMPILE_SPV_FILE_FULL: ${SHADER_COMPILE_SPV_FILE_FULL}")
+    message(STATUS "SHADER_COMPILE_HEADER_FILE_FULL: ${SHADER_COMPILE_HEADER_FILE_FULL}")
+    message(STATUS "SHADER_COMPILE_NAMESPACE: ${SHADER_COMPILE_NAMESPACE}")
+    
      ## Requires custom command function as this is the only way to call 
      ## a function during compile time from cmake (ie through cmake script)
      add_custom_command(OUTPUT "${SHADER_COMPILE_HEADER_FILE_FULL}"
@@ -63,6 +70,9 @@ function(vulkan_compile_shader_13)
                         COMMENT "Converting compiled shader '${SHADER_COMPILE_SPV_FILE_FULL}' to header file '${SHADER_COMPILE_HEADER_FILE_FULL}'."
                         MAIN_DEPENDENCY "${SHADER_COMPILE_SPV_FILE_FULL}")
 endfunction()
+
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "CMAKE_CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
 
 file(GLOB COMP_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.comp)
 find_package(kompute CONFIG REQUIRED) # imports the vulkan compiler

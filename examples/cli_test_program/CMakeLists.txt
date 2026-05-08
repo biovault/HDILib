@@ -129,15 +129,15 @@ file(GLOB_RECURSE ITEMS
     RELATIVE "${CMAKE_CURRENT_LIST_DIR}/../../"
     "${CMAKE_CURRENT_LIST_DIR}/../../hdi/*"
 )
-message(STATUS "ITEMS: ${ITEMS}")
+#message(STATUS "ITEMS: ${ITEMS}")
 
 file(GLOB_RECURSE ITEMS2
     "${CMAKE_CURRENT_LIST_DIR}/../../hdi/*"
 )
 
-foreach(item IN LISTS ITEMS2)
-    message(STATUS "${item}")
-endforeach()
+#foreach(item IN LISTS ITEMS2)
+#    message(STATUS "${item}")
+#endforeach()
 
 # Debug
 #message(STATUS "A. Test binary at ${CMAKE_CURRENT_BINARY_DIR}")
