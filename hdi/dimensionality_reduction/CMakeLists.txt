@@ -98,9 +98,9 @@ if(HDILib_USE_VULKAN_KOMPUTE)
     source_group(ShadersVulkan FILES ${ShaderFilesVulkan})
     message(STATUS "Add vulkan subdir")
     add_subdirectory(gpgpu_vulkan)
-    message(STATUS "CMAKE_CURRENT_LIST_DIR: ${CMAKE_CURRENT_LIST_DIR}")
+    message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
     # Sanity check that the generated headers align with our list above
-    file(GLOB GENERATED_VULKAN_SHADER_HEADERS RELATIVE ${CMAKE_CURRENT_LIST_DIR}
+    file(GLOB GENERATED_VULKAN_SHADER_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
         "gpgpu_vulkan/shaders/*.hpp"
     )
     set(_lhs "${GENERATED_VULKAN_SHADER_HEADERS}")
