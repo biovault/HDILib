@@ -45,7 +45,7 @@
     { "name": "hnswlib", "version": "0.8.0#0" },
     { "name": "lz4", "version": "1.10.0#0"},
     { "name": "rapidcsv", "version": "8.92#0" },
-    { "name": "shaderc", "version": "2026.2#0" },
+    { "name": "shaderc", "version": "2026.1#0" },
     { "name": "spirv-tools", "version": "1.4.341.0#0" },
     { "name": "spirv-headers", "version": "1.4.341.0#0" },
     { "name": "vulkan-headers", "version": "1.4.341.0#0" },
