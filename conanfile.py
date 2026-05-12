@@ -88,6 +88,7 @@ class HDILibConan(ConanFile):
 
     def _get_vcpkg_root(self):
         vcpkg_root = os.getenv("VCPKG_DIR", None)  # VCPKG_INSTALLATION_ROOT is the default vcpkg on github ci runners
+        print(f"Conan: vcpkg_root is {vcpkg_root}")
         if vcpkg_root is None:
             raise RuntimeError(
                 "Expected a preinstalled vcpkg and the environment variable"
@@ -100,6 +101,7 @@ class HDILibConan(ConanFile):
         vcpkg_tc_path = Path(
             self._get_vcpkg_root(), "scripts", "buildsystems", "vcpkg.cmake"
         )
+        print(f"Conan: vcpkg_tc_path is {vcpkg_tc_path}")
         if not vcpkg_tc_path.exists():
             raise RuntimeError(
                 f"Expected vcpkg toolchain not found at {vcpkg_tc_path.absolute()}"
