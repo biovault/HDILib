@@ -94,16 +94,16 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Select Xcode for Mac only
-        if: startsWith(runner.os, 'macOS')
-        run: |
-          sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
-
       - name: Setup python version
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           
+      - name: Select Xcode for Mac only
+        if: startsWith(runner.os, 'macOS')
+        run: |
+          sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
+
       - name: Set vcpkg environment (Unix)
         if: "!startsWith(runner.os, 'Windows')"
         run: |
@@ -203,16 +203,10 @@ jobs:
           submodules: recursive
           set-safe-directory: true
 
-      - name: Verify default Python installation
-        run: |
-          python3 --version
-          python3 -m ensurepip --upgrade
-          pip3 --version
-  
-      - name: Verify Python installation
-        run: |
-          python3 --version
-          pip3 --version
+      - name: Setup python version
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
 
       # Ensure zip is available on manylinux before vcpkg setup
       - name: Install zip
@@ -220,26 +214,26 @@ jobs:
         run: |
           dnf install -y zip
 
-      - name: Set vcpkg environment
+      - name: Set vcpkg environment (Unix)
         run: |
           echo "VCPKG_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
           echo "VCPKG_ROOT=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
           echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
-          
+
       - name: Set up binary cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-cache-${{ runner.os }}-${{ hashFiles('**/vcpkg.json', 'vcpkg-overlays/**') }}
+          key: vcpkg-cache-${{ runner.os }}-${{ env.VCPKG_COMMIT_SHA }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-overlays/**') }}
           restore-keys: |
-            vcpkg-cache-${{ runner.os }}-
-
+            vcpkg-cache-${{ runner.os }}-${{ env.VCPKG_COMMIT_SHA }}
+  
       - name: Clone and checkout vcpkg
         run: |
           git clone https://github.com/microsoft/vcpkg.git --branch master ${{ env.VCPKG_DIR }}
           git -C ${{ env.VCPKG_DIR }} checkout ${{ env.VCPKG_COMMIT_SHA }}
 
-      - name: Bootstrap vcpkg (Unix)
+      - name: Bootstrap vcpkg
         run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.sh -disableMetrics
           
       - name: Linux build
