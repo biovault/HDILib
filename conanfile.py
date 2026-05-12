@@ -187,7 +187,7 @@ class HDILibConan(ConanFile):
         cmake_release.build(build_type="Release")
         cmake_release.install(build_type="Release")
 
-        print(f"Conan: Build RelWithDebInfo")
+        #print(f"Conan: Build RelWithDebInfo")
         #cmake_release = self._configure_cmake()
         #cmake_release.build(build_type="RelWithDebInfo")
         #cmake_release.install(build_type="RelWithDebInfo")
