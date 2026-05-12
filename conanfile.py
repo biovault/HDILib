@@ -131,7 +131,7 @@ class HDILibConan(ConanFile):
             json.dump(conan_preset_data, f, indent=2)
 
     def generate(self):
-        print("In generate")
+        print("Conan: generate CMake toolchain")
         generator = None
         if self.settings.os == "Macos":
             generator = "Xcode"
@@ -161,7 +161,6 @@ class HDILibConan(ConanFile):
 
         tc.cache_variables["HDILib_BUILD_EXAMPLE"] = True
 
-        print("Call toolchain generate")
         tc.generate()
         self._inject_vcpkg_in_cmake_presets()
 
@@ -178,19 +177,20 @@ class HDILibConan(ConanFile):
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
 
-        #cmake_debug = self._configure_cmake()
-        #cmake_debug.build(build_type="Debug")
-        #cmake_debug.install(build_type="Debug")
+        print(f"Conan: Build Debug")
+        cmake_debug = self._configure_cmake()
+        cmake_debug.build(build_type="Debug")
+        cmake_debug.install(build_type="Debug")
 
-        if os.getenv("Analysis", None) is None:
-            # Disable code analysis in Release mode
-            cmake_release = self._configure_cmake()
-            cmake_release.build(build_type="Release")
-            cmake_release.install(build_type="Release")
+        print(f"Conan: Build Release")
+        cmake_release = self._configure_cmake()
+        cmake_release.build(build_type="Release")
+        cmake_release.install(build_type="Release")
 
-            #cmake_release = self._configure_cmake()
-            #cmake_release.build(build_type="RelWithDebInfo")
-            #cmake_release.install(build_type="RelWithDebInfo")
+        print(f"Conan: Build RelWithDebInfo")
+        #cmake_release = self._configure_cmake()
+        #cmake_release.build(build_type="RelWithDebInfo")
+        #cmake_release.install(build_type="RelWithDebInfo")
 
     def package_id(self):
         # The package contains both Debug and Release build types
