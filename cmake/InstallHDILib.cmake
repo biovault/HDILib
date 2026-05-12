@@ -34,7 +34,7 @@ install(FILES
     COMPONENT HDI_PACKAGE
 )
 
-if(HDILib_INSTALL_DEPENDENCIES)
+if(HDILib_INSTALL_DEPENDENCIES AND HDILib_USE_VULKAN_KOMPUTE)
 
     function(patch_file)
     # Step through the file line by line replacing 
