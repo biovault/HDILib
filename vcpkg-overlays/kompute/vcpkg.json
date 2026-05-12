@@ -8,7 +8,6 @@
     "fmt",
     "vulkan-headers",
     "vulkan-loader",
-    "glfw3",
     {
       "name": "glslang",
       "features": [ "tools" ] 
