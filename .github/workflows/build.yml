@@ -13,8 +13,9 @@ on:
   workflow_dispatch:
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+  VCPKG_DIR: ${{ runner.temp }}/vcpkg
+  VCPKG_BINARY_SOURCES: "clear;files,${{ runner.temp }}/vcpkg-cache,readwrite"
+  VCPKG_COMMIT_SHA: c3867e714dd3a51c272826eea77267876517ed99 # corresponds to tag 2026.03.18
 
 # for matrix check https://docs.github.com/en/actions/reference/specifications-for-github-hosted-runners
 jobs:
@@ -104,8 +105,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - name: Configure vcpkg binary caching
-        run: echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
           
       # Workaround for run-vcpkg cache instability: persist vcpkg binaries/downloads between jobs.
       - name: Set up binary cache
@@ -116,23 +115,22 @@ jobs:
           restore-keys: |
             vcpkg-cache-${{ runner.os }}-
   
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
-        with: 
-          vcpkgGitCommitId: "c3867e714dd3a51c272826eea77267876517ed99" # corresponds to tag 2026.03.18
-          vcpkgDirectory: ${{ runner.temp }}/vcpkg
-        env:
-          VCPKG_BINARY_SOURCES: default,rw
+      - name: Clone vcpkg
+        run: git clone https://github.com/microsoft/vcpkg.git ${{ env.VCPKG_DIR }}
 
-      - name: Set vcpkg directory (Unix)
+      - name: Checkout vcpkg commit
+        working-directory: ${{ env.VCPKG_DIR }}
+        run: git checkout ${{ env.VCPKG_COMMIT_SHA }} # corresponds to tag 2026.03.18
+
+      - name: Bootstrap vcpkg (Unix)
         if: "!startsWith(runner.os, 'Windows')"
-        run: echo "VCPKG_LUKKA_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.sh -disableMetrics
 
-      - name: Set vcpkg directory (Windows)
+      - name: Bootstrap vcpkg (Windows)
         if: startsWith(runner.os, 'Windows')
         shell: pwsh
-        run: echo "VCPKG_LUKKA_DIR=${{ runner.temp }}/vcpkg" >> $env:GITHUB_ENV
-
+        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.bat -disableMetrics.
+  
       - name: Windows build
         if: startsWith(matrix.os, 'Windows')
         uses: ./.github/conan_windows_build
@@ -212,9 +210,6 @@ jobs:
         run: |
           dnf install -y zip
 
-      - name: Configure vcpkg binary caching
-        run: echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
-          
       # Workaround for run-vcpkg cache instability: persist vcpkg binaries/downloads between jobs.
       - name: Set up binary cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -224,17 +219,22 @@ jobs:
           restore-keys: |
             vcpkg-cache-${{ runner.os }}-
 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
-        with: 
-          vcpkgGitCommitId: "c3867e714dd3a51c272826eea77267876517ed99" # corresponds to tag 2026.03.18
-          vcpkgDirectory: ${{ runner.temp }}/vcpkg
-        env:
-          VCPKG_BINARY_SOURCES: default,rw
-        
-      - name: Set vcpkg directory
-        run: echo "VCPKG_LUKKA_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+      - name: Clone vcpkg
+        run: git clone https://github.com/microsoft/vcpkg.git ${{ env.VCPKG_DIR }}
 
+      - name: Checkout vcpkg commit
+        working-directory: ${{ env.VCPKG_DIR }}
+        run: git checkout ${{ env.VCPKG_COMMIT_SHA }}
+
+      - name: Bootstrap vcpkg (Unix)
+        if: "!startsWith(runner.os, 'Windows')"
+        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.sh -disableMetrics
+
+      - name: Bootstrap vcpkg (Windows)
+        if: startsWith(runner.os, 'Windows')
+        shell: pwsh
+        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.bat -disableMetrics.
+          
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
         with:
