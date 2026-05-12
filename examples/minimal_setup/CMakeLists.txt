@@ -17,24 +17,10 @@ find_package(lz4 CONFIG REQUIRED)
 find_package(flann CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(kompute CONFIG REQUIRED)
-find_package(glfw3 REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
 
 find_package(OpenGL REQUIRED)
 find_package(OpenMP)
-
-if(NOT FLANN_TARGET)
-    if(TARGET flann::flann_cpp_s)
-        set(FLANN_TARGET flann::flann_cpp_s)
-    elseif(TARGET flann::flann_cpp)
-        set(FLANN_TARGET flann::flann_cpp)
-    elseif(TARGET flann::flann_s)
-        set(FLANN_TARGET flann::flann_s)
-    elseif(TARGET flann::flann)
-        set(FLANN_TARGET flann::flann)
-    else()
-        message(FATAL_ERROR "No Flann target found.")
-    endif()
-endif()
 
 set(SOURCES
     src/minimal_setup.cpp
@@ -49,10 +35,14 @@ target_include_directories(example PRIVATE ${HDILib_INCLUDE_DIR})
 # Link the libraries individually or use the predefined HDILib_LINK_LIBS
 target_link_libraries(example PRIVATE 
     HDI::hdidimensionalityreduction HDI::hdiutils HDI::hdidata  # Same as ${HDILib_LINK_LIBS}
-    lz4::lz4 ${FLANN_TARGET} kompute::kompute                   # HDILib drags several dependencies in
+    lz4::lz4 flann::flann_cpp_s kompute::kompute                # HDILib drags several dependencies in
     ${OPENGL_LIBRARIES}                                         # We need openGL
     glfw                                                        # Use GLFW to create offscreenWindow
     )
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(example PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 if(UNIX)
     set(THREADS_PREFER_PTHREAD_FLAG ON)
