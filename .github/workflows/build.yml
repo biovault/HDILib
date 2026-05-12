@@ -129,8 +129,7 @@ jobs:
   
       - name: Clone and checkout vcpkg
         run: |
-          git clone --depth 1 https://github.com/microsoft/vcpkg.git --branch master ${{ env.VCPKG_DIR }}
-          git -C ${{ env.VCPKG_DIR }} fetch --depth 1 origin ${{ env.VCPKG_COMMIT_SHA }}
+          git clone https://github.com/microsoft/vcpkg.git --branch master ${{ env.VCPKG_DIR }}
           git -C ${{ env.VCPKG_DIR }} checkout ${{ env.VCPKG_COMMIT_SHA }}
 
       - name: Bootstrap vcpkg (Unix)
@@ -237,8 +236,7 @@ jobs:
 
       - name: Clone and checkout vcpkg
         run: |
-          git clone --depth 1 https://github.com/microsoft/vcpkg.git --branch master ${{ env.VCPKG_DIR }}
-          git -C ${{ env.VCPKG_DIR }} fetch --depth 1 origin ${{ env.VCPKG_COMMIT_SHA }}
+          git clone https://github.com/microsoft/vcpkg.git --branch master ${{ env.VCPKG_DIR }}
           git -C ${{ env.VCPKG_DIR }} checkout ${{ env.VCPKG_COMMIT_SHA }}
 
       - name: Bootstrap vcpkg (Unix)
