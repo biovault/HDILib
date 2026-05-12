@@ -88,11 +88,11 @@ class HDILibConan(ConanFile):
         return f"{arch}-linux"  # T.B.D. macos
 
     def _get_vcpkg_root(self):
-        vcpkg_root = os.getenv("VCPKG_INSTALLATION_ROOT", None)
+        vcpkg_root = os.getenv("VCPKG_LUKKA_DIR", None)  # VCPKG_INSTALLATION_ROOT is the default vcpkg on github ci runners
         if vcpkg_root is None:
             raise RuntimeError(
                 "Expected a preinstalled vcpkg and the environment variable"
-                " VCPKG_INSTALLATION_ROOT to be available"
+                " VCPKG_LUKKA_DIR to be available"
             )
         return vcpkg_root
 

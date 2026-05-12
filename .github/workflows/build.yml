@@ -112,7 +112,7 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-cache-${{ runner.os }}-${{ hashFiles('**/vcpkg.json', 'vcpkg-overlays/**') }}
+          key: vcpkg-cache-${{ runner.os }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-overlays/**') }}
           restore-keys: |
             vcpkg-cache-${{ runner.os }}-
   
@@ -123,6 +123,9 @@ jobs:
           vcpkgDirectory: ${{ runner.temp }}/vcpkg
         env:
           VCPKG_BINARY_SOURCES: default,rw
+
+      - name: Set vcpkg directory
+        run: echo "VCPKG_LUKKA_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
 
       - name: Windows build
         if: startsWith(matrix.os, 'Windows')
@@ -222,7 +225,10 @@ jobs:
           vcpkgDirectory: ${{ runner.temp }}/vcpkg
         env:
           VCPKG_BINARY_SOURCES: default,rw
-          
+        
+        - name: Set vcpkg directory
+        run: echo "VCPKG_LUKKA_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
         with:
