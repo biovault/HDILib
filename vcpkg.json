@@ -7,10 +7,20 @@
   ],
   "features": {
     "kompute" : {
-        "description": "kompute library for vulkan",
-        "dependencies": [
-            "kompute"
-    ]   
+      "description": "kompute library for vulkan",
+      "dependencies": [
+          "kompute"
+      ]   
+    },
+    "example" : {
+      "description": "example library usage",
+      "dependencies": [
+        {
+          "name": "hdilib",
+          "features": [ "kompute" ]
+        },
+        "glfw3"
+      ]   
     }
   },
   "builtin-baseline":"c3867e714dd3a51c272826eea77267876517ed99",

@@ -1,5 +1,8 @@
 cmake_minimum_required (VERSION 3.22)
 
+message(STATUS "Building: HDILib ${HDILib_VERSION}")
+message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+
 # -----------------------------------------------------------------------------
 # User Options
 # -----------------------------------------------------------------------------
@@ -7,7 +10,6 @@ option(HDILib_ENABLE_AVX "Enable AVX support" OFF)
 option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC" OFF)
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
-option(HDILib_INSTALL_DEPENDENCIES "Enable installation of the HDILib" OFF)
 option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
 option(HDILib_BUILD_EXAMPLE "Enable building the test executables" OFF)
 option(HDILib_USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
@@ -15,33 +17,34 @@ set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targe
 set(HDILib_VERSION "latest" CACHE STRING "HDILib Library version")
 
 if(HDILib_ENABLE_AVX)
-    message(STATUS "ENABLE_AVX is ON")
+    message(STATUS "HDILib: ENABLE_AVX is ON")
 endif()
 
 if(HDILib_ENABLE_CODE_ANALYSIS AND WIN32)
-    message(STATUS "Code Analysis ENABLED")
+    message(STATUS "HDILib: Code Analysis ENABLED")
 endif()
 
 if(HDILib_ENABLE_PID)
-    message(STATUS "Position independent code compilation ON")
+    message(STATUS "HDILib: Position independent code compilation ON")
 endif()
 
 if(HDILib_USE_VULKAN_KOMPUTE)
+    message(STATUS "HDILib: HDILib_USE_VULKAN_KOMPUTE ON")
     list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
-
-    # Make sure vcpkg toolchain is picked up (or pass -DCMAKE_TOOLCHAIN_FILE=...)
-    # Example: cmake .. -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
-    set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
-
-    if(WIN32 AND NOT DEFINED VCPKG_LIBRARY_LINKAGE)
-        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "")
-        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
-        set(VCPKG_LIBRARY_LINKAGE "static" CACHE STRING "")
-    endif()
 endif()
 
-message(STATUS "Building: HDILib ${HDILib_VERSION}")
-message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+if(HDILib_BUILD_EXAMPLE)
+    message(STATUS "HDILib: HDILib_BUILD_EXAMPLE ON")
+    list(APPEND VCPKG_MANIFEST_FEATURES "example")
+endif()
+
+set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
+
+if(WIN32)
+    set(VCPKG_HOST_TRIPLET "x64-windows-static-md")
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static-md")
+    set(VCPKG_LIBRARY_LINKAGE "static")
+endif()
 
 # -----------------------------------------------------------------------------
 # CMake Project
