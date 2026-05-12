@@ -52,7 +52,7 @@ git clone https://github.com/biovault/HDILib.git
 
 HDILib builds on several dependencies like, [hnswlib](https://github.com/nmslib/hnswlib), [annoy](https://github.com/spotify/annoy) or [FLANN](https://github.com/mariusmuja/flann).
 
-We recommend [vcpkg](github.com/microsoft/vcpkg/) to install them.
+We recommend [vcpkg](https://github.com/microsoft/vcpkg/) to install them.
 
 When configuring cmake make sure to set up vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and use the same VCPKG_TARGET_TRIPLET as for installing flann, here `x64-windows-static-md`. 
 
