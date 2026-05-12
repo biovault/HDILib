@@ -177,10 +177,10 @@ class HDILibConan(ConanFile):
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
 
-        print(f"Conan: Build Debug")
-        cmake_debug = self._configure_cmake()
-        cmake_debug.build(build_type="Debug")
-        cmake_debug.install(build_type="Debug")
+        #print(f"Conan: Build Debug")
+        #cmake_debug = self._configure_cmake()
+        #cmake_debug.build(build_type="Debug")
+        #cmake_debug.install(build_type="Debug")
 
         print(f"Conan: Build Release")
         cmake_release = self._configure_cmake()
