@@ -50,26 +50,11 @@ git clone https://github.com/biovault/HDILib.git
 
 ### Requirements
 
-HDILib depends on [FLANN](https://github.com/mariusmuja/flann) (version >= 1.9.1). FLANN itself depends on [LZ4](https://github.com/lz4/lz4). Be sure to install LZ4 version >= 1.10.
+HDILib builds on several dependencies like, [hnswlib](https://github.com/nmslib/hnswlib), [annoy](https://github.com/spotify/annoy) or [FLANN](https://github.com/mariusmuja/flann).
 
-Flann can be built from the source but we recommend vcpkg to install it, especially on Windows.
+We recommend [vcpkg](github.com/microsoft/vcpkg/) to install them.
 
-### Installing flann 
-
-On Windows with vcpkg
-```bash
-.\vcpkg install flann:x64-windows-static-md
-```
-When configuring cmake make sure to setup vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and use the same VCPKG_TARGET_TRIPLET as for installing flann, here `x64-windows-static-md`. vcpkg will automatically install LZ4 with Flann.
-
-You may also use system-specific package managers, e.g. on Linux with
-```bash
-sudo apt-get -y install libflann-dev liblz4-dev pkg-config
-```
-and Mac OS with
-```
-brew install flann lz4 pkg-config
-```
+When configuring cmake make sure to set up vcpkg with CMAKE_TOOLCHAIN_FILE (`PATH_TO/vcpkg/scripts/buildsystems/vcpkg.cmake`) and use the same VCPKG_TARGET_TRIPLET as for installing flann, here `x64-windows-static-md`. 
 
 ### Generate the build files
 
@@ -98,7 +83,7 @@ cmake  -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install
 
 ## Using the HDILib
 
-The subdirectory `examples` contains two example projects that showcase how to setup and use the HDILib. Check the respective CMakeLists.txt to see how to consume the library.
+The subdirectory `examples` contains two example projects that showcase how to set up and use the HDILib. Check the respective CMakeLists.txt to see how to consume the library.
 
 Find the package
 ```cmake
@@ -116,7 +101,7 @@ A suite of command line and visualization applications is available in the [orig
 
 ## CI/CD process
 
-Conan is used in the CI/CD process to retrieve a prebuilt flann from the lkeb-artifactory and to upload the completed HDILib to the artifactory. The conanfile uses the cmake tool as builder.
+Conan is used in the CI/CD process to upload the completed HDILib to the artifactory. The conanfile uses the cmake tool as builder.
 
 ### CI/CD note on https
 OpenSSL in the python libraries does not have a recent list of CA-authorities, that includes the authority for lkeb-artifactory GEANT issued certificate. Therefore it is essential to append the lkeb-artifactory cert.pem to the cert.pem file in the conan home directory for a successful https connection. See the CI scripts for details.
@@ -130,7 +115,7 @@ containing all the necessary CMake variables for the build.
 These variables provided by the toolchain file allow the CMake file to locate the required packages that conan has downloaded.
 
 #### Build bundle
-The conan build creates three versions of the package, Release, Debug and 
+The conan build creates two versions of the package, Release and Debug. 
 
 ### GitHub Actions status
 ![master ci status](https://github.com/biovault/HDILib/actions/workflows/build.yml/badge.svg)

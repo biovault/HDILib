@@ -38,6 +38,11 @@ if(HDILib_BUILD_EXAMPLE)
     list(APPEND VCPKG_MANIFEST_FEATURES "example")
 endif()
 
+if(HDILib_BUILD_TESTS)
+    message(STATUS "HDILib: HDILib_BUILD_TESTS ON")
+    list(APPEND VCPKG_MANIFEST_FEATURES "test")
+endif()
+
 set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
 
 if(WIN32)
@@ -105,33 +110,6 @@ include(FetchContent)
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
-find_package(lz4 CONFIG)
-if(NOT ${lz4_FOUND})
-    find_package(PkgConfig REQUIRED)
-
-    pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
-    set(LZ4_TARGET PkgConfig::lz4)
-endif()
-
-if(NOT ${lz4_FOUND})
-    message (FATAL_ERROR "lz4 NOT found")
-endif()
-message (STATUS "Found lz4 version ${lz4_VERSION}")
-
-find_package(flann CONFIG)
-if(NOT ${flann_FOUND})
-    find_package(PkgConfig REQUIRED)
-
-    pkg_check_modules(flann REQUIRED flann)
-    set(FLANN_TARGET flann_cpp)
-    set(flann_INCLUDE_DIR "${flann_INCLUDE_DIRS}/flann")
-endif()
-
-if(NOT ${flann_FOUND})
-    message (FATAL_ERROR "flann NOT found")
-endif()
-message (STATUS "Found flann version ${flann_VERSION}")
-
 find_package(OpenMP)
 
 if(OpenMP_CXX_FOUND)
@@ -142,37 +120,11 @@ else()
     message(WARNING, "OpenMP not found!")
 endif()
 
-if (NOT TARGET hnswlib::hnswlib)
-    message (STATUS "Fetching hnswlib...")
-    FetchContent_Declare(
-      hnswlib
-      GIT_REPOSITORY https://github.com/nmslib/hnswlib
-      GIT_TAG v0.8.0
-      EXCLUDE_FROM_ALL
-    )
-    FetchContent_MakeAvailable(hnswlib)
-else()
-    get_target_property(hnswlib_SOURCE_DIR hnswlib::hnswlib INTERFACE_INCLUDE_DIRECTORIES)
-endif()
+find_package(lz4 CONFIG REQUIRED)
+find_package(flann CONFIG REQUIRED)
 
-message(STATUS "hnswlib at ${hnswlib_SOURCE_DIR}")
-
-if (NOT TARGET Annoy::Annoy)
-    message (STATUS "Fetching annoy...")
-    FetchContent_Declare(
-      annoy
-      GIT_REPOSITORY https://github.com/spotify/annoy
-      GIT_TAG v1.17.3
-      EXCLUDE_FROM_ALL
-    )
-    FetchContent_MakeAvailable(annoy)
-    set(Annoy_SOURCE_DIR "${Annoy_SOURCE_DIR}/src")
-else()
-    get_target_property(Annoy_SOURCE_DIR Annoy::Annoy INTERFACE_INCLUDE_DIRECTORIES)
-    set(Annoy_SOURCE_DIR "${Annoy_SOURCE_DIR}/annoy")
-endif()
-
-message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
+find_package(Annoy CONFIG REQUIRED)
+find_package(hnswlib CONFIG REQUIRED)
 
 if (HDILib_USE_VULKAN_KOMPUTE)
     find_package(fmt CONFIG REQUIRED)

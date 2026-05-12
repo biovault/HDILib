@@ -1,30 +1,7 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.22)
 project(tsne_tester)
 
 set(CMAKE_CXX_STANDARD 17)
-
-include(FetchContent)
-
-message (STATUS "Fetching argparse...")
-FetchContent_Declare(
-    argparse
-    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
-    GIT_TAG "v3.2"
-    EXCLUDE_FROM_ALL
-
-)
-FetchContent_MakeAvailable(argparse)
-message(STATUS "argparse at ${argparse_SOURCE_DIR}")
-
-message (STATUS "Fetching rapidcsv...")
-FetchContent_Declare(
-  rapidcsv
-  GIT_REPOSITORY "https://github.com/d99kris/rapidcsv.git"
-  GIT_TAG        "v8.88"
-  EXCLUDE_FROM_ALL
-)
-FetchContent_MakeAvailable(rapidcsv)
-message(STATUS "rapidcsv at ${rapidcsv_SOURCE_DIR}")
 
 # If using RenderDoc (https://renderdoc.org) or XCode GPU debugging capturing
 # GPU calls is a powerful debugging tool for Vulkan
@@ -73,71 +50,15 @@ if(APPLE AND TSNETESTER_GPUDEBUG_CAPTURE)
     target_sources(tsne_tester PRIVATE ${METALCAPTURE_SOURCES})
 endif()
 
-# find_package(Vulkan CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(kompute CONFIG REQUIRED)
-find_package(glfw3 REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(argparse CONFIG REQUIRED)
+find_path(RAPIDCSV_INCLUDE_DIRS "rapidcsv.h")
 
-# debug
-if(TARGET kompute::kompute)
-    message(STATUS "Found kompute::kompute target. Linking is possible.")
-    # get_target_property(kompute_type kompute::kompute TYPE)
-    # message(STATUS "  TYPE: ${kompute_type}")
-
-    # get_target_property(kompute_include_dirs kompute::kompute INTERFACE_INCLUDE_DIRECTORIES)
-    # message(STATUS "  INTERFACE_INCLUDE_DIRECTORIES: ${kompute_include_dirs}")
-
-    # get_target_property(kompute_link_libs kompute::kompute INTERFACE_LINK_LIBRARIES)
-    # message(STATUS "  INTERFACE_LINK_LIBRARIES: ${kompute_link_libs}")
-
-    # get_target_property(kompute_default_location kompute::kompute IMPORTED_LOCATION)
-    # message(STATUS "  IMPORTED_LOCATION (default): ${kompute_default_location}")
-
-    # get_target_property(kompute_location kompute::kompute IMPORTED_LOCATION_RELEASE)
-    # message(STATUS "  IMPORTED_LOCATION_RELEASE: ${kompute_location}")
-    # #${kompute_location} OUTPUT_VARIABLE KOMPUTE_SYMBOLS)
-    # #message(STATUS "Kompute symbols ${KOMPUTE_SYMBOLS}")
-
-    # get_target_property(kompute_location_dbg kompute::kompute IMPORTED_LOCATION_DEBUG)
-    # message(STATUS "  IMPORTED_LOCATION_DEBUG: ${kompute_location_dbg}")
-
-else()
-    message(WARNING "kompute::kompute target not found. Check your kompute installation.")
-endif()
-
-macro(print_all_variables)
-    message(STATUS "print_all_variables------------------------------------------{")
-    get_cmake_property(_variableNames VARIABLES)
-    foreach (_variableName ${_variableNames})
-        message(STATUS "${_variableName}=${${_variableName}}")
-    endforeach()
-    message(STATUS "print_all_variables------------------------------------------}")
-endmacro()
-#message(STATUS "***********************************")
-#message(STATUS "***********************************")
-#print_all_variables()
-#message(STATUS "***********************************")
-#message(STATUS "***********************************")
-target_include_directories(tsne_tester PRIVATE "${argparse_SOURCE_DIR}/include")
-target_include_directories(tsne_tester PRIVATE "${rapidcsv_SOURCE_DIR}/src")
 target_include_directories(tsne_tester PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
 target_include_directories(tsne_tester PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../..")
-
-# Debug
-#message(STATUS "A. Test binary at ${CMAKE_CURRENT_BINARY_DIR}")
-#file(GLOB CURBINDIRFILES "${CMAKE_CURRENT_BINARY_DIR}/*")
-#message(STATUS "Cur bin dir files: ${CURBINDIRFILES}")
-#message(STATUS "B. Test binary at ${CMAKE_BINARY_DIR}")
-#file(GLOB BINDIRFILES "${CMAKE_BINARY_DIR}/*")
-#message(STATUS "Bin dir files: ${BINDIRFILES}")https://www.demangler.com/
-#file(GLOB_RECURSE BINDIRSTATICLIBS "${CMAKE_BINARY_DIR}/*.a")
-#message(STATUS "Bin dir static libs ${BINDIRSTATICLIBS}")
-#set(HDIDATASTATICLIB "${CMAKE_BINARY_DIR}/hdi/data/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidata${CMAKE_STATIC_LIBRARY_SUFFIX}") 
-#set(HDIUTILSSTATICLIB "${CMAKE_BINARY_DIR}/hdi/utils/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX}")
-#message(STATUS "HDI data staticlib path ${HDIDATASTATICLIB}" )
-#message(STATUS "HDI data staticlib path ${HDIUTILSSTATICLIB}" )
-#add_custom_command(TARGET tsne_tester PRE_LINK COMMAND nm ${CMAKE_BINARY_DIR}/hdi/data/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdidata${CMAKE_STATIC_LIBRARY_SUFFIX})
-#add_custom_command(TARGET tsne_tester PRE_LINK COMMAND nm ${CMAKE_BINARY_DIR}/hdi/utils/$<CONFIG>/${CMAKE_STATIC_LIBRARY_PREFIX}hdiutils${CMAKE_STATIC_LIBRARY_SUFFIX})
+target_include_directories(tsne_tester PRIVATE "${RAPIDCSV_INCLUDE_DIRS}")
 
 # For static library linking the consumer lib comes first (gcc)
 target_link_libraries(tsne_tester PRIVATE Vulkan::Vulkan)
@@ -145,6 +66,8 @@ target_link_libraries(tsne_tester PRIVATE glfw)
 target_link_libraries(tsne_tester PRIVATE ${OPENGL_LIBRARIES})
 target_link_libraries(tsne_tester PRIVATE hdidimensionalityreduction hdiutils hdidata)
 target_link_libraries(tsne_tester PRIVATE kompute::kompute)
+target_link_libraries(tsne_tester PRIVATE lz4::lz4 flann::flann_cpp_s)
+target_link_libraries(tsne_tester PRIVATE argparse::argparse)
 
 if (APPLE)
     target_link_libraries(tsne_tester PRIVATE "-framework OpenGL" "-framework Metal" "-framework Foundation" )
@@ -153,21 +76,3 @@ endif()
 if(OpenMP_CXX_FOUND)
     target_link_libraries(tsne_tester PRIVATE OpenMP::OpenMP_CXX)
 endif()
-if(NOT LZ4_TARGET)
-    if(TARGET LZ4::lz4_static)
-        set(LZ4_TARGET LZ4::lz4_static)
-    elseif(TARGET LZ4::lz4_shared)
-        set(LZ4_TARGET LZ4::lz4_shared)
-    elseif(TARGET lz4::lz4)
-        set(LZ4_TARGET lz4::lz4)
-    elseif(TARGET LZ4::lz4)    # intentionally UPPERCASE::LOWERCASE
-        set(LZ4_TARGET LZ4::lz4)
-    else()
-        message(FATAL_ERROR "No LZ4 target found.")
-    endif()
-endif()
-
-#message (STATUS "Flann link library: " ${FLANN_TARGET})
-#target_link_libraries(tsne_tester PRIVATE ${FLANN_TARGET})
-message (STATUS "Linking lz4 library " ${LZ4_TARGET})
-target_link_libraries(tsne_tester PRIVATE ${LZ4_TARGET})
