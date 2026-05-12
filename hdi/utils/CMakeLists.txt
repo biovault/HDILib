@@ -53,12 +53,6 @@ if(HDILib_ENABLE_PID)
     set_target_properties(${PROJECT_UTILS} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
-if(HDILib_ENABLE_CODE_ANALYSIS)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-        target_compile_options(${PROJECT_UTILS} PRIVATE /analyze)
-    endif()
-endif()
-
 hdi_check_and_set_AVX(${PROJECT_UTILS} ${HDILib_ENABLE_AVX})
 hdi_set_optimization_level(${PROJECT_UTILS} ${HDILib_OPTIMIZATION_LEVEL})
 

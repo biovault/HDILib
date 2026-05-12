@@ -7,7 +7,6 @@ message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 # User Options
 # -----------------------------------------------------------------------------
 option(HDILib_ENABLE_AVX "Enable AVX support" OFF)
-option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC" OFF)
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
@@ -18,10 +17,6 @@ set(HDILib_VERSION "latest" CACHE STRING "HDILib Library version")
 
 if(HDILib_ENABLE_AVX)
     message(STATUS "HDILib: ENABLE_AVX is ON")
-endif()
-
-if(HDILib_ENABLE_CODE_ANALYSIS AND WIN32)
-    message(STATUS "HDILib: Code Analysis ENABLED")
 endif()
 
 if(HDILib_ENABLE_PID)
