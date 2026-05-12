@@ -28,16 +28,18 @@ endif()
 
 if(HDILib_USE_VULKAN_KOMPUTE)
     list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
+endif()
 
-    # Make sure vcpkg toolchain is picked up (or pass -DCMAKE_TOOLCHAIN_FILE=...)
-    # Example: cmake .. -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
-    set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
+if(HDILib_BUILD_EXAMPLE)
+    list(APPEND VCPKG_MANIFEST_FEATURES "example")
+endif()
 
-    if(WIN32 AND NOT DEFINED VCPKG_LIBRARY_LINKAGE)
-        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "")
-        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
-        set(VCPKG_LIBRARY_LINKAGE "static" CACHE STRING "")
-    endif()
+set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
+
+if(WIN32)
+    set(VCPKG_HOST_TRIPLET "x64-windows-static-md")
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static-md")
+    set(VCPKG_LIBRARY_LINKAGE "static")
 endif()
 
 message(STATUS "Building: HDILib ${HDILib_VERSION}")
