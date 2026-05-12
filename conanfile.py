@@ -15,7 +15,6 @@ required_conan_version = "~=1.66.0"
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "latest"
     description = (
         "HDILib is a library for the scalable analysis of large and high-dimensional"
         " data. "
@@ -62,7 +61,7 @@ class HDILibConan(ConanFile):
         return "cmake"
 
     def requirements(self): 
-        self.requires.add("flann/1.9.2@lkeb/%s" % self.channel)
+        pass # handled via vcpkg
 
     def system_requirements(self):
         if os_info.is_macos:
@@ -88,11 +87,12 @@ class HDILibConan(ConanFile):
         return f"{arch}-linux"  # T.B.D. macos
 
     def _get_vcpkg_root(self):
-        vcpkg_root = os.getenv("VCPKG_INSTALLATION_ROOT", None)
+        vcpkg_root = os.getenv("VCPKG_DIR", None)  # VCPKG_INSTALLATION_ROOT is the default vcpkg on github ci runners
+        print(f"Conan: vcpkg_root is {vcpkg_root}")
         if vcpkg_root is None:
             raise RuntimeError(
                 "Expected a preinstalled vcpkg and the environment variable"
-                " VCPKG_INSTALLATION_ROOT to be available"
+                " VCPKG_DIR to be available"
             )
         return vcpkg_root
 
@@ -101,6 +101,7 @@ class HDILibConan(ConanFile):
         vcpkg_tc_path = Path(
             self._get_vcpkg_root(), "scripts", "buildsystems", "vcpkg.cmake"
         )
+        print(f"Conan: vcpkg_tc_path is {vcpkg_tc_path}")
         if not vcpkg_tc_path.exists():
             raise RuntimeError(
                 f"Expected vcpkg toolchain not found at {vcpkg_tc_path.absolute()}"
@@ -130,7 +131,7 @@ class HDILibConan(ConanFile):
             json.dump(conan_preset_data, f, indent=2)
 
     def generate(self):
-        print("In generate")
+        print("Conan: generate CMake toolchain")
         generator = None
         if self.settings.os == "Macos":
             generator = "Xcode"
@@ -142,47 +143,29 @@ class HDILibConan(ConanFile):
         tc = CMakeToolchain(self, generator=generator)
         if self.settings.os == "Windows":
             tc.variables["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
-        tc.variables["HDILib_VERSION"] = self.version
+
         if self.build_folder is not None:
             tc.variables["CMAKE_INSTALL_PREFIX"] = str(
                 Path(self.build_folder, "install").as_posix()
             )
         else:
             tc.variables["CMAKE_INSTALL_PREFIX"] = "${CMAKE_BINARY_DIR}"
+        
         tc.variables["CMAKE_VERBOSE_MAKEFILE"] = "ON"
-        if os.getenv("Analysis", None) is None:
-            tc.variables["HDILib_ENABLE_CODE_ANALYSIS"] = "OFF"
-        else:
-            tc.variables["HDILib_ENABLE_CODE_ANALYSIS"] = "ON"
-        tc.variables["CMAKE_MSVC_RUNTIME_LIBRARY"] = (
-            "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-        )
-        # Use the cmake export in the flann package
-        tc.variables["flann_ROOT"] = Path(
-            self.deps_cpp_info["flann"].rootpath, "lib", "cmake"
-        ).as_posix()
-        # Use the cmake export in the lz4 package
-        tc.variables["lz4_ROOT"] = Path(
-            self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
-        ).as_posix()
-        tc.variables["IN_CONAN_BUILD"] = "TRUE"
 
         if os_info.is_macos:
             proc = subprocess.run(
                 "brew --prefix libomp", shell=True, capture_output=True
             )
-            omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
-            tc.variables["OpenMP_ROOT"] = omp_prefix_path
+            tc.variables["OpenMP_ROOT"] = f"{proc.stdout.decode('UTF-8').strip()}"
 
         tc.cache_variables["HDILib_BUILD_EXAMPLE"] = True
 
-        print("Call toolchain generate")
         tc.generate()
         self._inject_vcpkg_in_cmake_presets()
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        print(f"Set version to {self.version}")
         cmake.configure()
         return cmake
 
@@ -194,19 +177,20 @@ class HDILibConan(ConanFile):
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
 
+        #print(f"Conan: Build Debug")
         #cmake_debug = self._configure_cmake()
         #cmake_debug.build(build_type="Debug")
         #cmake_debug.install(build_type="Debug")
 
-        if os.getenv("Analysis", None) is None:
-            # Disable code analysis in Release mode
-            cmake_release = self._configure_cmake()
-            cmake_release.build(build_type="Release")
-            cmake_release.install(build_type="Release")
+        print(f"Conan: Build Release")
+        cmake_release = self._configure_cmake()
+        cmake_release.build(build_type="Release")
+        cmake_release.install(build_type="Release")
 
-            #cmake_release = self._configure_cmake()
-            #cmake_release.build(build_type="RelWithDebInfo")
-            #cmake_release.install(build_type="RelWithDebInfo")
+        #print(f"Conan: Build RelWithDebInfo")
+        #cmake_release = self._configure_cmake()
+        #cmake_release.build(build_type="RelWithDebInfo")
+        #cmake_release.install(build_type="RelWithDebInfo")
 
     def package_id(self):
         # The package contains both Debug and Release build types
