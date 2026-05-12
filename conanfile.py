@@ -15,7 +15,6 @@ required_conan_version = "~=1.66.0"
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "latest"
     description = (
         "HDILib is a library for the scalable analysis of large and high-dimensional"
         " data. "
@@ -142,7 +141,7 @@ class HDILibConan(ConanFile):
         tc = CMakeToolchain(self, generator=generator)
         if self.settings.os == "Windows":
             tc.variables["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
-        tc.variables["HDILib_VERSION"] = self.version
+
         if self.build_folder is not None:
             tc.variables["CMAKE_INSTALL_PREFIX"] = str(
                 Path(self.build_folder, "install").as_posix()
@@ -156,8 +155,7 @@ class HDILibConan(ConanFile):
             proc = subprocess.run(
                 "brew --prefix libomp", shell=True, capture_output=True
             )
-            omp_prefix_path = f"{proc.stdout.decode('UTF-8').strip()}"
-            tc.variables["OpenMP_ROOT"] = omp_prefix_path
+            tc.variables["OpenMP_ROOT"] = f"{proc.stdout.decode('UTF-8').strip()}"
 
         tc.cache_variables["HDILib_BUILD_EXAMPLE"] = True
 
@@ -167,7 +165,6 @@ class HDILibConan(ConanFile):
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        print(f"Set version to {self.version}")
         cmake.configure()
         return cmake
 
