@@ -13,8 +13,6 @@ on:
   workflow_dispatch:
 
 env:
-  VCPKG_DIR: ${{ runner.temp }}/vcpkg
-  VCPKG_BINARY_SOURCES: "clear;files,${{ runner.temp }}/vcpkg-cache,readwrite"
   VCPKG_COMMIT_SHA: c3867e714dd3a51c272826eea77267876517ed99 # corresponds to tag 2026.03.18
 
 # for matrix check https://docs.github.com/en/actions/reference/specifications-for-github-hosted-runners
@@ -106,21 +104,34 @@ jobs:
         with:
           python-version: "3.11"
           
-      # Workaround for run-vcpkg cache instability: persist vcpkg binaries/downloads between jobs.
+      - name: Set vcpkg environment (Unix)
+        if: "!startsWith(runner.os, 'Windows')"
+        run: |
+          echo "VCPKG_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
+
+      - name: Set vcpkg environmentg (Windows)
+        if: startsWith(runner.os, 'Windows')
+        shell: pwsh
+        run: |
+          echo "VCPKG_DIR=${{ runner.temp }}/vcpkg" >> $env:GITHUB_ENV
+          echo "VCPKG_ROOT=${{ runner.temp }}/vcpkg" >> $env:GITHUB_ENV
+          echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $env:GITHUB_ENV
+
       - name: Set up binary cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ runner.temp }}/vcpkg-cache
-          key: vcpkg-cache-${{ runner.os }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-overlays/**') }}
+          key: vcpkg-cache-${{ runner.os }}-${{ env.VCPKG_COMMIT_SHA }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-overlays/**') }}
           restore-keys: |
-            vcpkg-cache-${{ runner.os }}-
+            vcpkg-cache-${{ runner.os }}-${{ env.VCPKG_COMMIT_SHA }}
   
-      - name: Clone vcpkg
-        run: git clone https://github.com/microsoft/vcpkg.git ${{ env.VCPKG_DIR }}
-
-      - name: Checkout vcpkg commit
-        working-directory: ${{ env.VCPKG_DIR }}
-        run: git checkout ${{ env.VCPKG_COMMIT_SHA }} # corresponds to tag 2026.03.18
+      - name: Clone and checkout vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git --branch master ${{ env.VCPKG_DIR }}
+          git -C ${{ env.VCPKG_DIR }} fetch --depth 1 origin ${{ env.VCPKG_COMMIT_SHA }}
+          git -C ${{ env.VCPKG_DIR }} checkout ${{ env.VCPKG_COMMIT_SHA }}
 
       - name: Bootstrap vcpkg (Unix)
         if: "!startsWith(runner.os, 'Windows')"
@@ -129,7 +140,7 @@ jobs:
       - name: Bootstrap vcpkg (Windows)
         if: startsWith(runner.os, 'Windows')
         shell: pwsh
-        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.bat -disableMetrics.
+        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.bat -disableMetrics
   
       - name: Windows build
         if: startsWith(matrix.os, 'Windows')
@@ -210,7 +221,12 @@ jobs:
         run: |
           dnf install -y zip
 
-      # Workaround for run-vcpkg cache instability: persist vcpkg binaries/downloads between jobs.
+      - name: Set vcpkg environment
+        run: |
+          echo "VCPKG_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
+          
       - name: Set up binary cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -219,21 +235,14 @@ jobs:
           restore-keys: |
             vcpkg-cache-${{ runner.os }}-
 
-      - name: Clone vcpkg
-        run: git clone https://github.com/microsoft/vcpkg.git ${{ env.VCPKG_DIR }}
-
-      - name: Checkout vcpkg commit
-        working-directory: ${{ env.VCPKG_DIR }}
-        run: git checkout ${{ env.VCPKG_COMMIT_SHA }}
+      - name: Clone and checkout vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git --branch master ${{ env.VCPKG_DIR }}
+          git -C ${{ env.VCPKG_DIR }} fetch --depth 1 origin ${{ env.VCPKG_COMMIT_SHA }}
+          git -C ${{ env.VCPKG_DIR }} checkout ${{ env.VCPKG_COMMIT_SHA }}
 
       - name: Bootstrap vcpkg (Unix)
-        if: "!startsWith(runner.os, 'Windows')"
         run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.sh -disableMetrics
-
-      - name: Bootstrap vcpkg (Windows)
-        if: startsWith(runner.os, 'Windows')
-        shell: pwsh
-        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.bat -disableMetrics.
           
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
