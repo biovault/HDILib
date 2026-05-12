@@ -217,14 +217,14 @@ jobs:
 
       - name: Set vcpkg environment (Unix)
         run: |
-          echo "VCPKG_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
-          echo "VCPKG_ROOT=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
-          echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
+          echo "VCPKG_DIR=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_BINARY_SOURCES=clear;files,${{ github.workspace }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
 
       - name: Set up binary cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ${{ runner.temp }}/vcpkg-cache
+          path: ${{ github.workspace }}/vcpkg-cache
           key: vcpkg-cache-${{ runner.os }}-${{ env.VCPKG_COMMIT_SHA }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-overlays/**') }}
           restore-keys: |
             vcpkg-cache-${{ runner.os }}-${{ env.VCPKG_COMMIT_SHA }}
