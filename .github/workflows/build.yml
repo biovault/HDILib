@@ -184,6 +184,18 @@ jobs:
         run: |
           dnf install -y zip
 
+      - name: Configure vcpkg binary caching
+        run: echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
+          
+      # Workaround for run-vcpkg cache instability: persist vcpkg binaries/downloads between jobs.
+      - name: Set up binary cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-cache${{ runner.os }}-${{ hashFiles('**/vcpkg.json', 'vcpkg-overlays/**') }}
+          restore-keys: |
+            vcpkg-cache-${{ runner.os }}-
+  
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11.6
         with: 
@@ -191,14 +203,7 @@ jobs:
           vcpkgDirectory: ${{ runner.temp }}/vcpkg
         env:
           VCPKG_BINARY_SOURCES: default,rw
-
-      # Workaround for run-vcpkg cache instability: persist vcpkg binaries/downloads between jobs.
-      - name: Set up binary cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: msvc-full-features/vcpkg_installed
-          key: vcpkg-installed-${{ hashFiles('vcpkg.json', 'vcpkg_overlays/**') }}-c3867e714dd3a51c272826eea77267876517ed99
-  
+          
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
         with:
