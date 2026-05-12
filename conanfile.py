@@ -62,7 +62,7 @@ class HDILibConan(ConanFile):
         return "cmake"
 
     def requirements(self): 
-        self.requires.add("flann/1.9.2@lkeb/%s" % self.channel)
+        pass # handled via vcpkg
 
     def system_requirements(self):
         if os_info.is_macos:
@@ -149,23 +149,8 @@ class HDILibConan(ConanFile):
             )
         else:
             tc.variables["CMAKE_INSTALL_PREFIX"] = "${CMAKE_BINARY_DIR}"
+        
         tc.variables["CMAKE_VERBOSE_MAKEFILE"] = "ON"
-        if os.getenv("Analysis", None) is None:
-            tc.variables["HDILib_ENABLE_CODE_ANALYSIS"] = "OFF"
-        else:
-            tc.variables["HDILib_ENABLE_CODE_ANALYSIS"] = "ON"
-        tc.variables["CMAKE_MSVC_RUNTIME_LIBRARY"] = (
-            "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-        )
-        # Use the cmake export in the flann package
-        tc.variables["flann_ROOT"] = Path(
-            self.deps_cpp_info["flann"].rootpath, "lib", "cmake"
-        ).as_posix()
-        # Use the cmake export in the lz4 package
-        tc.variables["lz4_ROOT"] = Path(
-            self.deps_cpp_info["lz4"].rootpath, "lib", "cmake"
-        ).as_posix()
-        tc.variables["IN_CONAN_BUILD"] = "TRUE"
 
         if os_info.is_macos:
             proc = subprocess.run(

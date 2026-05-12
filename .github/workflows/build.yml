@@ -124,8 +124,14 @@ jobs:
         env:
           VCPKG_BINARY_SOURCES: default,rw
 
-      - name: Set vcpkg directory
+      - name: Set vcpkg directory (Unix)
+        if: "!startsWith(runner.os, 'Windows')"
         run: echo "VCPKG_LUKKA_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+
+      - name: Set vcpkg directory (Windows)
+        if: startsWith(runner.os, 'Windows')
+        shell: pwsh
+        run: echo "VCPKG_LUKKA_DIR=${{ runner.temp }}/vcpkg" >> $env:GITHUB_ENV
 
       - name: Windows build
         if: startsWith(matrix.os, 'Windows')
