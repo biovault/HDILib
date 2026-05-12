@@ -195,11 +195,9 @@ jobs:
       - name: Set up binary cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ runner.os }}-vcpkg-binary-cache-${{ hashFiles('vcpkg*.json') }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-binary-cache-
-
+          path: msvc-full-features/vcpkg_installed
+          key: vcpkg-installed-${{ hashFiles('msvc-full-features/vcpkg.json', '.github/vcpkg_triplets/x64-windows-static.cmake') }}-c3867e714dd3a51c272826eea77267876517ed99
+  
       - name: Linux build
         uses: ./.github/conan_linuxmac_build
         with:
