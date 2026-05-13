@@ -121,6 +121,9 @@ find_package(flann CONFIG REQUIRED)
 find_package(Annoy CONFIG REQUIRED)
 find_package(hnswlib CONFIG REQUIRED)
 
+get_target_property(ANNOY_INCLUDE_DIR Annoy::Annoy INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(HNSWLIB_INCLUDE_DIR hnswlib::hnswlib INTERFACE_INCLUDE_DIRECTORIES)
+
 if (HDILib_USE_VULKAN_KOMPUTE)
     find_package(fmt CONFIG REQUIRED)
     find_package(kompute CONFIG REQUIRED)

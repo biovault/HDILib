@@ -103,11 +103,11 @@ endif()
 add_library(${PROJECT_DR} STATIC ${HeaderFilesDR} ${SourceFilesDR} ${ShaderFilesVulkan})
 
 target_include_directories(${PROJECT_DR} PRIVATE "${PROJECT_SOURCE_DIR}")
+target_include_directories(${PROJECT_DR} PRIVATE "${ANNOY_INCLUDE_DIR}")
+target_include_directories(${PROJECT_DR} PRIVATE "${HNSWLIB_INCLUDE_DIR}")
 
 target_link_libraries(${PROJECT_DR} PRIVATE lz4::lz4)
 target_link_libraries(${PROJECT_DR} PRIVATE flann::flann_cpp_s)
-target_link_libraries(${PROJECT_DR} PRIVATE Annoy::Annoy)
-target_link_libraries(${PROJECT_DR} PRIVATE hnswlib::hnswlib)
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(${PROJECT_DR} PRIVATE OpenMP::OpenMP_CXX)
