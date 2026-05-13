@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 env:
-  VCPKG_COMMIT_SHA: c3867e714dd3a51c272826eea77267876517ed99 # corresponds to tag 2026.03.18
+  VCPKG_COMMIT_SHA: 56bb2411609227288b70117ead2c47585ba07713 # corresponds to tag 2026.04.27
 
 # for matrix check https://docs.github.com/en/actions/reference/specifications-for-github-hosted-runners
 jobs:
