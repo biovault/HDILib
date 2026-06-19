@@ -27,8 +27,9 @@ option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC"
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
+option(SUPPORT_LIBS_INSTALL "Install the dependencies of HDILib (e.g. kompute, lz4, flann) with the package" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
-set(HDILib_VERSION "2.0.0" CACHE STRING "HDILib Library version")
+set(HDILib_VERSION "2.0.1" CACHE STRING "HDILib Library version")
 
 if(HDILib_ENABLE_AVX)
     message(STATUS "ENABLE_AVX is ON")
@@ -309,7 +310,7 @@ if(${HDILib_INSTALL})
             DESTINATION lib/cmake/HDILib
             COMPONENT HDI_PACKAGE
     )
-    if (USE_VULKAN_KOMPUTE)
+    if (USE_VULKAN_KOMPUTE AND SUPPORT_LIBS_INSTALL)
       # TBD possibly move this to an external script
       # Install the config.cmake files for the vcpkg dependencies
       message("Fix config in ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute/komputeTargets-*.cmake")
