@@ -15,7 +15,7 @@ required_conan_version = "~=1.66.0"
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "2.0.1"
+    version = "2.0.2"
     description = (
         "HDILib is a library for the scalable analysis of large and high-dimensional"
         " data. "
@@ -240,5 +240,5 @@ class HDILibConan(ConanFile):
         # Add the debug support files to the package
         # (*.pdb) if building the Visual Studio version
         if self.settings.compiler == "Visual Studio":
-            self.copy("*.pdb", dst="lib/Debug", keep_path=False)
-            self.copy("*.pdb", dst="lib/RelWithDebInfo", keep_path=False)
+            # self.copy("*.pdb", dst="lib/Debug", keep_path=False)
+            self.copy("*.pdb", dst="lib/Release", keep_path=False)

@@ -29,7 +29,7 @@ option(HDILib_INSTALL "Enable installation of the HDILib" ON)
 option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
 option(SUPPORT_LIBS_INSTALL "Install the dependencies of HDILib (e.g. kompute, lz4, flann) with the package" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
-set(HDILib_VERSION "2.0.1" CACHE STRING "HDILib Library version")
+set(HDILib_VERSION "2.0.2" CACHE STRING "HDILib Library version")
 
 if(HDILib_ENABLE_AVX)
     message(STATUS "ENABLE_AVX is ON")
