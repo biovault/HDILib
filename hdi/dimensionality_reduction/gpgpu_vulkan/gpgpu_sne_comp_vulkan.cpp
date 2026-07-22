@@ -96,6 +96,7 @@ namespace hdi {
 
       // Compute initial data bounds
       _bounds = computeInitialBounds(embedding, 0.1f);
+      std::cout << " Initial bounds: " << _bounds[0] << ", " << _bounds[1] << ", " << _bounds[2] << ", "  << _bounds[3] << "\n";
 
       // Initialize all Vulkan resources
       initializeVulkan(num_points, linear_P);
@@ -283,6 +284,7 @@ namespace hdi {
     }
 
     void GpgpuSneVulkan::compute_sequence(embedding_type* embedding, float exaggeration, float iteration, float mult) {
+      std::out << "Bounds size: " << _bounds.size();
       auto range_x = abs(_bounds[2] - _bounds[0]);
       auto range_y = abs(_bounds[3] - _bounds[1]);
 
