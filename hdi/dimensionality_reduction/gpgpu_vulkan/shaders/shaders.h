@@ -31,4 +31,4 @@ enum class SPIRVShader {
   FIELD_WORKGROUP = 12,
 };
 
-std::map<SPIRVShader, std::vector<uint32_t>>& getSPIRVBinaries();
+std::vector<uint32_t> getSPIRVBinaries(SPIRVShader shader);

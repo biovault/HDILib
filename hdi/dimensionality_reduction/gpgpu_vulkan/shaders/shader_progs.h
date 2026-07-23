@@ -103,7 +103,7 @@ public:
   BoundsShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::BOUNDS] )
+    _shaderBinary(getSPIRVBinaries(SPIRVShader::BOUNDS))
   {}
 
   void record_padded(
@@ -128,7 +128,7 @@ public:
   StencilShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::STENCIL]),
+    _shaderBinary(getSPIRVBinaries(SPIRVShader::STENCIL)),
     _fields_buffer_size(0),
     _ubo(mgr, sizeof(stencilParams))
   {
@@ -167,8 +167,8 @@ public:
   Stencil2ListShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinaryClearCounter(getSPIRVBinaries()[SPIRVShader::RESET_COUNTER]),
-    _shaderBinary2List(getSPIRVBinaries()[SPIRVShader::STENCIL2ACTIVE]),
+    _shaderBinaryClearCounter(getSPIRVBinaries(SPIRVShader::RESET_COUNTER)),
+    _shaderBinary2List(getSPIRVBinaries(SPIRVShader::STENCIL2ACTIVE)),
     _fields_buffer_size(0),
     _ubo(mgr, sizeof(stencilParams))
   {
@@ -212,7 +212,7 @@ public:
   FieldComputationShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS]),
+    _shaderBinary(getSPIRVBinaries(SPIRVShader::COMPUTE_FIELDS)),
     _fields_buffer_size(0),
     _ubo(mgr, sizeof(fieldParams))
   {
@@ -251,8 +251,8 @@ public:
   FieldComputationEnhShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FIELDS_ENH]),
-    _shaderFieldWorkgroup(getSPIRVBinaries()[SPIRVShader::FIELD_WORKGROUP]),
+    _shaderBinary(getSPIRVBinaries(SPIRVShader::COMPUTE_FIELDS_ENH)),
+    _shaderFieldWorkgroup(getSPIRVBinaries(SPIRVShader::FIELD_WORKGROUP)),
     _fields_buffer_size(0),
     _ubo(mgr, sizeof(fieldParams))
   {
@@ -293,7 +293,7 @@ public:
   InterpolationShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::INTERP_FIELDS]),
+    _shaderBinary(getSPIRVBinaries(SPIRVShader::INTERP_FIELDS)),
     _ubo(mgr, sizeof(interpParams))
   {
   };
@@ -329,8 +329,8 @@ public:
   InterpolationEnhShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary1(getSPIRVBinaries()[SPIRVShader::INTERP_FIELDS_ENH1]),
-    _shaderBinary2(getSPIRVBinaries()[SPIRVShader::INTERP_FIELDS_ENH2]),
+    _shaderBinary1(getSPIRVBinaries(SPIRVShader::INTERP_FIELDS_ENH1)),
+    _shaderBinary2(getSPIRVBinaries(SPIRVShader::INTERP_FIELDS_ENH2)),
     _ubo(mgr, sizeof(interpParams)),
     _ubo2(mgr, sizeof(interp2Params))
   {
@@ -376,7 +376,7 @@ public:
   ForcesShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::COMPUTE_FORCES]),
+    _shaderBinary(getSPIRVBinaries(SPIRVShader::COMPUTE_FORCES)),
     _ubo(mgr, sizeof(forcesParams))
   {
   }
@@ -403,7 +403,7 @@ public:
   UpdateShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::UPDATE]),
+    _shaderBinary(getSPIRVBinaries(SPIRVShader::UPDATE)),
     _ubo(mgr, sizeof(updaterParams))
   {
   }
@@ -442,7 +442,7 @@ public:
   CenterScaleShaderProg(std::shared_ptr<kp::Manager> mgr, TensorMap& tensors) :
     _mgr(mgr),
     _tensors(tensors),
-    _shaderBinary(getSPIRVBinaries()[SPIRVShader::CENTER_SCALE]),
+    _shaderBinary(getSPIRVBinaries(SPIRVShader::CENTER_SCALE)),
     _ubo(mgr, sizeof(centerScaleParams))
   {
   }
