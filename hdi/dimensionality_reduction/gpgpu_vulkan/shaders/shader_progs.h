@@ -116,7 +116,7 @@ public:
     uint32_t num_points);
 
 private:
-  std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t> _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _boundsAlgorithmPadded;
   std::shared_ptr<kp::Algorithm> _boundsAlgorithmUnpadded;
@@ -153,7 +153,7 @@ public:
   }
 
 private:
-  std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t> _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _stencilAlgorithm;
   TensorMap& _tensors;
@@ -195,8 +195,8 @@ public:
   }
 
 private:
-  std::vector<uint32_t>& _shaderBinaryClearCounter;
-  std::vector<uint32_t>& _shaderBinary2List;
+  std::vector<uint32_t> _shaderBinaryClearCounter;
+  std::vector<uint32_t> _shaderBinary2List;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _clearCounterAlgorithm;
   std::shared_ptr<kp::Algorithm> _stencil2listAlgorithm;
@@ -237,7 +237,7 @@ public:
   }
   
 private:
-  std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t> _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _fieldAlgorithm;
   TensorMap& _tensors;
@@ -277,8 +277,8 @@ public:
   }
   
 private:
-  std::vector<uint32_t>& _shaderBinary;
-  std::vector<uint32_t>& _shaderFieldWorkgroup;
+  std::vector<uint32_t> _shaderBinary;
+  std::vector<uint32_t> _shaderFieldWorkgroup;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _fieldWorkgroupAlgorithm;
   std::shared_ptr<kp::Algorithm> _fieldAlgorithm;
@@ -316,7 +316,7 @@ public:
     return sumQ; 
   };
 private:
-  std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t> _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _interpAlgorithm;
   TensorMap& _tensors;
@@ -360,8 +360,8 @@ public:
     _interpAlgorithm2->destroy();
   }
 private:
-  std::vector<uint32_t>& _shaderBinary1;
-  std::vector<uint32_t>& _shaderBinary2;
+  std::vector<uint32_t> _shaderBinary1;
+  std::vector<uint32_t> _shaderBinary2;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _interpAlgorithm1;
   std::shared_ptr<kp::Algorithm> _interpAlgorithm2;
@@ -391,7 +391,7 @@ public:
     float exaggeration);
 
 private:
-  std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t> _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _forcesAlgorithm;
   TensorMap& _tensors;
@@ -430,7 +430,7 @@ public:
     float gain_mult);
 
 private:
-  std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t> _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _updateAlgorithm;
   TensorMap& _tensors;
@@ -457,7 +457,7 @@ public:
     float exaggeration);
 
 private:
-  std::vector<uint32_t>& _shaderBinary;
+  std::vector<uint32_t> _shaderBinary;
   std::shared_ptr<kp::Manager> _mgr;
   std::shared_ptr<kp::Algorithm> _centerScaleAlgorithm;
   TensorMap& _tensors;
