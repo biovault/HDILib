@@ -234,9 +234,9 @@ namespace hdi {
         initializeEmbeddingPosition(_params._seed, _params._rngRange);
       }
 
-#ifndef __APPLE__
       if (_gpgpu_type == AUTO_DETECT)
         setType(AUTO_DETECT); // resolves whether to use Compute Shader or Raster version
+#ifndef __APPLE__
       if (_gpgpu_type == COMPUTE_SHADER)
         _gpgpu_compute_tsne.initialize(_embedding, _params, _P);
       else
@@ -245,9 +245,6 @@ namespace hdi {
         _gpgpu_vulkan_compute_tsne.initialize(_embedding, _params, _P);
       else// (_tsne_type == RASTER)
         _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
-//#else
-//      _gpgpu_raster_tsne.initialize(_embedding, _params, _P);
-//#endif
 
       _iteration = 0;
 
