@@ -69,9 +69,8 @@ namespace hdi {
       _exaggeration_baseline(1),
       kl_divergence(-1.0f)
     {
-#ifndef __APPLE__
+      // Initialize on ALL platforms.
       _gpgpu_type = AUTO_DETECT;
-#endif
     }
 
     void GradientDescentTSNETexture::setType(GpgpuSneType tsne_type) {
