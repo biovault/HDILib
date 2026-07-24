@@ -81,7 +81,10 @@ private:
         vk::SharingMode::eExclusive // the default
     };
   
-    mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, *mMgr->getDynamicDispatch());
+    vk::Result res = mVkDevice->createBuffer(&bufferInfo, nullptr, &mVkBuffer);
+    if (res != vk::Result::eSuccess) {
+        throw std::runtime_error("Failed to create UBO buffer!");
+    }
 
     vk::MemoryRequirements vk_memReq = mVkDevice->getBufferMemoryRequirements(mVkBuffer);
 
