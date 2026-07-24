@@ -150,7 +150,7 @@ target_link_libraries(tsne_tester PRIVATE kompute::kompute)
 if (APPLE)
     target_link_libraries(tsne_tester PRIVATE "-framework OpenGL" "-framework Metal" "-framework Foundation" )
 endif()
-
+target_compile_definitions(tsne_tester PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VULKAN_HPP_STORAGE_SHARED=1)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(tsne_tester PRIVATE OpenMP::OpenMP_CXX)
 endif()
