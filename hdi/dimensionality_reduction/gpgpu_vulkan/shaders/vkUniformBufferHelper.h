@@ -80,8 +80,8 @@ private:
         vk::BufferUsageFlagBits::eUniformBuffer,
         vk::SharingMode::eExclusive // the default
     };
-
-    mVkBuffer = mVkDevice->createBuffer(bufferInfo);
+  
+    mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, *mMgr->getDynamicDispatch());
 
     vk::MemoryRequirements vk_memReq = mVkDevice->getBufferMemoryRequirements(mVkBuffer);
 
