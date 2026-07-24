@@ -25,6 +25,7 @@
 #include <kompute/logger/Logger.hpp>
 #include <algorithm>
 #include <GLFW/glfw3.h>
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 #include "tSNETester_config.h" //CMake generated config file for test configuration (e.g. GPU debug capture)
@@ -39,7 +40,6 @@
 #include "./MetalDevice.h"
 #endif
 
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 void save_to_csv(std::vector<float> embedding, std::string output, int iter = -1) {
     auto outname = (iter == -1) ? output + ".csv" : output + "_" + std::to_string(iter) + ".csv";
