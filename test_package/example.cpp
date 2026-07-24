@@ -1,3 +1,5 @@
+#include <vulkan/vulkan.hpp>
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include <hdi/dimensionality_reduction/tsne.h>
 #include <hdi/data/embedding.h>
 #include <hdi/dimensionality_reduction/hd_joint_probability_generator.h>
