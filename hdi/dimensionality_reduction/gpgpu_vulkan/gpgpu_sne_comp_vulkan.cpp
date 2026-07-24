@@ -10,7 +10,6 @@
 #include "tensor_config.h"
 #include "shaders/shaders.h"
 
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 namespace hdi {
   namespace dr {
 

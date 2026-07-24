@@ -25,9 +25,8 @@
 #include <kompute/logger/Logger.hpp>
 #include <algorithm>
 #include <GLFW/glfw3.h>
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
-
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include "tSNETester_config.h" //CMake generated config file for test configuration (e.g. GPU debug capture)
 
 #ifdef WIN32
