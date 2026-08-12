@@ -92,9 +92,9 @@ private:
   
     // vk::Result res = mVkDevice->createBuffer(&bufferInfo, nullptr, &mVkBuffer);
     mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, dld);
-    if (res != vk::Result::eSuccess) {
-        throw std::runtime_error("Failed to create UBO buffer!");
-    }
+    //if (res != vk::Result::eSuccess) {
+    //    throw std::runtime_error("Failed to create UBO buffer!");
+    //}
 
     vk::MemoryRequirements vk_memReq = mVkDevice->getBufferMemoryRequirements(mVkBuffer);
 
