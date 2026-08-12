@@ -77,7 +77,7 @@ private:
 
     // Construct a local vk::detail::DispatchLoaderDynamic to avoid offset issues
     vk::detail::DispatchLoaderDynamic dld(
-      *(mMgr->getInstance()), 
+      *(mMgr->getVkInstance()), 
       vkGetInstanceProcAddr, 
       *mVkDevice, 
       vkGetDeviceProcAddr
