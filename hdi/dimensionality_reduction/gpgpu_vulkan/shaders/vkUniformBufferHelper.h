@@ -75,8 +75,8 @@ private:
     mVkDevice = mMgr->getDevice();
     mVkPhysicalDevice = mMgr->getPhysicalDevice();
 
-    // Construct a local vk::DispatchLoaderDynamic to avoid offset issues
-    vk::DispatchLoaderDynamic dld(
+    // Construct a local vk::detail::DispatchLoaderDynamic to avoid offset issues
+    vk::detail::DispatchLoaderDynamic dld(
       *(mMgr->getInstance()), 
       vkGetInstanceProcAddr, 
       *mVkDevice, 
