@@ -75,14 +75,6 @@ private:
     mVkDevice = mMgr->getDevice();
     mVkPhysicalDevice = mMgr->getPhysicalDevice();
 
-    // Construct a local vk::detail::DispatchLoaderDynamic to avoid offset issues
-    vk::detail::DispatchLoaderDynamic dld(
-      *(mMgr->getVkInstance()), 
-      vkGetInstanceProcAddr, 
-      *mVkDevice, 
-      vkGetDeviceProcAddr
-    );
-
     vk::BufferCreateInfo bufferInfo{
         vk::BufferCreateFlags(),
         mSize,
@@ -91,7 +83,7 @@ private:
     };
   
     // vk::Result res = mVkDevice->createBuffer(&bufferInfo, nullptr, &mVkBuffer);
-    mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, dld);
+    mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, VULKAN_HPP_DISPATCH_LOADER_DYNAMIC);
     //if (res != vk::Result::eSuccess) {
     //    throw std::runtime_error("Failed to create UBO buffer!");
     //}
