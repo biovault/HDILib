@@ -83,7 +83,7 @@ private:
     };
   
     // vk::Result res = mVkDevice->createBuffer(&bufferInfo, nullptr, &mVkBuffer);
-    mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, VULKAN_HPP_DISPATCH_LOADER_DYNAMIC);
+    mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, VULKAN_HPP_DEFAULT_DISPATCHER);
     //if (res != vk::Result::eSuccess) {
     //    throw std::runtime_error("Failed to create UBO buffer!");
     //}
