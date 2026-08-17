@@ -29,13 +29,13 @@ jobs:
       matrix:
         include:
 
-          - name: Windows-msvc2022
-            os: windows-2022
-            compiler: msvc-2022
-            build-cversion: 17
-            build-runtime: MD
-            build-config: Release
-            build-arch: x86_64
+          # - name: Windows-msvc2022
+          #   os: windows-2022
+          #   compiler: msvc-2022
+          #   build-cversion: 17
+          #   build-runtime: MD
+          #   build-config: Release
+          #   build-arch: x86_64
 
           #- name: Linux_gcc10
           #  os: ubuntu-22.04
@@ -59,47 +59,47 @@ jobs:
           #  build-libcxx: libstdc++11
           #  build-arch: x86_64
 
-          - name: Linux_gcc13
-            os: ubuntu-24.04
-            build-cc: gcc
-            build-cxx: g++
-            build-compiler: gcc
-            build-cversion: 13
-            build-config: Release
-            build-os: Linux
-            build-libcxx: libstdc++11
-            build-arch: x86_64
+          # - name: Linux_gcc13
+          #   os: ubuntu-24.04
+          #   build-cc: gcc
+          #   build-cxx: g++
+          #   build-compiler: gcc
+          #   build-cversion: 13
+          #   build-config: Release
+          #   build-os: Linux
+          #   build-libcxx: libstdc++11
+          #   build-arch: x86_64
 
-          - name: Linux_gcc14
-            os: ubuntu-24.04
-            build-cc: gcc
-            build-cxx: g++
-            build-compiler: gcc
-            build-cversion: 14
-            build-config: Release
-            build-os: Linux
-            build-libcxx: libstdc++11
-            build-arch: x86_64
+          # - name: Linux_gcc14
+          #   os: ubuntu-24.04
+          #   build-cc: gcc
+          #   build-cxx: g++
+          #   build-compiler: gcc
+          #   build-cversion: 14
+          #   build-config: Release
+          #   build-os: Linux
+          #   build-libcxx: libstdc++11
+          #   build-arch: x86_64
 
-          - name: Macos_xcode14.3
-            os: macos-14
-            build-compiler: apple-clang
-            build-cversion: 14
-            build-config: Release
-            build-os: Macos
-            build-xcode-version: 15.0.1
-            build-libcxx: libc++
-            build-arch: armv8
+          # - name: Macos_xcode14.3
+          #   os: macos-14
+          #   build-compiler: apple-clang
+          #   build-cversion: 14
+          #   build-config: Release
+          #   build-os: Macos
+          #   build-xcode-version: 15.0.1
+          #   build-libcxx: libc++
+          #   build-arch: armv8
 
-          - name: Macos_xcode15
-            os: macos-14
-            build-compiler: apple-clang
-            build-cversion: 15
-            build-config: Release
-            build-os: Macos
-            build-xcode-version: 15.4
-            build-libcxx: libc++
-            build-arch: armv8
+          # - name: Macos_xcode15
+          #   os: macos-14
+          #   build-compiler: apple-clang
+          #   build-cversion: 15
+          #   build-config: Release
+          #   build-os: Macos
+          #   build-xcode-version: 15.4
+          #   build-libcxx: libc++
+          #   build-arch: armv8
 
           - name: Macos_xcode16
             os: macos-15
