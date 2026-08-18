@@ -171,16 +171,16 @@ jobs:
     container: quay.io/pypa/manylinux_2_28_x86_64
     strategy:
       matrix:
-        include: 
-          # - name: python manylinux_2_28_gcc14
-          #   build-cc: gcc
-          #   build-cxx: g++
-          #   build-compiler: gcc
-          #   build-cversion: 14
-          #   build-config: Release
-          #   build-os: Linux
-          #   build-libcxx: libstdc++11
-          #   build-arch: x86_64    
+        include:
+          - name: python manylinux_2_28_gcc14
+            build-cc: gcc
+            build-cxx: g++
+            build-compiler: gcc
+            build-cversion: 14
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++11
+            build-arch: x86_64    
 
     
     steps:
@@ -209,17 +209,17 @@ jobs:
           vcpkgGitCommitId: "ce613c41372b23b1f51333815feb3edd87ef8a8b"
           vcpkgDirectory: ${{ runner.temp }}/vcpkg
 
-      - name: Linux build
-        uses: ./.github/conan_linuxmac_build
-        with:
-          conan-compiler: ${{matrix.build-compiler}}
-          conan-compiler-version: ${{matrix.build-cversion}}
-          conan-libcxx-version: ${{matrix.build-libcxx}}
-          conan-build-type: ${{matrix.build-config}}
-          conan-build-os: ${{matrix.build-os}}
-          conan-channel: python
-          build-arch: ${{matrix.build-arch}}
-          conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
-          conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
-        env:
-          VCPKG_BINARY_SOURCES: "clear"
+      # - name: Linux build
+      #   uses: ./.github/conan_linuxmac_build
+      #   with:
+      #     conan-compiler: ${{matrix.build-compiler}}
+      #     conan-compiler-version: ${{matrix.build-cversion}}
+      #     conan-libcxx-version: ${{matrix.build-libcxx}}
+      #     conan-build-type: ${{matrix.build-config}}
+      #     conan-build-os: ${{matrix.build-os}}
+      #     conan-channel: python
+      #     build-arch: ${{matrix.build-arch}}
+      #     conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
+      #     conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+      #   env:
+      #     VCPKG_BINARY_SOURCES: "clear"
