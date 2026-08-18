@@ -172,25 +172,16 @@ jobs:
     strategy:
       matrix:
         include: 
-          - name: python manylinux_2_28_gcc14
-            build-cc: gcc
-            build-cxx: g++
-            build-compiler: gcc
-            build-cversion: 14
-            build-config: Release
-            build-os: Linux
-            build-libcxx: libstdc++11
-            build-arch: x86_64    
-            
-          # - name: python manylinux_2_28_gcc12
+          # - name: python manylinux_2_28_gcc14
           #   build-cc: gcc
           #   build-cxx: g++
           #   build-compiler: gcc
-          #   build-cversion: 12
+          #   build-cversion: 14
           #   build-config: Release
           #   build-os: Linux
           #   build-libcxx: libstdc++11
-          #   build-arch: x86_64   
+          #   build-arch: x86_64    
+
     
     steps:
       - name: Checkout the source
