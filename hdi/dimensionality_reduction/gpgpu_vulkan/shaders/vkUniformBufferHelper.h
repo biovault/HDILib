@@ -83,7 +83,7 @@ private:
     };
   
     // vk::Result res = mVkDevice->createBuffer(&bufferInfo, nullptr, &mVkBuffer);
-    mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, vk::detail::defaultLoaderDynamic);
+    mVkBuffer = mVkDevice->createBuffer(bufferInfo, nullptr, defaultLoaderDynamic);
     //if (res != vk::Result::eSuccess) {
     //    throw std::runtime_error("Failed to create UBO buffer!");
     //}
