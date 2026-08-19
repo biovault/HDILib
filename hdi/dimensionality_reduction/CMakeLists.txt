@@ -130,7 +130,7 @@ if(${HDILib_INSTALL})
     install(EXPORT ${PROJECT}Targets
             FILE ${PROJECT}Targets.cmake
             NAMESPACE HDI::
-            DESTINATION lib/cmake/HDILib
+            DESTINATION share/HDILib
             COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
     )
 endif()
