@@ -216,13 +216,14 @@ class HDILibConan(ConanFile):
         self.cpp_info.set_property("cmake_config_file", True)
 
         # Also package the dependencies from vcpkg
-        self.cpp_info.components["kompute"].libs = ["kompute"]
-        self.cpp_info.components["kompute"].includedirs = ["include"]
-        self.cpp_info.components["kompute"].libdirs = ["lib"]
+        # Can't combine self.cpp_info and self.cpp_info.components
+        #self.cpp_info.components["kompute"].libs = ["kompute"]
+        #self.cpp_info.components["kompute"].includedirs = ["include"]
+        #self.cpp_info.components["kompute"].libdirs = ["lib"]
 
-        self.cpp_info.components["fmt"].libs = ["fmt"]
-        self.cpp_info.components["fmt"].includedirs = ["include"]
-        self.cpp_info.components["fmt"].libdirs = ["lib"]
+        #self.cpp_info.components["fmt"].libs = ["fmt"]
+        #self.cpp_info.components["fmt"].includedirs = ["include"]
+        #self.cpp_info.components["fmt"].libdirs = ["lib"]
 
         # If your main lib depends on these components
         # self.cpp_info.components["hdilib"].libs = ["HDILib"]
