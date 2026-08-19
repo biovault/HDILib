@@ -35,8 +35,8 @@ hdi_set_optimization_level(${PROJECT} ${HDILib_OPTIMIZATION_LEVEL})
 if(${HDILib_INSTALL})
     install(TARGETS ${PROJECT}
         EXPORT ${PROJECT}Targets
-        LIBRARY DESTINATION lib/$<CONFIGURATION>>
-        ARCHIVE DESTINATION lib/$<CONFIGURATION>
+        LIBRARY DESTINATION $<$<CONFIG:Debug>:debug/>${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION $<$<CONFIG:Debug>:debug/>${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION include/hdi/data
         COMPONENT hdidata
     )

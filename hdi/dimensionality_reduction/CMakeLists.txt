@@ -105,8 +105,8 @@ endif(UNIX)
 if(${HDILib_INSTALL})
     install(TARGETS ${PROJECT}
         EXPORT ${PROJECT}Targets
-        LIBRARY DESTINATION lib/$<CONFIGURATION>
-        ARCHIVE DESTINATION lib/$<CONFIGURATION>
+        LIBRARY DESTINATION $<$<CONFIG:Debug>:debug/>${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION $<$<CONFIG:Debug>:debug/>${CMAKE_INSTALL_LIBDIR}
         COMPONENT hdidimensionalityreduction
     )
 
