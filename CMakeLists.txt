@@ -224,7 +224,7 @@ if(${HDILib_INSTALL})
     install(FILES
               "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
-            DESTINATION lib/cmake/HDILib
+            DESTINATION share/HDILib
             COMPONENT HDI_PACKAGE
     )
     if (USE_VULKAN_KOMPUTE AND SUPPORT_LIBS_INSTALL)
@@ -275,7 +275,7 @@ if(${HDILib_INSTALL})
         DESTINATION lib COMPONENT HDI_PACKAGE)
       install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}"
         DESTINATION lib COMPONENT HDI_PACKAGE)
-        
+
       # Install the debug libraries
       install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}"
         DESTINATION debug/lib COMPONENT HDI_PACKAGE)
