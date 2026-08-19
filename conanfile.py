@@ -15,7 +15,7 @@ required_conan_version = "~=1.66.0"
 
 class HDILibConan(ConanFile):
     name = "HDILib"
-    version = "2.0.3a9"
+    version = "2.0.3a10"
     description = (
         "HDILib is a library for the scalable analysis of large and high-dimensional"
         " data. "
@@ -193,19 +193,15 @@ class HDILibConan(ConanFile):
         install_dir = Path(self.build_folder).joinpath("install")
         install_dir.mkdir(exist_ok=True)
 
-        #cmake_debug = self._configure_cmake()
-        #cmake_debug.build(build_type="Debug")
-        #cmake_debug.install(build_type="Debug")
+        cmake_debug = self._configure_cmake()
+        cmake_debug.build(build_type="Debug")
+        cmake_debug.install(build_type="Debug")
 
-        if os.getenv("Analysis", None) is None:
-            # Disable code analysis in Release mode
-            cmake_release = self._configure_cmake()
-            cmake_release.build(build_type="Release")
-            cmake_release.install(build_type="Release")
 
-            #cmake_release = self._configure_cmake()
-            #cmake_release.build(build_type="RelWithDebInfo")
-            #cmake_release.install(build_type="RelWithDebInfo")
+        cmake_release = self._configure_cmake()
+        cmake_release.build(build_type="Release")
+        cmake_release.install(build_type="Release")
+
 
     def package_id(self):
         # The package contains both Debug and Release build types
@@ -240,5 +236,5 @@ class HDILibConan(ConanFile):
         # Add the debug support files to the package
         # (*.pdb) if building the Visual Studio version
         if self.settings.compiler == "Visual Studio":
-            # self.copy("*.pdb", dst="lib/Debug", keep_path=False)
+            self.copy("*.pdb", dst="lib/Debug", keep_path=False)
             self.copy("*.pdb", dst="lib/Release", keep_path=False)
