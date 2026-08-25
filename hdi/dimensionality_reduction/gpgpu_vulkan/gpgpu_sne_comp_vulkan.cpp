@@ -283,7 +283,7 @@ namespace hdi {
     }
 
     void GpgpuSneVulkan::compute_sequence(embedding_type* embedding, float exaggeration, float iteration, float mult) {
-      std::cout << "Bounds size: " << _bounds.size();
+      //std::cout << "Bounds size: " << _bounds.size();
       auto range_x = abs(_bounds[2] - _bounds[0]);
       auto range_y = abs(_bounds[3] - _bounds[1]);
 
