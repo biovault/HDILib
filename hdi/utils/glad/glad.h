@@ -28,6 +28,24 @@
 #endif
 #define __gl_h_
 
+#ifdef __APPLE__
+/* On macOS, Qt's OpenGL headers include the system OpenGL headers.
+   Their declarations collide with glad's function-pointer macros.
+   We block these headers here to avoid clashes when using glad. */
+#ifndef __gl3_h_
+#define __gl3_h_
+#endif
+#ifndef __gl3ext_h_
+#define __gl3ext_h_
+#endif
+#ifndef __glext_h_
+#define __glext_h_
+#endif
+#ifndef __gl_glext_h_
+#define __gl_glext_h_
+#endif
+#endif
+
 #if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 1
