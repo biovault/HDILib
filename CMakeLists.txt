@@ -194,7 +194,7 @@ endif()
 # -----------------------------------------------------------------------------
 # Create HDILib find_package
 # -----------------------------------------------------------------------------
-# NOTE CMake installs are defined in the sub-projects.
+# NOTE CMake installs for the individual HDILib shared or static libs are defined in the sub-projects.
 
 # Helper macro for packaging
 include(CMakePackageConfigHelpers)
@@ -202,11 +202,6 @@ include(CMakePackageConfigHelpers)
 # Generate the version file for use with find_package
 set(hdilib_package_version "${HDILib_VERSION}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake" @ONLY)
-#write_basic_package_version_file(
-#  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
-#  VERSION "${HDILib_VERSION}"
-#  COMPATIBILITY ExactVersion
-#)
 
 set(INCLUDE_INSTALL_DIR include)
 set(LIB_INSTALL_DIR lib)
@@ -220,6 +215,7 @@ configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibConfig.cmake.in
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
+# merge the dependencies with HDILib package for simplicity at the consumer.
 if(${HDILib_INSTALL})
     install(FILES
               "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"

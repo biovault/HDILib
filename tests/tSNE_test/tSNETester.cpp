@@ -26,7 +26,6 @@
 #include <algorithm>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.hpp>
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 #include "tSNETester_config.h" //CMake generated config file for test configuration (e.g. GPU debug capture)
 
 #ifdef WIN32
