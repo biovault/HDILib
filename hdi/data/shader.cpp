@@ -149,8 +149,8 @@ void ShaderProgram::build()
   {
     destroy();
 
-    // Visual studio 2013 and under do not support the full C++11 standard
-    #if (_MSC_VER <= 1800)
+    // Visual studio 2013 and under do not support the full C++11 standard.
+    #if defined(_MSC_VER) && (_MSC_VER <= 1800)
         throw;
     #else
         throw ShaderLoadingException(e);

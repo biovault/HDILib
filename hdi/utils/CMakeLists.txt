@@ -5,13 +5,7 @@ file(GLOB UtilsHeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
 file(GLOB GladHeaderFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} glad/*.h glad/KHR/*.h)
 file(GLOB SourceFiles *.cpp)
 
-if(APPLE)
-    # Do not include or build glad on Apple
-    set(HeaderFiles ${UtilsHeaderFiles})
-    list(REMOVE_ITEM SourceFiles "${CMAKE_CURRENT_SOURCE_DIR}/glad.cpp")
-else()
-    set(HeaderFiles ${UtilsHeaderFiles} ${GladHeaderFiles})
-endif()
+set(HeaderFiles ${UtilsHeaderFiles} ${GladHeaderFiles})
 
 add_library(${PROJECT} STATIC ${HeaderFiles} ${SourceFiles} ${Resources} )
 
