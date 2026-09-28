@@ -227,5 +227,5 @@ class HDILibConan(ConanFile):
         # Add the debug support files to the package
         # (*.pdb) if building the Visual Studio version
         if self.settings.compiler == "Visual Studio":
-            self.copy("*.pdb", dst="lib/Debug", keep_path=False)
-            self.copy("*.pdb", dst="lib/RelWithDebInfo", keep_path=False)
+            self.copy("*.pdb", dst="lib/debug", keep_path=False)
+            self.copy("*.pdb", dst="lib/relwithwebinfo", keep_path=False)

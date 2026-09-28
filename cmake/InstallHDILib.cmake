@@ -24,14 +24,14 @@ configure_package_config_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/HDILibConfig.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
     PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR CURRENT_BUILD_DIR
-    INSTALL_DESTINATION lib/cmake/HDILib
+    INSTALL_DESTINATION share/HDILib
     NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
 install(FILES
         "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
-    DESTINATION lib/cmake/HDILib
+    DESTINATION share/HDILib
     COMPONENT HDI_PACKAGE
 )
 

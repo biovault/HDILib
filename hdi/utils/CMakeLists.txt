@@ -86,7 +86,7 @@ if(${HDILib_INSTALL})
     install(EXPORT ${PROJECT_UTILS}Targets
             FILE ${PROJECT_UTILS}Targets.cmake
             NAMESPACE HDI::
-            DESTINATION lib/cmake/HDILib
+            DESTINATION share/HDILib
             COMPONENT HDIUTILS_TARGET
     )
 endif()
