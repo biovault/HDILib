@@ -102,6 +102,7 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
 endif()
 
 include(FetchContent)
+include(GNUInstallDirs)
 
 # -----------------------------------------------------------------------------
 # Dependencies
