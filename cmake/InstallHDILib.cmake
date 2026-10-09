@@ -38,7 +38,7 @@ install(FILES
 if(HDILib_INSTALL_DEPENDENCIES AND HDILib_USE_VULKAN_KOMPUTE)
 
     # Install the config.cmake files for the vcpkg dependencies
-    message("Merge dependencies to the HDILib package")
+    message(STATUS "Merge dependencies to the HDILib package")
     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute" 
       DESTINATION share COMPONENT HDI_PACKAGE)
     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt" 
