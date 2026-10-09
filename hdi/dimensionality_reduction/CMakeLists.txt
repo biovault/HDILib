@@ -141,8 +141,8 @@ hdi_set_optimization_level(${PROJECT_DR} ${HDILib_OPTIMIZATION_LEVEL})
 if(${HDILib_INSTALL})
     install(TARGETS ${PROJECT_DR}
         EXPORT ${PROJECT_DR}Targets
-        LIBRARY DESTINATION lib/$<CONFIGURATION>
-        ARCHIVE DESTINATION lib/$<CONFIGURATION>
+        LIBRARY DESTINATION $<$<CONFIG:Debug>:debug/>${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION $<$<CONFIG:Debug>:debug/>${CMAKE_INSTALL_LIBDIR}
         COMPONENT hdidimensionalityreduction
     )
 
@@ -166,7 +166,7 @@ if(${HDILib_INSTALL})
     install(EXPORT ${PROJECT_DR}Targets
             FILE ${PROJECT_DR}Targets.cmake
             NAMESPACE HDI::
-            DESTINATION lib/cmake/HDILib
+            DESTINATION share/HDILib
             COMPONENT HDIDIMENSIONALITYREDUCTION_TARGET
     )
 endif()
