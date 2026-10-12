@@ -31,7 +31,6 @@ class HDILibConan(ConanFile):
     )
     default_user = "lkeb"
     default_channel = "stable"
-    version = "improved_packaging"
 
     # Options may need to change depending on the packaged library
     settings = "os", "compiler", "arch", "build_type"
