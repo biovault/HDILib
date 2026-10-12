@@ -37,7 +37,7 @@
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
 #include "hdi/dimensionality_reduction/tsne_parameters.h"
-#include "field_computation.h"
+#include "hdi/dimensionality_reduction/gpgpu_sne/field_computation.h"
 
 #include <array>
 #include <cstdint>

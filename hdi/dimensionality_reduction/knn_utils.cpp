@@ -5,8 +5,8 @@
 #include "hdi/utils/scoped_timers.h"
 
 #pragma warning(disable:4477)
-#include <annoylib.h>
-#include <kissrandom.h>
+#include <annoy/annoylib.h>
+#include <annoy/kissrandom.h>
 #pragma warning(default:4477)
 #include <flann/flann.h>
 #include <hnswlib/hnswlib.h>

@@ -3,31 +3,17 @@
 # -----------------------------------------------------------------------------
 set(HDILIB_TESTS "HDILibTests")
 
-# Setup of test build depends on setup of parent project, the plugin itself
-
+# Setup of test build depends on setup of parent project, the library itself
 PROJECT(${HDILIB_TESTS} LANGUAGES CXX)
 
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
-
-include(FetchContent)
-
-set(CATCH_INSTALL_DOCS OFF CACHE BOOL "" FORCE)
-set(CATCH_INSTALL_EXTRAS OFF CACHE BOOL "" FORCE)
-
-FetchContent_Declare(
-    Catch2
-    GIT_REPOSITORY https://github.com/catchorg/Catch2
-    GIT_TAG v3.14.0
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(Catch2)
+find_package(Catch2 CONFIG REQUIRED)
 
 # -----------------------------------------------------------------------------
 # Source files
 # -----------------------------------------------------------------------------
-
 set(SOURCES
     test_main.cpp
 	test_utils.h
@@ -38,7 +24,6 @@ source_group(HDILibTests FILES ${SOURCES})
 # -----------------------------------------------------------------------------
 # CMake Target
 # -----------------------------------------------------------------------------
-
 add_executable(${HDILIB_TESTS} ${SOURCES})
 
 # -----------------------------------------------------------------------------
@@ -59,7 +44,6 @@ endif()
 # -----------------------------------------------------------------------------
 # Target properties
 # -----------------------------------------------------------------------------
-
 # Request C++20
 target_compile_features(${HDILIB_TESTS} PRIVATE cxx_std_20)
 target_compile_features(${HDILIB_TESTS} PRIVATE c_std_17)

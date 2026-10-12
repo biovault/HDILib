@@ -1,4 +1,4 @@
-#include "vulkan_extension.h"
+#include "hdi/dimensionality_reduction/gpgpu_vulkan/shaders/vulkan_extension.h"
 
 // record() will be called by kp::Sequence with a vk::CommandBuffer
 void OpIndirectDispatch::record(const vk::CommandBuffer& commandBuffer) {

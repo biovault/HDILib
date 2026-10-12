@@ -1,55 +1,62 @@
 cmake_minimum_required (VERSION 3.22)
 
-option(USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
-
-if(USE_VULKAN_KOMPUTE)
-    list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
-
-    # Make sure vcpkg toolchain is picked up (or pass -DCMAKE_TOOLCHAIN_FILE=...)
-    # Example: cmake .. -DCMAKE_TOOLCHAIN_FILE=[vcpkg-root]/scripts/buildsystems/vcpkg.cmake
-    set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
-
-    if(WIN32 AND NOT DEFINED VCPKG_LIBRARY_LINKAGE)
-        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "")
-        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "")
-        set(VCPKG_LIBRARY_LINKAGE "static" CACHE STRING "")
-    endif()
-endif()
-
-set(PROJECT "HDILib")
-PROJECT(${PROJECT})
+message(STATUS "Building: HDILib ${HDILib_VERSION}")
+message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
 
 # -----------------------------------------------------------------------------
 # User Options
 # -----------------------------------------------------------------------------
 option(HDILib_ENABLE_AVX "Enable AVX support" OFF)
-option(HDILib_ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build with MSVC" OFF)
 option(HDILib_ENABLE_PID "Set POSITION_INDEPENDENT_CODE property for all targets" OFF)
 option(HDILib_INSTALL "Enable installation of the HDILib" ON)
+option(HDILib_INSTALL_DEPENDENCIES "Enable installation of the dependencies into the HDILib install dir" ON)
 option(HDILib_BUILD_TESTS "Build tests for HDILib" OFF)
-option(SUPPORT_LIBS_INSTALL "Install the dependencies of HDILib (e.g. kompute, lz4, flann) with the package" ON)
+option(HDILib_BUILD_EXAMPLE "Enable building the test executables" OFF)
+option(HDILib_USE_VULKAN_KOMPUTE "Build the repo using the Vulkan kompute library - by default ON" ON)
 set(HDILib_OPTIMIZATION_LEVEL "2" CACHE STRING "Optimization level for all targets in release builds, e.g. 0, 1, 2")
-set(HDILib_VERSION "2.0.2" CACHE STRING "HDILib Library version")
+set(HDILib_VERSION "latest" CACHE STRING "HDILib Library version")
 
 if(HDILib_ENABLE_AVX)
-    message(STATUS "ENABLE_AVX is ON")
-endif()
-
-if(HDILib_ENABLE_CODE_ANALYSIS AND WIN32)
-    message(STATUS "Code Analysis ENABLED")
+    message(STATUS "HDILib: ENABLE_AVX is ON")
 endif()
 
 if(HDILib_ENABLE_PID)
-    message(STATUS "Position independent code compilation ON")
+    message(STATUS "HDILib: Position independent code compilation ON")
 endif()
 
-message(STATUS "Building: HDILib ${HDILib_VERSION}")
-message(STATUS "CMAKE_GENERATOR: ${CMAKE_GENERATOR}")
+if(HDILib_USE_VULKAN_KOMPUTE)
+    message(STATUS "HDILib: HDILib_USE_VULKAN_KOMPUTE ON")
+    list(APPEND VCPKG_MANIFEST_FEATURES "kompute")
+endif()
+
+if(HDILib_BUILD_EXAMPLE)
+    message(STATUS "HDILib: HDILib_BUILD_EXAMPLE ON")
+    list(APPEND VCPKG_MANIFEST_FEATURES "example")
+endif()
+
+if(HDILib_BUILD_TESTS)
+    message(STATUS "HDILib: HDILib_BUILD_TESTS ON")
+    list(APPEND VCPKG_MANIFEST_FEATURES "test")
+endif()
+
+set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_LIST_DIR}/vcpkg-overlays/kompute")
+
+if(WIN32)
+    set(VCPKG_HOST_TRIPLET "x64-windows-static-md")
+    set(VCPKG_TARGET_TRIPLET "x64-windows-static-md")
+    set(VCPKG_LIBRARY_LINKAGE "static")
+endif()
+
+# -----------------------------------------------------------------------------
+# CMake Project
+# -----------------------------------------------------------------------------
+set(PROJECT "HDILib")
+PROJECT(${PROJECT} LANGUAGES CXX C)
 
 # -----------------------------------------------------------------------------
 # CMake Options
 # -----------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -95,37 +102,11 @@ if (CMAKE_GENERATOR STREQUAL Xcode)
 endif()
 
 include(FetchContent)
+include(GNUInstallDirs)
 
 # -----------------------------------------------------------------------------
 # Dependencies
 # -----------------------------------------------------------------------------
-find_package(lz4 CONFIG)
-if(NOT ${lz4_FOUND})
-    find_package(PkgConfig REQUIRED)
-
-    pkg_check_modules(lz4 REQUIRED IMPORTED_TARGET liblz4)
-    set(LZ4_TARGET PkgConfig::lz4)
-endif()
-
-if(NOT ${lz4_FOUND})
-    message (FATAL_ERROR "lz4 NOT found")
-endif()
-message (STATUS "Found lz4 version ${lz4_VERSION}")
-
-find_package(flann CONFIG)
-if(NOT ${flann_FOUND})
-    find_package(PkgConfig REQUIRED)
-
-    pkg_check_modules(flann REQUIRED flann)
-    set(FLANN_TARGET flann_cpp)
-    set(flann_INCLUDE_DIR "${flann_INCLUDE_DIRS}/flann")
-endif()
-
-if(NOT ${flann_FOUND})
-    message (FATAL_ERROR "flann NOT found")
-endif()
-message (STATUS "Found flann version ${flann_VERSION}")
-
 find_package(OpenMP)
 
 if(OpenMP_CXX_FOUND)
@@ -136,43 +117,24 @@ else()
     message(WARNING, "OpenMP not found!")
 endif()
 
-if (NOT TARGET hnswlib::hnswlib)
-    message (STATUS "Fetching hnswlib...")
-    FetchContent_Declare(
-      hnswlib
-      GIT_REPOSITORY https://github.com/nmslib/hnswlib
-      GIT_TAG v0.8.0
-      EXCLUDE_FROM_ALL
-    )
-    FetchContent_MakeAvailable(hnswlib)
-else()
-    get_target_property(hnswlib_SOURCE_DIR hnswlib::hnswlib INTERFACE_INCLUDE_DIRECTORIES)
-endif()
+find_package(lz4 CONFIG REQUIRED)
+find_package(flann CONFIG REQUIRED)
 
-message(STATUS "hnswlib at ${hnswlib_SOURCE_DIR}")
+find_package(Annoy CONFIG REQUIRED)
+find_package(hnswlib CONFIG REQUIRED)
 
-if (NOT TARGET Annoy::Annoy)
-    message (STATUS "Fetching annoy...")
-    FetchContent_Declare(
-      annoy
-      GIT_REPOSITORY https://github.com/spotify/annoy
-      GIT_TAG v1.17.3
-      EXCLUDE_FROM_ALL
-    )
-    FetchContent_MakeAvailable(annoy)
-    set(Annoy_SOURCE_DIR "${Annoy_SOURCE_DIR}/src")
-else()
-    get_target_property(Annoy_SOURCE_DIR Annoy::Annoy INTERFACE_INCLUDE_DIRECTORIES)
-    set(Annoy_SOURCE_DIR "${Annoy_SOURCE_DIR}/annoy")
-endif()
+get_target_property(ANNOY_INCLUDE_DIR Annoy::Annoy INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(HNSWLIB_INCLUDE_DIR hnswlib::hnswlib INTERFACE_INCLUDE_DIRECTORIES)
 
-message(STATUS "annoy at ${Annoy_SOURCE_DIR}")
+if (HDILib_USE_VULKAN_KOMPUTE)
+    find_package(fmt CONFIG REQUIRED)
+    find_package(kompute CONFIG REQUIRED)
 
-if (USE_VULKAN_KOMPUTE)
-    # Neede for fmt library used in vulkan 
+    # Needed for fmt library used in vulkan 
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endif()
+
 # -----------------------------------------------------------------------------
 # Projects
 # -----------------------------------------------------------------------------
@@ -181,107 +143,11 @@ add_subdirectory(hdi/data)
 add_subdirectory(hdi/dimensionality_reduction)
 
 # -----------------------------------------------------------------------------
-# Tests
+# Example project
 # -----------------------------------------------------------------------------
-option(ENABLE_TESTS "Enable building the test executables" ON)
-if (ENABLE_TESTS)
-    add_subdirectory(tests)
-    add_dependencies(tsne_tester hdiutils hdidimensionalityreduction hdidata)
-endif()
-
-
-
-# -----------------------------------------------------------------------------
-# Create HDILib find_package
-# -----------------------------------------------------------------------------
-# NOTE CMake installs for the individual HDILib shared or static libs are defined in the sub-projects.
-
-# Helper macro for packaging
-include(CMakePackageConfigHelpers)
-
-# Generate the version file for use with find_package
-set(hdilib_package_version "${HDILib_VERSION}")
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ConfigVersion.cmake.in "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake" @ONLY)
-
-set(INCLUDE_INSTALL_DIR include)
-set(LIB_INSTALL_DIR lib)
-set(CURRENT_BUILD_DIR "${CMAKE_BINARY_DIR}")
-
-# create config file
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/HDILibConfig.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
-  PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR CURRENT_BUILD_DIR
-  INSTALL_DESTINATION share/HDILib
-  NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
-
-# merge the dependencies with HDILib package for simplicity at the consumer.
-if(${HDILib_INSTALL})
-    install(FILES
-              "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfig.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/HDILibConfigVersion.cmake"
-            DESTINATION share/HDILib
-            COMPONENT HDI_PACKAGE
-    )
-    if (USE_VULKAN_KOMPUTE AND SUPPORT_LIBS_INSTALL)
-      # TBD possibly move this to an external script
-      # Install the config.cmake files for the vcpkg dependencies
-      message("Merge dependencies to the HDILib package")
-      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/kompute" 
-        DESTINATION share COMPONENT HDI_PACKAGE)
-      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/fmt" 
-        DESTINATION share COMPONENT HDI_PACKAGE)
-      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/share/glfw3" 
-        DESTINATION share COMPONENT HDI_PACKAGE)
-
-      # Install the include files
-      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/kompute"
-        DESTINATION include)
-      # Additional generated kompute headers
-      install(FILES 
-        "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/ShaderLogisticRegression.hpp"
-        "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/ShaderOpMult.hpp"
-        DESTINATION include)
-      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/fmt"
-        DESTINATION include)
-      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/GLFW"
-        DESTINATION include)
-      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/vulkan"
-        DESTINATION include)
-      install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/include/vk_video"
-        DESTINATION include)
-
-      # Install the release libraries
-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION lib COMPONENT HDI_PACKAGE)
-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kp_logger${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION lib COMPONENT HDI_PACKAGE)
-      # Install vulkan so lib?
-      install(CODE "
-        execute_process(COMMAND ls ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/)
-      ")
-      if(WIN32)
-        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}vulkan-1${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION lib COMPONENT HDI_PACKAGE)
-      else()
-        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}vulkan${CMAKE_SHARED_LIBRARY_SUFFIX}"
-        DESTINATION lib COMPONENT HDI_PACKAGE)
-      endif()
-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmt${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION lib COMPONENT HDI_PACKAGE)
-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION lib COMPONENT HDI_PACKAGE)
-
-      # Install the debug libraries
-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kompute${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION debug/lib COMPONENT HDI_PACKAGE)
-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}kp_logger${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION debug/lib COMPONENT HDI_PACKAGE)
-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}fmtd${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION debug/lib COMPONENT HDI_PACKAGE)
-      install(FILES "${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/debug/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glfw3${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        DESTINATION debug/lib COMPONENT HDI_PACKAGE)
-    endif()
+if(HDILib_BUILD_EXAMPLE)
+    message(STATUS "Build HDLIB test application")
+    add_subdirectory(examples/cli_test_program)
 endif()
 
 # -----------------------------------------------------------------------------
@@ -289,5 +155,14 @@ endif()
 # -----------------------------------------------------------------------------
 if(HDILib_BUILD_TESTS)
 	message(STATUS "Build HDLIB unit tests")
-	add_subdirectory("test")
+	add_subdirectory(test)
+endif()
+
+# -----------------------------------------------------------------------------
+# Create HDILib find_package
+# -----------------------------------------------------------------------------
+# NOTE CMake installs are defined in the sub-projects.
+
+if(HDILib_INSTALL)
+    include(InstallHDILib) 
 endif()

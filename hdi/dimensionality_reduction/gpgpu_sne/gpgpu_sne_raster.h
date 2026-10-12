@@ -32,21 +32,12 @@
 
 #pragma once
 
-/*
-* // In shader.h
-#ifdef __APPLE__
-    #include <OpenGL/gl3.h>
-#else // __APPLE__
-    #include "hdi/utils/glad/glad.h"
-#endif // __APPLE__ */
-
 #include "hdi/data/shader.h"
 #include "hdi/data/embedding.h"
 #include "hdi/data/map_mem_eff.h"
 #include "hdi/dimensionality_reduction/tsne_parameters.h"
-#include "field_computation.h"
+#include "hdi/dimensionality_reduction/gpgpu_sne/field_computation.h"
 
-#include <array>
 #include <cstdint>
 
 namespace hdi {

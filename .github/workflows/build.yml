@@ -13,8 +13,7 @@ on:
   workflow_dispatch:
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+  VCPKG_COMMIT_SHA: 56bb2411609227288b70117ead2c47585ba07713 # corresponds to tag 2026.04.27
 
 # for matrix check https://docs.github.com/en/actions/reference/specifications-for-github-hosted-runners
 jobs:
@@ -29,77 +28,55 @@ jobs:
       matrix:
         include:
 
-          # - name: Windows-msvc2022
-          #   os: windows-2022
-          #   compiler: msvc-2022
-          #   build-cversion: 17
-          #   build-runtime: MD
-          #   build-config: Release
-          #   build-arch: x86_64
+          - name: Windows-msvc2022
+            os: windows-2022
+            compiler: msvc-2022
+            build-cversion: 17
+            build-runtime: MD
+            build-config: Release
+            build-arch: x86_64
 
-          #- name: Linux_gcc10
-          #  os: ubuntu-22.04
-          #  build-cc: gcc
-          #  build-cxx: g++
-          #  build-compiler: gcc
-          #  build-cversion: 10
-          #  build-config: Release
-          #  build-os: Linux
-          #  build-libcxx: libstdc++11
-          #  build-arch: x86_64
+          - name: Linux_gcc13
+            os: ubuntu-24.04
+            build-cc: gcc
+            build-cxx: g++
+            build-compiler: gcc
+            build-cversion: 13
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++11
+            build-arch: x86_64
 
-          #- name: Linux_gcc11
-          #  os: ubuntu-22.04
-          #  build-cc: gcc
-          #  build-cxx: g++
-          #  build-compiler: gcc
-          #  build-cversion: 11
-          #  build-config: Release
-          #  build-os: Linux
-          #  build-libcxx: libstdc++11
-          #  build-arch: x86_64
+          - name: Linux_gcc14
+            os: ubuntu-24.04
+            build-cc: gcc
+            build-cxx: g++
+            build-compiler: gcc
+            build-cversion: 14
+            build-config: Release
+            build-os: Linux
+            build-libcxx: libstdc++11
+            build-arch: x86_64
 
-          # - name: Linux_gcc13
-          #   os: ubuntu-24.04
-          #   build-cc: gcc
-          #   build-cxx: g++
-          #   build-compiler: gcc
-          #   build-cversion: 13
-          #   build-config: Release
-          #   build-os: Linux
-          #   build-libcxx: libstdc++11
-          #   build-arch: x86_64
+          - name: Macos_xcode14.3
+            os: macos-14
+            build-compiler: apple-clang
+            build-cversion: 14
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 15.0.1
+            build-libcxx: libc++
+            build-arch: armv8
 
-          # - name: Linux_gcc14
-          #   os: ubuntu-24.04
-          #   build-cc: gcc
-          #   build-cxx: g++
-          #   build-compiler: gcc
-          #   build-cversion: 14
-          #   build-config: Release
-          #   build-os: Linux
-          #   build-libcxx: libstdc++11
-          #   build-arch: x86_64
-
-          # - name: Macos_xcode14.3
-          #   os: macos-14
-          #   build-compiler: apple-clang
-          #   build-cversion: 14
-          #   build-config: Release
-          #   build-os: Macos
-          #   build-xcode-version: 15.0.1
-          #   build-libcxx: libc++
-          #   build-arch: armv8
-
-          # - name: Macos_xcode15
-          #   os: macos-14
-          #   build-compiler: apple-clang
-          #   build-cversion: 15
-          #   build-config: Release
-          #   build-os: Macos
-          #   build-xcode-version: 15.4
-          #   build-libcxx: libc++
-          #   build-arch: armv8
+          - name: Macos_xcode15
+            os: macos-14
+            build-compiler: apple-clang
+            build-cversion: 15
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 15.4
+            build-libcxx: libc++
+            build-arch: armv8
 
           - name: Macos_xcode16
             os: macos-15
@@ -113,20 +90,57 @@ jobs:
 
     steps:
       - name: Checkout the source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
+      - name: Setup python version
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          
       - name: Select Xcode for Mac only
         if: startsWith(runner.os, 'macOS')
         run: |
           sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
 
-      - name: Setup python version
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: Set vcpkg environment (Unix)
+        if: "!startsWith(runner.os, 'Windows')"
+        run: |
+          echo "VCPKG_DIR=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=${{ runner.temp }}/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $GITHUB_ENV
 
+      - name: Set vcpkg environmentg (Windows)
+        if: startsWith(runner.os, 'Windows')
+        shell: pwsh
+        run: |
+          echo "VCPKG_DIR=${{ runner.temp }}/vcpkg" >> $env:GITHUB_ENV
+          echo "VCPKG_ROOT=${{ runner.temp }}/vcpkg" >> $env:GITHUB_ENV
+          echo "VCPKG_BINARY_SOURCES=clear;files,${{ runner.temp }}/vcpkg-cache,readwrite" >> $env:GITHUB_ENV
+
+      - name: Set up binary cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ${{ runner.temp }}/vcpkg-cache
+          key: vcpkg-cache-${{ runner.os }}-${{ matrix.os }}-${{ matrix.build-cversion }}-${{ env.VCPKG_COMMIT_SHA }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-overlays/**') }}
+          restore-keys: |
+            vcpkg-cache-${{ runner.os }}-${{ matrix.os }}-${{ matrix.build-cversion }}-${{ env.VCPKG_COMMIT_SHA }}
+  
+      - name: Clone and checkout vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git --branch master ${{ env.VCPKG_DIR }}
+          git -C ${{ env.VCPKG_DIR }} checkout ${{ env.VCPKG_COMMIT_SHA }}
+
+      - name: Bootstrap vcpkg (Unix)
+        if: "!startsWith(runner.os, 'Windows')"
+        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.sh -disableMetrics
+
+      - name: Bootstrap vcpkg (Windows)
+        if: startsWith(runner.os, 'Windows')
+        shell: pwsh
+        run: ${{ env.VCPKG_DIR }}/bootstrap-vcpkg.bat -disableMetrics
+  
       - name: Windows build
         if: startsWith(matrix.os, 'Windows')
         uses: ./.github/conan_windows_build
@@ -165,13 +179,13 @@ jobs:
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
   # This build for python on linux cannot be performed using the normal matrix
-  # becuse the C libs are not compatible with the python versions 
+  # because the C libs are not compatible with the python versions 
   Python-ManyLinux-2-28-Build:
     runs-on: ubuntu-latest
-    container: quay.io/pypa/manylinux_2_28_x86_64
+    container: quay.io/pypa/manylinux_2_28_x86_64:latest
     strategy:
       matrix:
-        include:
+        include: 
           - name: python manylinux_2_28_gcc14
             build-cc: gcc
             build-cxx: g++
@@ -181,8 +195,7 @@ jobs:
             build-os: Linux
             build-libcxx: libstdc++11
             build-arch: x86_64    
-
-    
+            
     steps:
       - name: Checkout the source
         uses: actions/checkout@v6
@@ -195,31 +208,44 @@ jobs:
           python3 --version
           python3 -m ensurepip --upgrade
           pip3 --version
-  
-      - name: Verify Python installation
+          
+      # Ensure zip is available on manylinux before vcpkg setup
+      - name: Install zip
+        if: contains(matrix.name, 'manylinux')
         run: |
-          python3 --version
-          pip3 --version
-
-      # The version of vcpkg 
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        #This vcpkg baseline corresponds to tag 2025.04.09",
-        with: 
-          vcpkgGitCommitId: "ce613c41372b23b1f51333815feb3edd87ef8a8b"
-          vcpkgDirectory: ${{ runner.temp }}/vcpkg
-
-      # - name: Linux build
-      #   uses: ./.github/conan_linuxmac_build
-      #   with:
-      #     conan-compiler: ${{matrix.build-compiler}}
-      #     conan-compiler-version: ${{matrix.build-cversion}}
-      #     conan-libcxx-version: ${{matrix.build-libcxx}}
-      #     conan-build-type: ${{matrix.build-config}}
-      #     conan-build-os: ${{matrix.build-os}}
-      #     conan-channel: python
-      #     build-arch: ${{matrix.build-arch}}
-      #     conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
-      #     conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
-      #   env:
-      #     VCPKG_BINARY_SOURCES: "clear"
+          dnf install -y zip
+      
+      - name: Set vcpkg environment (Unix)
+        run: |
+          echo "VCPKG_DIR=/opt/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=/opt/vcpkg" >> $GITHUB_ENV
+          echo "VCPKG_BINARY_SOURCES=clear;files,/opt/vcpkg-cache,readwrite" >> $GITHUB_ENV
+      
+      - name: Set up binary cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: /opt/vcpkg-cache
+          key: vcpkg-cache-manylinux-2-28-${{ env.VCPKG_COMMIT_SHA }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-overlays/**') }}
+          restore-keys: |
+            vcpkg-cache-manylinux-2-28-${{ env.VCPKG_COMMIT_SHA }}
+      
+      - name: Clone and checkout vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git --branch master /opt/vcpkg
+          git -C /opt/vcpkg checkout ${{ env.VCPKG_COMMIT_SHA }}
+      
+      - name: Bootstrap vcpkg
+        run: /opt/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+  
+      - name: Linux build
+        uses: ./.github/conan_linuxmac_build
+        with:
+          conan-compiler: ${{matrix.build-compiler}}
+          conan-compiler-version: ${{matrix.build-cversion}}
+          conan-libcxx-version: ${{matrix.build-libcxx}}
+          conan-build-type: ${{matrix.build-config}}
+          conan-build-os: ${{matrix.build-os}}
+          conan-channel: python
+          build-arch: ${{matrix.build-arch}}
+          conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
+          conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}

@@ -1,4 +1,4 @@
-#include "field_computation.h"
+#include "hdi/dimensionality_reduction/gpgpu_sne/field_computation.h"
 
 #include <cmath>
 #include <vector>

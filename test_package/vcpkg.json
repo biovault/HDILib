@@ -1,6 +1,0 @@
-{
-  "name": "hdilib-conantest-example",
-  "dependencies": [
-    "vulkan"
-  ]
-}
